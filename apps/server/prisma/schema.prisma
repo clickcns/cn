@@ -1,0 +1,200 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// shared-types ROLES와 값이 일치해야 한다. 권한 구분이며, 방문 서식은 직종(Profession)이 정한다.
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+/// shared-types PROFESSIONS와 값이 일치해야 한다.
+enum Profession {
+  DOCTOR
+  NURSE
+  SOCIAL_WORKER
+}
+
+/// shared-types PROGRAMS와 값이 일치해야 한다.
+enum Program {
+  PRIMARY_CARE
+  HOME_CARE_CENTER
+  LTC_NURSING
+}
+
+/// shared-types GENDERS와 값이 일치해야 한다.
+enum Gender {
+  MALE
+  FEMALE
+}
+
+/// shared-types VISIT_STATUSES와 값이 일치해야 한다.
+enum VisitStatus {
+  SCHEDULED
+  DRAFT
+  CONFIRMED
+}
+
+/// 방문간호 기관(재가장기요양기관·가정간호사업소 등).
+model Organization {
+  id        String    @id @default(uuid())
+  name      String
+  /// 요양기관기호·장기요양기관 기호 등 기관 식별 코드(서식 머리에 적는다)
+  code      String?   @unique
+  /// 기관이 하는 사업. 방문을 만들 때 이 중에서 고른다.
+  programs  Program[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  users      User[]
+  recipients Recipient[]
+  visits     Visit[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String      @id @default(uuid())
+  /// 소문자로 정규화해 저장한다.
+  username       String      @unique
+  password       String
+  name           String
+  role           Role        @default(STAFF)
+  /// 직종. 방문 때 쓰는 서식을 정한다. 운영자는 없다.
+  profession     Profession?
+  /// 면허·자격번호(서식에 적는다)
+  licenseNumber  String?
+  isActive       Boolean     @default(true)
+  /// 운영자(ADMIN)는 소속 기관이 없다.
+  organizationId String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization?    @relation(fields: [organizationId], references: [id])
+  visits       Visit[]
+  sessions     RefreshSession[]
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+/// 로그인 세션(기기·앱별). 간호사 웹과 관리 웹에 동시에 로그인해도 서로 끊지 않는다.
+/// refresh할 때마다 토큰을 교체하고, 이전 토큰이 다시 오면 탈취로 보고 세션을 끊는다.
+model RefreshSession {
+  id        String   @id @default(uuid())
+  userId    String
+  /// 현재 유효한 refresh token의 SHA-256 해시
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_sessions")
+}
+
+/// 장기요양 수급자(방문 대상자).
+model Recipient {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  birthDate      DateTime? @db.Date
+  gender         Gender?
+  /// 장기요양등급: "1"~"5", "COGNITIVE"(인지지원등급)
+  careGrade      String?
+  /// 장기요양인정번호
+  ltcCertNumber  String?
+  phone          String?
+  address        String?
+  guardianName   String?
+  guardianPhone  String?
+  notes          String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  visits       Visit[]
+
+  @@index([organizationId, name])
+  @@map("recipients")
+}
+
+/// 방문(또는 사회복지사 상담) 1건. 서식 값은 VisitForm에 서식별로 둔다.
+model Visit {
+  id             String      @id @default(uuid())
+  organizationId String
+  recipientId    String
+  /// 담당자(의사·간호사·사회복지사)
+  staffId        String
+  program        Program
+  /// 이 방문에서 쓰는 서식(shared-types FORM_IDS). 만들 때 사업과 담당자 직종으로 정한다.
+  formIds        String[]
+  scheduledAt    DateTime
+  startedAt      DateTime?
+  endedAt        DateTime?
+  status         VisitStatus @default(SCHEDULED)
+  confirmedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  recipient    Recipient       @relation(fields: [recipientId], references: [id])
+  staff        User            @relation(fields: [staffId], references: [id])
+  forms        VisitForm[]
+  dictation    VisitDictation?
+
+  @@index([organizationId, scheduledAt])
+  @@index([staffId, scheduledAt])
+  @@index([recipientId, scheduledAt])
+  @@map("visits")
+}
+
+/// 방문의 서식 한 장. data는 shared-types 서식 정의(FORMS[formId])로 검사한 값이다.
+model VisitForm {
+  id        String   @id @default(uuid())
+  visitId   String
+  formId    String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@unique([visitId, formId])
+  @@map("visit_forms")
+}
+
+/// 방문 직후 음성 구술과 그로부터 만든 기록 초안. 방문당 하나이며, 다시 녹음하면 바꾸고
+/// 되묻기에 답한 녹음은 이어 붙인다. 초안은 기록이 아니다(담당자가 서식에 채워 저장해야 기록).
+/// sentences·draft·issues·questions는 shared-types dictation.ts 형태다.
+model VisitDictation {
+  id           String   @id @default(uuid())
+  visitId      String   @unique
+  sentences    Json
+  draft        Json
+  issues       Json
+  questions    Json
+  /// 초안을 만들지 못한 이유(문장은 남아 있어 다시 만들 수 있다)
+  draftError   String?
+  /// 녹음 횟수
+  takes        Int
+  /// 녹음 길이 합(초)
+  audioSeconds Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("visit_dictations")
+}

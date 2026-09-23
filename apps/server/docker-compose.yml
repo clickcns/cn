@@ -1,0 +1,29 @@
+# 로컬 개발용 인프라. 루트에서 `pnpm infra:up` / `pnpm infra:down` 으로 제어한다.
+# 포트 5510 — 다른 로컬 프로젝트(구 _carenote 5501, custom-forms 5439)와 겹치지 않게 골랐다.
+# 구 _carenote의 컨테이너(carenote-postgres, carenote-minio · 프로젝트 carenote-server)와
+# 이름이 겹치지 않도록 컨테이너 이름을 carenote-pg로 둔다.
+name: carenote
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: carenote-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: carenote
+      TZ: Asia/Seoul
+    ports:
+      - "5510:5432"
+    # PostgreSQL 18 이미지는 데이터를 /var/lib/postgresql/18/docker 에 둔다.
+    # 볼륨은 상위 /var/lib/postgresql 에 붙여야 한다(…/data 에 붙이면 기동이 거부된다).
+    volumes:
+      - carenote-pg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d carenote"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  carenote-pg:

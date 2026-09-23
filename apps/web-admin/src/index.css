@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+
+/* ── 디자인 토큰 (라이트 테마만 쓴다) ───────────────── */
+:root {
+  --background: #f5f7f9;
+  --foreground: #15202a;
+  --card: #ffffff;
+  --card-foreground: #15202a;
+  --popover: #ffffff;
+  --popover-foreground: #15202a;
+  --muted: #eef1f4;
+  --muted-foreground: #63717d;
+  --border: #dee4e9;
+  --input: #cdd5dc;
+  --ring: #2446b0;
+
+  --primary: #2446b0;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e8edfa;
+
+  --destructive: #b3342a;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fbecea;
+
+  --success: #1c7447;
+  --success-soft: #e3f2e9;
+
+  --warning: #8e5b06;
+  --warning-soft: #fcf1dc;
+
+  --sidebar-width: 15rem;
+  --header-height: 3.5rem;
+}
+
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+
+  /* 데스크톱 본문 기준 15px */
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+}
+
+/* ── 기본 스타일 ─────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-background text-foreground text-base antialiased;
+    /* 한국어는 어절 단위로 줄바꿈하고, 긴 영문·숫자만 강제로 끊는다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}

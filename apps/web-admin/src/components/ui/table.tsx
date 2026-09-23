@@ -1,0 +1,82 @@
+import type * as React from "react";
+import { cn } from "@/lib/utils";
+
+export function Table({ className, ...props }: React.ComponentProps<"table">) {
+  return (
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto"
+    >
+      <table
+        data-slot="table"
+        className={cn("w-full caption-bottom text-sm tabular-nums", className)}
+        {...props}
+      />
+    </div>
+  );
+}
+
+export function TableHeader({
+  className,
+  ...props
+}: React.ComponentProps<"thead">) {
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn("bg-muted/60 [&_tr]:border-b", className)}
+      {...props}
+    />
+  );
+}
+
+export function TableBody({
+  className,
+  ...props
+}: React.ComponentProps<"tbody">) {
+  return (
+    <tbody
+      data-slot="table-body"
+      className={cn("[&_tr:last-child]:border-0", className)}
+      {...props}
+    />
+  );
+}
+
+export function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+  return (
+    <tr
+      data-slot="table-row"
+      className={cn(
+        "hover:bg-muted/50 data-[state=selected]:bg-primary-soft/60 border-b transition-colors",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+  return (
+    <th
+      data-slot="table-head"
+      className={cn(
+        "text-muted-foreground h-10 px-3 text-left align-middle text-[13px] font-medium whitespace-nowrap first:pl-5 last:pr-5",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+  return (
+    <td
+      data-slot="table-cell"
+      className={cn(
+        "h-11 px-3 py-2 align-middle first:pl-5 last:pr-5",
+        className,
+      )}
+      {...props}
+    />
+  );
+}

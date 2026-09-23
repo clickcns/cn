@@ -1,0 +1,38 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "globalDependencies": ["pnpm-lock.yaml"],
+  "globalEnv": ["NODE_ENV"],
+  "tasks": {
+    // persistent = 끝나지 않는 태스크. Ctrl+C 하면 turbo가 서버·웹을 함께 정리한다.
+    // ^build 로 shared-types dist를 먼저 만든다(server가 dist를 import).
+    "dev": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "outputs": ["dist/**"]
+    },
+    // server 타입체크는 생성된 Prisma client가 있어야 통과한다.
+    // (^ 없는 이름 = 같은 패키지의 태스크. prisma:generate가 없는 패키지는 건너뛴다.)
+    "check-types": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build", "prisma:generate"],
+      "outputs": []
+    },
+    // Prisma 7 prisma-client 생성기는 src/generated 아래에 TS 소스를 만든다.
+    "prisma:generate": {
+      "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
+      "outputs": ["src/generated/**"]
+    }
+  }
+}

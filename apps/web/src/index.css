@@ -1,0 +1,159 @@
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ── 디자인 토큰 (라이트 테마만) ─────────────────────── */
+:root {
+  --background: #f5f7f9;
+  --foreground: #15202a;
+  --card: #ffffff;
+  --card-foreground: #15202a;
+  --popover: #ffffff;
+  --popover-foreground: #15202a;
+  --muted: #edf1f4;
+  --muted-foreground: #63717d;
+  --border: #dee4e9;
+  --input: #c3ccd4;
+  --ring: #2446b0;
+
+  --primary: #2446b0;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e8edfa;
+
+  --destructive: #b3342a;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fbeceb;
+
+  --success: #1c7447;
+  --success-foreground: #ffffff;
+  --success-soft: #e4f3ea;
+
+  --warning: #8e5b06;
+  --warning-foreground: #ffffff;
+  --warning-soft: #fcf1dc;
+
+  --radius: 0.875rem;
+
+  /*
+   * 화면 아래에 고정되는 막대(하단 탭 바·기록 저장 버튼 바)의 높이.
+   * 좁은 화면에서 해당 요소가 있을 때만 값이 생기고, 본문 아래 여백과
+   * PWA 업데이트 배너 위치가 이 값을 따라간다.
+   */
+  --tab-bar-h: 0px;
+  --action-bar-h: 0px;
+}
+
+@media (width < 48rem) {
+  :root:has([data-slot="tab-bar"]) {
+    --tab-bar-h: 4.5rem;
+  }
+  :root:has([data-slot="action-bar"]) {
+    --action-bar-h: 5rem;
+  }
+}
+
+@theme inline {
+  --font-sans:
+    "Pretendard Variable", Pretendard, system-ui, -apple-system, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 4px);
+}
+
+/* 50대 사용자 기준: 가장 작은 글자도 14px, 본문 17px. */
+@theme {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.65;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 1.35;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-base antialiased;
+    min-height: 100dvh;
+    line-height: 1.65;
+    /* 한국어는 어절 단위로 줄바꿈하고, 공백 없는 긴 문자열만 강제로 끊는다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ── 레이아웃 유틸리티 ─────────────────────────────── */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 고정 막대에 가려지지 않도록 본문 아래에 여백을 둔다. */
+@utility pb-bottom-stack {
+  padding-bottom: calc(
+    var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 2rem
+  );
+}
+
+/* 하단 탭 바 바로 위. */
+@utility bottom-above-tab-bar {
+  bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom));
+}
+
+/* 하단 고정 막대들 위(업데이트 배너용). */
+@utility bottom-above-stack {
+  bottom: calc(
+    var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) +
+      0.75rem
+  );
+}

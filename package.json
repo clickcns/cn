@@ -1,0 +1,32 @@
+{
+  "name": "carenote",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:server": "turbo run dev --filter=@repo/server",
+    "dev:web": "turbo run dev --filter=@repo/web",
+    "dev:admin": "turbo run dev --filter=@repo/web-admin",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md}\"",
+    "infra:up": "docker compose -f apps/server/docker-compose.yml up -d --wait",
+    "infra:down": "docker compose -f apps/server/docker-compose.yml down",
+    "infra:reset": "docker compose -f apps/server/docker-compose.yml down -v",
+    "prisma:generate": "turbo run prisma:generate",
+    "db:migrate": "pnpm --filter @repo/server prisma:migrate",
+    "db:deploy": "pnpm --filter @repo/server prisma:deploy",
+    "db:seed": "pnpm --filter @repo/server db:seed",
+    "db:studio": "pnpm --filter @repo/server prisma:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "turbo": "^2.10.11"
+  },
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

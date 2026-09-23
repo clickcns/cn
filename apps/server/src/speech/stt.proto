@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package stt;
+
+message PostProcessThreshold {
+  float no_speech_prob = 1; // 무음 확률
+  float avg_logprob = 2; // 평균 로그 확률
+  float compression_ratio = 3; // 압축률
+}
+// STT 요청 메시지: PCM 바이너리 데이터를 포함
+message SttRequest {
+  bytes pcm_data = 1; // PCM 오디오 데이터 (바이너리)
+  string language = 2; // 언어 코드 (예: "ko-KR")
+  int32 language_detection_segments = 3;
+  float language_detection_threshold = 4;
+  int32 batch_size = 5; // 배치 크기
+  string initial_prompt = 6; // 프롬프트 텍스트
+  optional PostProcessThreshold post_threshold = 7; // 후처리 임계값
+  bool condition_on_previous_text = 8; // 이전 텍스트 조건 사용 여부
+  float temperature = 9; // 디코딩 온도
+  int32 best_of = 10; // 샘플링 후보 개수
+  int32 beam_size = 11; // 빔 서치 크기
+}
+
+// STT 응답 메시지: 인식된 텍스트 반환
+message SttResponse {
+  string text = 1; // 인식된 텍스트
+  float no_speech_prob = 2; // 무음 확률
+  float avg_logprob = 3; // 평균 로그 확률
+  float compression_ratio = 4; // 압축률
+  float start = 5; // 시작 시간 (s)
+  float end = 6; // 종료 시간 (s)
+  string language = 7; // 인식된 언어 코드
+}
+
+// STT 서비스 정의
+service SpeechToText {
+  rpc Recognize(stream SttRequest) returns (stream SttResponse);
+}

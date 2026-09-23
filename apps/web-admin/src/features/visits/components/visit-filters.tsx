@@ -1,0 +1,136 @@
+import {
+  PROGRAM_LABELS,
+  PROGRAMS,
+  VISIT_STATUS_LABELS,
+  VISIT_STATUSES,
+} from "@repo/shared-types";
+import { RotateCcwIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import {
+  useScopeOrganizationId,
+  useShowsAllOrganizations,
+} from "@/features/organizations/hooks/use-organization-scope";
+import { useVisitStaff } from "@/features/users/hooks/use-users";
+import { staffLabel } from "@/features/users/lib/staff-label";
+import type { VisitFilters as VisitFilterValues } from "@/features/visits/hooks/use-visit-filters";
+
+interface VisitFiltersProps {
+  filters: VisitFilterValues;
+  onChange: (key: keyof VisitFilterValues, value: string | undefined) => void;
+  onReset: () => void;
+  canReset: boolean;
+}
+
+export function VisitFilters({
+  filters,
+  onChange,
+  onReset,
+  canReset,
+}: VisitFiltersProps) {
+  const scopeOrganizationId = useScopeOrganizationId();
+  const showsAllOrganizations = useShowsAllOrganizations();
+  // 지난 방문을 찾을 수 있게 비활성 계정도 목록에 둔다.
+  const { staff, isPending: staffPending } = useVisitStaff(
+    scopeOrganizationId,
+    { includeInactive: true },
+  );
+
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="grid gap-1.5">
+        <Label htmlFor="visit-filter-from">기간</Label>
+        <div className="flex items-center gap-1.5">
+          <Input
+            id="visit-filter-from"
+            type="date"
+            aria-label="시작일"
+            className="w-38"
+            value={filters.from}
+            max={filters.to}
+            onChange={(event) => onChange("from", event.target.value)}
+          />
+          <span className="text-muted-foreground" aria-hidden>
+            ~
+          </span>
+          <Input
+            type="date"
+            aria-label="종료일"
+            className="w-38"
+            value={filters.to}
+            min={filters.from}
+            onChange={(event) => onChange("to", event.target.value)}
+          />
+        </div>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="visit-filter-status">상태</Label>
+        <Select
+          id="visit-filter-status"
+          containerClassName="w-32"
+          value={filters.status ?? ""}
+          onChange={(event) => onChange("status", event.target.value)}
+        >
+          <option value="">전체 상태</option>
+          {VISIT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {VISIT_STATUS_LABELS[status]}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="visit-filter-program">사업</Label>
+        <Select
+          id="visit-filter-program"
+          containerClassName="w-44"
+          value={filters.program ?? ""}
+          onChange={(event) => onChange("program", event.target.value)}
+        >
+          <option value="">전체 사업</option>
+          {PROGRAMS.map((program) => (
+            <option key={program} value={program}>
+              {PROGRAM_LABELS[program]}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="visit-filter-staff">담당자</Label>
+        <Select
+          id="visit-filter-staff"
+          containerClassName="w-56"
+          value={filters.staffId ?? ""}
+          disabled={staffPending}
+          onChange={(event) => onChange("staffId", event.target.value)}
+        >
+          <option value="">전체 담당자</option>
+          {/* 조회 중이거나 기관을 바꿔 목록에 없는 담당자도 선택값은 유지한다. */}
+          {filters.staffId &&
+            !staff.some((user) => user.id === filters.staffId) && (
+              <option value={filters.staffId}>
+                {staffPending ? "불러오는 중…" : "선택한 담당자"}
+              </option>
+            )}
+          {staff.map((user) => (
+            <option key={user.id} value={user.id}>
+              {staffLabel(user, { withOrganization: showsAllOrganizations })}
+            </option>
+          ))}
+        </Select>
+      </div>
+      {canReset && (
+        <Button
+          variant="ghost"
+          onClick={onReset}
+          className="text-muted-foreground"
+        >
+          <RotateCcwIcon />
+          초기화
+        </Button>
+      )}
+    </div>
+  );
+}
