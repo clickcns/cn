@@ -37,6 +37,8 @@ const DRAFT_FAILED =
   "기록 초안을 만들지 못했습니다. 잠시 후 [초안 다시 만들기]를 눌러 주세요";
 const LLM_NOT_CONFIGURED =
   "초안을 만드는 LLM이 설정되지 않았습니다(LLM_API_KEY). 음성인식 결과만 저장했습니다";
+const CONFIRMED_WHILE_PROCESSING =
+  "녹음을 처리하는 동안 방문 기록이 확정되어 구술을 저장하지 않았습니다";
 
 type DraftFields = Pick<
   VisitDictation,
@@ -155,11 +157,18 @@ export class DictationService implements OnModuleDestroy {
       takes: take,
       audioSeconds: (previous?.audioSeconds ?? 0) + seconds,
     };
-    const row = await this.prisma.visitDictation.upsert({
-      where: { visitId },
-      create: { visitId, ...data },
-      update: data,
-    });
+    // 음성인식·초안에 걸린 사이에 확정됐으면 저장하지 않는다.
+    const row = await this.visitService.writeIfStillWritable(
+      actor,
+      visitId,
+      CONFIRMED_WHILE_PROCESSING,
+      (tx) =>
+        tx.visitDictation.upsert({
+          where: { visitId },
+          create: { visitId, ...data },
+          update: data,
+        }),
+    );
     this.logger.log(
       {
         visitId,
@@ -193,10 +202,16 @@ export class DictationService implements OnModuleDestroy {
       context,
       current,
     );
-    const updated = await this.prisma.visitDictation.update({
-      where: { visitId },
-      data: draftColumns(draft),
-    });
+    const updated = await this.visitService.writeIfStillWritable(
+      actor,
+      visitId,
+      CONFIRMED_WHILE_PROCESSING,
+      (tx) =>
+        tx.visitDictation.update({
+          where: { visitId },
+          data: draftColumns(draft),
+        }),
+    );
     return toVisitDictation(updated);
   }
 

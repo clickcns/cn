@@ -60,6 +60,20 @@ function visitScope(actor: AuthenticatedUser): Prisma.VisitWhereInput {
   };
 }
 
+/** 담당자 본인(403)이고 확정 전(409)이어야 기록을 쓸 수 있다. */
+function checkWritable(
+  actor: AuthenticatedUser,
+  visit: { staffId: string; status: VisitStatus },
+  lockedMessage = RECORD_LOCKED,
+): void {
+  if (visit.staffId !== actor.id) {
+    throw new ForbiddenException("담당자만 기록을 작성할 수 있습니다");
+  }
+  if (!isRecordEditable(visit.status)) {
+    throw new ConflictException(lockedMessage);
+  }
+}
+
 /** 이월 칸만 골라 낸다. */
 function pickCarryOver(formId: FormId, data: FormData): FormData {
   const picked: FormData = {};
@@ -330,13 +344,29 @@ export class VisitService {
       },
     });
     if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
-    if (visit.staffId !== actor.id) {
-      throw new ForbiddenException("담당자만 기록을 작성할 수 있습니다");
-    }
-    if (!isRecordEditable(visit.status)) {
-      throw new ConflictException(RECORD_LOCKED);
-    }
+    checkWritable(actor, visit);
     return { ...visit, formIds: toFormIds(visit.formIds) };
+  }
+
+  /**
+   * 오래 걸리는 작업(음성인식·LLM) 뒤에 기록을 쓸 때 쓴다. 방문 행을 잠그고 담당자·확정 여부를
+   * 다시 확인한 뒤 같은 트랜잭션에서 write를 실행한다. 그 사이 확정됐으면 쓰지 않고 409이고,
+   * 동시에 온 확정 요청은 이 트랜잭션이 끝날 때까지 기다린다.
+   */
+  async writeIfStillWritable<T>(
+    actor: AuthenticatedUser,
+    id: string,
+    lockedMessage: string,
+    write: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      const [visit] = await tx.$queryRaw<
+        { staffId: string; status: VisitStatus }[]
+      >`SELECT "staffId", status::text AS status FROM visits WHERE id = ${id} FOR UPDATE`;
+      if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
+      checkWritable(actor, visit, lockedMessage);
+      return write(tx);
+    });
   }
 
   /** 이월 값은 기록 폼을 여는 담당자에게만 쓸모가 있으므로 그때만 찾는다. */
