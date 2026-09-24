@@ -3,6 +3,7 @@ import {
   allowsProfession,
   assignableRoles,
   CreateUserSchema,
+  getPasswordMinLength,
   requiresOrganization,
   ROLE_LABELS,
 } from "@repo/shared-types";
@@ -164,7 +165,7 @@ function CreateUserForm({ onDone }: { onDone: () => void }) {
           htmlFor="user-password"
           required
           error={errors.password?.message}
-          hint="8자 이상"
+          hint={`${getPasswordMinLength()}자 이상`}
         >
           <Input
             id="user-password"

@@ -31,8 +31,8 @@ import {
 dotenv.config({ path: ".env" });
 
 /**
- * 개발 편의용 비밀번호. 시드는 bcrypt 해시를 직접 넣으므로 API의 비밀번호 규칙
- * (8자 이상, CreateUserSchema)을 거치지 않는다. 화면에서 만드는 계정은 규칙이 그대로 적용된다.
+ * 개발 편의용 비밀번호. 시드는 bcrypt 해시를 직접 넣으므로 API의 비밀번호 규칙을 거치지 않는다.
+ * 개발 환경은 화면에서도 4자부터 받으므로(allowShortPasswordsForDev) 같은 비밀번호를 쓸 수 있다.
  */
 const DEFAULT_PASSWORD = "1234";
 

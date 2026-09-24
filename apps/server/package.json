@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "dev": "chcp 65001 >nul 2>&1 & cross-env NODE_ENV=development nest start --watch",
+    "dev": "chcp 65001 >nul 2>&1 & cross-env NODE_ENV=development ALLOW_SHORT_PASSWORDS=true nest start --watch",
     "start:prod": "cross-env NODE_ENV=production node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
     "check-types": "tsc --noEmit",

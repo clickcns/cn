@@ -14,10 +14,31 @@ const ProfessionSchema = blankToNull(
 );
 const LicenseNumberSchema = optionalText(30, "면허·자격번호");
 
+/** 비밀번호 최소 길이: 운영 8자, 개발 4자(시드 비밀번호 1234처럼). */
+const PASSWORD_MIN_LENGTH = 8;
+const DEV_PASSWORD_MIN_LENGTH = 4;
+let passwordMinLength = PASSWORD_MIN_LENGTH;
+
+/**
+ * 개발 환경에서 비밀번호를 4자부터 받는다. `pnpm dev`로 띄운 서버(ALLOW_SHORT_PASSWORDS)와
+ * 관리 웹 개발 서버가 시작할 때 한 번 부른다(부르지 않으면 운영 규칙 8자).
+ * 스키마가 검사할 때 읽으므로 스키마를 다시 만들 필요가 없다.
+ */
+export function allowShortPasswordsForDev(): void {
+  passwordMinLength = DEV_PASSWORD_MIN_LENGTH;
+}
+
+/** 지금 적용 중인 비밀번호 최소 길이(입력 칸 안내에 쓴다). */
+export function getPasswordMinLength(): number {
+  return passwordMinLength;
+}
+
 const PasswordSchema = z
   .string()
-  .min(8, "비밀번호는 8자 이상이어야 합니다")
-  .max(72, "비밀번호는 72자 이하여야 합니다");
+  .max(72, "비밀번호는 72자 이하여야 합니다")
+  .refine((password) => password.length >= passwordMinLength, {
+    error: () => `비밀번호는 ${passwordMinLength}자 이상이어야 합니다`,
+  });
 
 export const CreateUserSchema = z
   .object({

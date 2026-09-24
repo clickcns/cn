@@ -36,6 +36,8 @@ export const EnvSchema = z.object({
   LLM_API_KEY: z.string().default(""),
   LLM_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   LLM_REASONING_EFFORT: z.enum(["low", "medium", "high"]).default("low"),
+  /** 비밀번호를 4자부터 받는다(개발 편의). `pnpm dev`만 켜며, 운영에서 켜면 시작하지 않는다. */
+  ALLOW_SHORT_PASSWORDS: z.enum(["true", "false"]).default("false"),
 });
 
 type Env = z.infer<typeof EnvSchema>;
@@ -73,6 +75,11 @@ export class ConfigService {
           "운영 환경에서는 JWT_ACCESS_SECRET·JWT_REFRESH_SECRET을 개발용 기본값이 아닌 값으로 설정해야 합니다",
         );
       }
+      if (this.allowShortPasswords) {
+        throw new Error(
+          "운영 환경에서는 ALLOW_SHORT_PASSWORDS를 켤 수 없습니다",
+        );
+      }
     }
   }
 
@@ -82,6 +89,10 @@ export class ConfigService {
 
   get isProduction(): boolean {
     return this.env.NODE_ENV === "production";
+  }
+
+  get allowShortPasswords(): boolean {
+    return this.env.ALLOW_SHORT_PASSWORDS === "true";
   }
 
   get databaseUrl(): string {

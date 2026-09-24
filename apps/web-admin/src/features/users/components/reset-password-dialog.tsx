@@ -1,5 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UpdateUserSchema, type UserSummary } from "@repo/shared-types";
+import {
+  getPasswordMinLength,
+  UpdateUserSchema,
+  type UserSummary,
+} from "@repo/shared-types";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -101,7 +105,7 @@ function ResetPasswordForm({
           htmlFor="reset-password"
           required
           error={errors.password?.message}
-          hint="8자 이상"
+          hint={`${getPasswordMinLength()}자 이상`}
         >
           <Input
             id="reset-password"

@@ -62,6 +62,7 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
 - 토큰 교체는 "지금 해시일 때만" 쓰는 조건부 update다(동시 갱신·되살아난 세션 방지).
 - `JwtStrategy`는 매 요청 `RefreshSession`을 조회한다. 그래서 로그아웃·비밀번호 재설정·탈취 탐지로 세션이 지워지면 이미 발급된 access token도 즉시 막힌다.
 - 사용 중지·비밀번호 재설정 시 그 사용자의 세션을 모두 끊는다.
+- 비밀번호는 8자 이상(`shared-types/src/user.ts`). `pnpm dev`로 띄운 서버(`ALLOW_SHORT_PASSWORDS=true`, 운영에서 켜면 시작하지 않음)와 관리 웹 개발 서버는 시작할 때 `allowShortPasswordsForDev()`를 불러 4자부터 받는다(시드 비밀번호 1234처럼). 운영 빌드·운영 서버는 8자 그대로다.
 - `TRUST_PROXY`(기본 loopback)가 요청 제한이 보는 클라이언트 IP를 정한다. 인그레스 뒤에 배포하면 앞단 프록시 수(보통 `1`)를 넣는다. 넓게 잡으면 X-Forwarded-For 위조로 로그인 제한을 우회할 수 있다.
 - 프론트: 로그인·갱신 결과는 `setSession()` **한 번에** 저장한다(토큰과 user를 나눠 set하면 중간 상태가 렌더링된다). 401 갱신은 `api-client`의 `refreshSession()` 하나를 공유한다.
 - 프론트 갱신 규칙 두 가지(`api-client/src/http.ts`):

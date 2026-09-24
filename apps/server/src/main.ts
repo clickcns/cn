@@ -1,5 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
+import { allowShortPasswordsForDev } from "@repo/shared-types";
 import compression from "compression";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
@@ -24,6 +25,9 @@ async function bootstrap(): Promise<void> {
 
   if (!config.isProduction) {
     setupSwagger(app);
+  }
+  if (config.allowShortPasswords) {
+    allowShortPasswordsForDev();
   }
 
   await app.listen(config.port);
