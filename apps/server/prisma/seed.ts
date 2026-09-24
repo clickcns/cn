@@ -10,7 +10,7 @@ import {
   addKstDays,
   formatKstDate,
   formDataSchema,
-  formIdsFor,
+  resolveFormIds,
   FORMS,
   toKstIsoDateTime,
   type FormData,
@@ -114,7 +114,7 @@ interface SeedVisit {
   forms?: VisitForms;
 }
 
-/** 방문은 기관에 한 건도 없을 때만 넣는다. 서식은 사업·담당자 직종으로 정한다. */
+/** 방문은 기관에 한 건도 없을 때만 넣는다. 서식은 사업·담당자 직종의 기본값(필수 + 미리 켜 둔 선택 서식)이다. */
 async function seedVisits(
   organizationId: string,
   recipients: Map<string, string>,
@@ -129,7 +129,7 @@ async function seedVisits(
         recipientId: recipients.get(visit.recipient)!,
         staffId: visit.staff.id,
         program: visit.program,
-        formIds: [...formIdsFor(visit.program, visit.staff.profession)],
+        formIds: resolveFormIds(visit.program, visit.staff.profession),
         scheduledAt: visit.scheduledAt,
         startedAt: visit.startedAt,
         endedAt: visit.endedAt,
@@ -188,6 +188,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
   const recipients = await seedRecipients(organization.id, [
     {
       name: "김영자",
+      programs: ["LTC_NURSING"],
       birthDate: new Date("1936-04-12T00:00:00Z"),
       gender: "FEMALE",
       careGrade: "2",
@@ -200,6 +201,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "박순례",
+      programs: ["LTC_NURSING"],
       birthDate: new Date("1941-09-03T00:00:00Z"),
       gender: "FEMALE",
       careGrade: "3",
@@ -212,6 +214,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "이만수",
+      programs: ["LTC_NURSING"],
       birthDate: new Date("1938-01-27T00:00:00Z"),
       gender: "MALE",
       careGrade: "1",
@@ -223,6 +226,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "최말순",
+      programs: ["LTC_NURSING"],
       birthDate: new Date("1944-06-15T00:00:00Z"),
       gender: "FEMALE",
       careGrade: "4",
@@ -231,6 +235,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "정덕배",
+      programs: ["LTC_NURSING"],
       birthDate: new Date("1946-11-30T00:00:00Z"),
       gender: "MALE",
       careGrade: "COGNITIVE",
@@ -349,6 +354,7 @@ async function seedHomeCareClinic(passwordHash: string) {
   const recipients = await seedRecipients(organization.id, [
     {
       name: "강옥자",
+      programs: ["HOME_CARE_CENTER"],
       birthDate: new Date("1939-03-02T00:00:00Z"),
       gender: "FEMALE",
       careGrade: "1",
@@ -361,6 +367,8 @@ async function seedHomeCareClinic(passwordHash: string) {
     },
     {
       name: "문태식",
+      // 장기요양등급은 있지만 재택의료센터에는 등록하지 않은 환자: 의사 방문은 별지 제4호만 쓴다.
+      programs: ["PRIMARY_CARE"],
       birthDate: new Date("1942-08-19T00:00:00Z"),
       gender: "MALE",
       careGrade: "2",
@@ -372,6 +380,7 @@ async function seedHomeCareClinic(passwordHash: string) {
     },
     {
       name: "서금순",
+      programs: ["HOME_CARE_CENTER"],
       birthDate: new Date("1945-12-05T00:00:00Z"),
       gender: "FEMALE",
       careGrade: "3",

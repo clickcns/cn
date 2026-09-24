@@ -6,7 +6,7 @@ import {
   type Organization,
 } from "@repo/shared-types";
 import { Controller, useForm } from "react-hook-form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CheckboxGroup } from "@/components/ui/checkbox-group";
 import {
   Dialog,
   DialogBody,
@@ -126,35 +126,21 @@ function OrganizationForm({
           label="사업"
           required
           error={errors.programs?.message}
-          hint="방문을 만들 때 이 중에서 고르고, 사업·담당자 직종으로 작성 서식이 정해집니다"
+          hint="수급자 등록 사업과 방문은 이 중에서 고릅니다. 사업을 빼면 그 사업에 등록한 수급자에게서도 빠집니다"
         >
           <Controller
             control={control}
             name="programs"
             render={({ field }) => (
-              <div className="grid gap-2" role="group" aria-label="사업">
-                {PROGRAMS.map((program) => {
-                  const checked = field.value.includes(program);
-                  return (
-                    <label
-                      key={program}
-                      className="flex cursor-pointer items-center gap-2 text-sm"
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(next) =>
-                          field.onChange(
-                            next === true
-                              ? [...field.value, program]
-                              : field.value.filter((p) => p !== program),
-                          )
-                        }
-                      />
-                      {PROGRAM_LABELS[program]}
-                    </label>
-                  );
-                })}
-              </div>
+              <CheckboxGroup
+                label="사업"
+                options={PROGRAMS.map((program) => ({
+                  value: program,
+                  label: PROGRAM_LABELS[program],
+                }))}
+                value={field.value}
+                onChange={field.onChange}
+              />
             )}
           />
         </FormField>

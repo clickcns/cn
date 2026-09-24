@@ -10,12 +10,12 @@ import {
   canBeAssignedVisits,
   checkVisitTimes,
   formFields,
-  formIdsFor,
   FORMS,
   isRecordEditable,
+  keepDraftForms,
   kstStartOfDay,
-  PROFESSION_LABELS,
   PROGRAM_LABELS,
+  selectForms,
   VISIT_STATUSES,
   VisitFormsSchema,
   withParticle,
@@ -23,6 +23,7 @@ import {
   type FormData,
   type FormId,
   type SaveVisitRecordSchema,
+  type UpdateVisitFormsSchema,
   type VisitDetail,
   type VisitForms,
   type VisitListQuerySchema,
@@ -35,8 +36,9 @@ import {
   assertOrganizationAccess,
   resolveOrganizationFilter,
 } from "../core/utils/org-scope.js";
+import { toVisitDictation } from "../dictation/dictation.mapper.js";
 import type { Prisma } from "../generated/prisma/client.js";
-import { handlePrismaError, PrismaService } from "../prisma/index.js";
+import { PrismaService } from "../prisma/index.js";
 import {
   toFormIds,
   toVisitDetail,
@@ -72,6 +74,32 @@ function checkWritable(
   if (!isRecordEditable(visit.status)) {
     throw new ConflictException(lockedMessage);
   }
+}
+
+/**
+ * 기록을 쓸 수 있는 방문을 읽는다: 보이는 방문(404)·담당자 본인(403)·확정 전(409).
+ * 잠금 없이(assertWritable)와 잠근 트랜잭션 안에서(lockWritable) 같은 규칙을 쓴다.
+ */
+async function findWritable(
+  client: Prisma.TransactionClient,
+  actor: AuthenticatedUser,
+  id: string,
+  lockedMessage = RECORD_LOCKED,
+) {
+  const visit = await client.visit.findFirst({
+    where: { id, ...visitScope(actor) },
+    select: {
+      staffId: true,
+      status: true,
+      program: true,
+      formIds: true,
+      startedAt: true,
+      endedAt: true,
+    },
+  });
+  if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
+  checkWritable(actor, visit, lockedMessage);
+  return { ...visit, formIds: toFormIds(visit.formIds) };
 }
 
 /** 이월 칸만 골라 낸다. */
@@ -163,6 +191,7 @@ export class VisitService {
         select: {
           organizationId: true,
           isActive: true,
+          programs: true,
           organization: { select: { programs: true } },
         },
       }),
@@ -191,6 +220,11 @@ export class VisitService {
         `이 기관은 ${PROGRAM_LABELS[dto.program]} 사업을 하지 않습니다`,
       );
     }
+    if (!recipient.programs.includes(dto.program)) {
+      throw new BadRequestException(
+        `이 수급자는 ${PROGRAM_LABELS[dto.program]} 사업에 등록되어 있지 않습니다. 수급자 정보에서 등록 사업을 확인해 주세요`,
+      );
+    }
     if (
       !staff?.isActive ||
       !canBeAssignedVisits(staff) ||
@@ -200,15 +234,9 @@ export class VisitService {
         "담당자를 선택해 주세요(수급자와 같은 기관의, 직종이 있는 사용자만 배정할 수 있습니다)",
       );
     }
-    const formIds = formIdsFor(dto.program, staff.profession);
-    if (formIds.length === 0) {
-      const profession = staff.profession
-        ? PROFESSION_LABELS[staff.profession]
-        : "이 사용자";
-      throw new BadRequestException(
-        `${withParticle(profession, "은/는")} ${PROGRAM_LABELS[dto.program]} 방문을 맡을 수 없습니다`,
-      );
-    }
+    // 서식은 사업·담당자 직종의 규칙 안에서 고른다(보내지 않으면 기본값).
+    const selection = selectForms(dto.program, staff.profession, dto.formIds);
+    if (!selection.ok) throw new BadRequestException(selection.message);
 
     const row = await this.prisma.visit.create({
       ...visitDetailArgs,
@@ -217,7 +245,7 @@ export class VisitService {
         recipientId: dto.recipientId,
         staffId,
         program: dto.program,
-        formIds: [...formIds],
+        formIds: selection.formIds,
         scheduledAt: new Date(dto.scheduledAt),
       },
     });
@@ -229,86 +257,126 @@ export class VisitService {
     id: string,
     { forms, startedAt, endedAt }: z.output<typeof SaveVisitRecordSchema>,
   ): Promise<VisitDetail> {
-    const visit = await this.assertWritable(actor, id);
-    const unknown = (Object.keys(forms) as FormId[]).filter(
-      (formId) => !visit.formIds.includes(formId),
-    );
-    if (unknown.length > 0) {
-      throw new BadRequestException("이 방문에서 쓰지 않는 서식입니다");
-    }
-    // 한쪽만 보내는 요청도 있으므로 저장된 값과 합친 뒤 스키마와 같은 규칙으로 확인한다.
-    const timeError = checkVisitTimes(
-      startedAt === undefined ? visit.startedAt : toOptionalDate(startedAt),
-      endedAt === undefined ? visit.endedAt : toOptionalDate(endedAt),
-    );
-    if (timeError) throw new BadRequestException(timeError);
+    const row = await this.prisma.$transaction(async (tx) => {
+      const visit = await this.lockWritable(tx, actor, id);
+      const unknown = (Object.keys(forms) as FormId[]).filter(
+        (formId) => !visit.formIds.includes(formId),
+      );
+      if (unknown.length > 0) {
+        throw new BadRequestException(
+          "이 방문에서 쓰지 않는 서식입니다. 화면을 새로 고쳐 주세요",
+        );
+      }
+      // 한쪽만 보내는 요청도 있으므로 저장된 값과 합친 뒤 스키마와 같은 규칙으로 확인한다.
+      const timeError = checkVisitTimes(
+        startedAt === undefined ? visit.startedAt : toOptionalDate(startedAt),
+        endedAt === undefined ? visit.endedAt : toOptionalDate(endedAt),
+      );
+      if (timeError) throw new BadRequestException(timeError);
 
-    const upserts = Object.entries(forms).map(([formId, data]) =>
-      this.prisma.visitForm.upsert({
-        where: { visitId_formId: { visitId: id, formId } },
-        create: {
-          visitId: id,
-          formId,
-          data: data as Prisma.InputJsonValue,
-        },
-        update: { data: data as Prisma.InputJsonValue },
-      }),
-    );
-
-    try {
-      // 서식을 먼저 쓰고, 확정되지 않았을 때만 방문을 갱신한다. 이미 확정됐으면 전체를 되돌린다.
-      const results = await this.prisma.$transaction([
-        ...upserts,
-        this.prisma.visit.update({
-          ...visitDetailArgs,
-          where: { id, status: { not: "CONFIRMED" } },
-          data: {
-            startedAt: toOptionalDate(startedAt),
-            endedAt: toOptionalDate(endedAt),
-            status: "DRAFT",
+      for (const [formId, data] of Object.entries(forms)) {
+        await tx.visitForm.upsert({
+          where: { visitId_formId: { visitId: id, formId } },
+          create: {
+            visitId: id,
+            formId,
+            data: data as Prisma.InputJsonValue,
           },
-        }),
-      ]);
-      return this.toDetail(actor, results.at(-1) as VisitDetailRow);
-    } catch (error) {
-      handlePrismaError(error, { staleWrite: RECORD_LOCKED });
-    }
+          update: { data: data as Prisma.InputJsonValue },
+        });
+      }
+      return tx.visit.update({
+        ...visitDetailArgs,
+        where: { id },
+        data: {
+          startedAt: toOptionalDate(startedAt),
+          endedAt: toOptionalDate(endedAt),
+          status: "DRAFT",
+        },
+      });
+    });
+    return this.toDetail(actor, row);
+  }
+
+  /**
+   * 확정 전 방문의 서식을 바꾼다(선택 서식 켜고 끄기). 기록을 쓰는 담당자 본인만 한다.
+   * 뺀 서식은 저장한 값과 구술 초안(값·검사 결과·되묻기)에서도 지우고, 더한 서식은 이월 값과 함께 돌려준다.
+   */
+  async updateForms(
+    actor: AuthenticatedUser,
+    id: string,
+    { formIds }: z.output<typeof UpdateVisitFormsSchema>,
+  ): Promise<VisitDetail> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      const visit = await this.lockWritable(tx, actor, id);
+      // 쓰는 사람이 곧 담당자다. 확정 전 방문이 있으면 직종을 바꿀 수 없으므로 방문을 만들 때의 직종과 같다.
+      const selection = selectForms(visit.program, actor.profession, formIds);
+      if (!selection.ok) throw new BadRequestException(selection.message);
+      const removed = visit.formIds.filter(
+        (formId) => !selection.formIds.includes(formId),
+      );
+      if (removed.length > 0) {
+        await tx.visitForm.deleteMany({
+          where: { visitId: id, formId: { in: removed } },
+        });
+        const dictation = await tx.visitDictation.findUnique({
+          where: { visitId: id },
+        });
+        if (dictation) {
+          const kept = keepDraftForms(
+            toVisitDictation(dictation),
+            selection.formIds,
+          );
+          await tx.visitDictation.update({
+            where: { visitId: id },
+            data: {
+              draft: kept.draft as Prisma.InputJsonValue,
+              issues: kept.issues as unknown as Prisma.InputJsonValue,
+              questions: kept.questions as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
+      }
+      return tx.visit.update({
+        ...visitDetailArgs,
+        where: { id },
+        data: { formIds: selection.formIds },
+      });
+    });
+    return this.toDetail(actor, row);
   }
 
   async confirm(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
-    const visit = await this.assertWritable(actor, id);
-    const saved = await this.prisma.visitForm.findMany({
-      where: { visitId: id },
-      select: { formId: true, data: true },
-    });
-    const missing = visit.formIds.find(
-      (formId) => !saved.some((row) => row.formId === formId),
-    );
-    if (missing) {
-      throw new BadRequestException(
-        `${withParticle(FORMS[missing].shortTitle, "이/가")} 저장되지 않았습니다. 먼저 임시 저장해 주세요`,
+    const row = await this.prisma.$transaction(async (tx) => {
+      const visit = await this.lockWritable(tx, actor, id);
+      const saved = await tx.visitForm.findMany({
+        where: { visitId: id, formId: { in: visit.formIds } },
+        select: { formId: true, data: true },
+      });
+      const missing = visit.formIds.find(
+        (formId) => !saved.some((form) => form.formId === formId),
       );
-    }
-    // 저장할 때와 같은 검사(서식 정의)를 다시 통과해야 확정한다. 문구는 "서식 이름 · 오류"다.
-    const parsed = VisitFormsSchema.safeParse(
-      Object.fromEntries(saved.map((row) => [row.formId, row.data])),
-    );
-    if (!parsed.success) {
-      throw new BadRequestException(
-        parsed.error.issues[0]?.message ?? "내용이 올바르지 않습니다",
+      if (missing) {
+        throw new BadRequestException(
+          `${withParticle(FORMS[missing].shortTitle, "이/가")} 저장되지 않았습니다. 먼저 임시 저장해 주세요`,
+        );
+      }
+      // 저장할 때와 같은 검사(서식 정의)를 다시 통과해야 확정한다. 문구는 "서식 이름 · 오류"다.
+      const parsed = VisitFormsSchema.safeParse(
+        Object.fromEntries(saved.map((form) => [form.formId, form.data])),
       );
-    }
-
-    try {
-      const row = await this.prisma.visit.update({
+      if (!parsed.success) {
+        throw new BadRequestException(
+          parsed.error.issues[0]?.message ?? "내용이 올바르지 않습니다",
+        );
+      }
+      return tx.visit.update({
         ...visitDetailArgs,
-        where: { id, status: "DRAFT" },
+        where: { id },
         data: { status: "CONFIRMED", confirmedAt: new Date() },
       });
-      return this.toDetail(actor, row);
-    } catch (error) {
-      handlePrismaError(error, { staleWrite: "이미 확정된 방문입니다" });
-    }
+    });
+    return this.toDetail(actor, row);
   }
 
   async remove(actor: AuthenticatedUser, id: string): Promise<{ ok: true }> {
@@ -328,45 +396,44 @@ export class VisitService {
     return { ok: true };
   }
 
-  /**
-   * 기록을 쓸 수 있는 방문인지 확인한다: 보이는 방문이고(404), 담당자 본인이며(403),
-   * 확정 전(409). 음성 구술(dictation)도 같은 규칙을 쓴다.
-   */
+  /** 잠그지 않고 기록을 쓸 수 있는지 확인한다(음성 구술의 조회·삭제·초안 준비). */
   async assertWritable(actor: AuthenticatedUser, id: string) {
-    const visit = await this.prisma.visit.findFirst({
-      where: { id, ...visitScope(actor) },
-      select: {
-        staffId: true,
-        status: true,
-        formIds: true,
-        startedAt: true,
-        endedAt: true,
-      },
-    });
-    if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
-    checkWritable(actor, visit);
-    return { ...visit, formIds: toFormIds(visit.formIds) };
+    return findWritable(this.prisma, actor, id);
   }
 
   /**
    * 오래 걸리는 작업(음성인식·LLM) 뒤에 기록을 쓸 때 쓴다. 방문 행을 잠그고 담당자·확정 여부를
-   * 다시 확인한 뒤 같은 트랜잭션에서 write를 실행한다. 그 사이 확정됐으면 쓰지 않고 409이고,
-   * 동시에 온 확정 요청은 이 트랜잭션이 끝날 때까지 기다린다.
+   * 다시 확인한 뒤 같은 트랜잭션에서 write를 실행한다. 그 사이 확정됐으면 쓰지 않고 409다.
+   * write는 잠근 뒤 읽은 방문(그 사이 바뀐 서식 목록 포함)을 받는다.
    */
   async writeIfStillWritable<T>(
     actor: AuthenticatedUser,
     id: string,
     lockedMessage: string,
-    write: (tx: Prisma.TransactionClient) => Promise<T>,
+    write: (
+      tx: Prisma.TransactionClient,
+      visit: { formIds: FormId[] },
+    ) => Promise<T>,
   ): Promise<T> {
     return this.prisma.$transaction(async (tx) => {
-      const [visit] = await tx.$queryRaw<
-        { staffId: string; status: VisitStatus }[]
-      >`SELECT "staffId", status::text AS status FROM visits WHERE id = ${id} FOR UPDATE`;
-      if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
-      checkWritable(actor, visit, lockedMessage);
-      return write(tx);
+      const visit = await this.lockWritable(tx, actor, id, lockedMessage);
+      return write(tx, visit);
     });
+  }
+
+  /**
+   * 방문 행을 잠그고(FOR UPDATE) 기록을 쓸 수 있는지 확인한다. 트랜잭션 안에서만 쓴다.
+   * 같은 방문의 저장·서식 바꾸기·확정·구술 저장은 이 잠금으로 차례로 처리되므로,
+   * 확정은 그 순간의 서식 목록이 모두 저장됐는지 본다.
+   */
+  private async lockWritable(
+    tx: Prisma.TransactionClient,
+    actor: AuthenticatedUser,
+    id: string,
+    lockedMessage?: string,
+  ) {
+    await tx.$queryRaw`SELECT id FROM visits WHERE id = ${id} FOR UPDATE`;
+    return findWritable(tx, actor, id, lockedMessage);
   }
 
   /** 이월 값은 기록 폼을 여는 담당자에게만 쓸모가 있으므로 그때만 찾는다. */

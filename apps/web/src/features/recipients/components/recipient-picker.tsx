@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { PROGRAM_SHORT_LABELS } from "@repo/shared-types";
 import { CircleCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { PageError, PageLoading } from "@/components/ui/page-state";
 import { CareGradeBadge } from "@/features/recipients/components/care-grade-badge";
 import { RecipientSearchInput } from "@/features/recipients/components/recipient-search-input";
@@ -79,6 +81,11 @@ export function RecipientPicker({
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-lg font-bold">{recipient.name}</span>
                     <CareGradeBadge grade={recipient.careGrade} />
+                    {recipient.programs.map((program) => (
+                      <Badge key={program} variant="outline">
+                        {PROGRAM_SHORT_LABELS[program]}
+                      </Badge>
+                    ))}
                   </div>
                   {(meta || recipient.address) && (
                     <span className="text-muted-foreground truncate text-sm">

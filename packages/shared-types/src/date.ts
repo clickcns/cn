@@ -63,3 +63,47 @@ export function fullAge(
     (today.slice(5) < birthDate.slice(5) ? 1 : 0);
   return age >= 0 ? age : null;
 }
+
+/**
+ * 연·월·일 칸의 자릿수. 월이 2~9로 시작하거나 13 이상이면 한 자리 월,
+ * 일이 4~9로 시작하거나 32 이상이면 한 자리 일로 본다("2026922" → 9월 22일).
+ */
+function datePartLength(index: number, part: string): number {
+  if (index === 0) return 4;
+  if (index === 1) return /^([2-9]|1[3-9])/.test(part) ? 1 : 2;
+  return /^([4-9]|3[2-9])/.test(part) ? 1 : 2;
+}
+
+/**
+ * 날짜 칸에 입력 중인 글자를 "YYYY-MM-DD" 꼴로 다듬는다(달력 입력 칸).
+ * 숫자만 치면 자리에 맞춰 하이픈을 넣고("20261021" → "2026-10-21"),
+ * 구분자(- . / 공백)를 직접 치면 그 자리를 지킨다("2026.1.5" → "2026-1-5").
+ */
+export function formatDateTyping(raw: string): string {
+  const parts = raw
+    .replace(/[./\s]/g, "-")
+    .replace(/[^\d-]/g, "")
+    .replace(/-+/g, "-")
+    .split("-");
+  let text = "";
+  let carry = "";
+  for (let i = 0; i < 3; i++) {
+    const part = carry + (parts[i] ?? "");
+    const length = datePartLength(i, part);
+    text += part.slice(0, length);
+    carry = part.slice(length);
+    // 넘친 숫자가 있거나 구분자를 쳤으면 다음 칸으로 넘어간다.
+    const next = carry !== "" || parts.length > i + 1;
+    if (i === 2 || !next) break;
+    text += "-";
+  }
+  return text;
+}
+
+/** 한 자리 월·일을 두 자리로: "2026-1-5" → "2026-01-05". 다른 꼴은 그대로 둔다. */
+export function normalizeDateTyping(text: string): string {
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+  return match
+    ? `${match[1]}-${match[2]!.padStart(2, "0")}-${match[3]!.padStart(2, "0")}`
+    : text;
+}

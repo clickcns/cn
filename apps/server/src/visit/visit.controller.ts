@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CreateVisitSchema,
   SaveVisitRecordSchema,
+  UpdateVisitFormsSchema,
   VisitListQuerySchema,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
@@ -23,6 +24,7 @@ import { VisitService } from "./visit.service.js";
 
 class CreateVisitDto extends createZodDto(CreateVisitSchema) {}
 class SaveVisitRecordDto extends createZodDto(SaveVisitRecordSchema) {}
+class UpdateVisitFormsDto extends createZodDto(UpdateVisitFormsSchema) {}
 class VisitListQueryDto extends createZodDto(VisitListQuerySchema) {}
 
 @ApiTags("visits")
@@ -56,6 +58,16 @@ export class VisitController {
     @Body() dto: SaveVisitRecordDto,
   ) {
     return this.visitService.saveRecord(actor, id, dto);
+  }
+
+  /** 확정 전 선택 서식 켜고 끄기(담당자 본인). 뺀 서식의 저장 값은 지워진다. */
+  @Put(":id/forms")
+  updateForms(
+    @CurrentUser() actor: AuthenticatedUser,
+    @UuidParam() id: string,
+    @Body() dto: UpdateVisitFormsDto,
+  ) {
+    return this.visitService.updateForms(actor, id, dto);
   }
 
   @Post(":id/confirm")

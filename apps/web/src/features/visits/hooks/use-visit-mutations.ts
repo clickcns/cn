@@ -1,9 +1,11 @@
 import type {
   CreateVisitInput,
   SaveVisitRecordInput,
+  UpdateVisitFormsInput,
   VisitDetail,
 } from "@repo/shared-types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { dictationKey } from "@/features/dictation/hooks/use-dictation";
 import { api } from "@/lib/api";
 import { visitKeys } from "@/lib/query-keys";
 
@@ -34,6 +36,23 @@ export function useSaveVisitRecord(visitId: string) {
     mutationFn: (input: SaveVisitRecordInput) =>
       api.visits.saveRecord(visitId, input),
     onSuccess: syncVisitCache,
+  });
+}
+
+/**
+ * 선택 서식 켜고 끄기(확정 전). 뺀 서식은 서버가 저장 값과 구술 초안에서도 지우므로 구술도 다시 받는다.
+ */
+export function useUpdateVisitForms(visitId: string) {
+  const queryClient = useQueryClient();
+  const syncVisitCache = useSyncVisitCache();
+
+  return useMutation({
+    mutationFn: (input: UpdateVisitFormsInput) =>
+      api.visits.updateForms(visitId, input),
+    onSuccess: (visit) => {
+      syncVisitCache(visit);
+      void queryClient.invalidateQueries({ queryKey: dictationKey(visitId) });
+    },
   });
 }
 

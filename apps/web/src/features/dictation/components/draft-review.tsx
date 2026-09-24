@@ -165,8 +165,15 @@ function IssueBox({
   severity: DraftIssue["severity"];
   issues: readonly DraftIssue[];
 }) {
-  const matched = issues.filter((issue) => issue.severity === severity);
-  if (matched.length === 0) return null;
+  // 두 서식에 같은 문제가 나오면 서식마다 남아 있으므로 문구는 한 번만 보여 준다.
+  const messages = [
+    ...new Set(
+      issues
+        .filter((issue) => issue.severity === severity)
+        .map((issue) => issue.message),
+    ),
+  ];
+  if (messages.length === 0) return null;
   const tone = ISSUE_TONES[severity];
   const Icon = tone.icon;
   return (
@@ -176,8 +183,8 @@ function IssueBox({
         {tone.title}
       </p>
       <ul className="mt-2 flex list-disc flex-col gap-1 pl-6">
-        {matched.map((issue) => (
-          <li key={`${issue.field}-${issue.message}`}>{issue.message}</li>
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
         ))}
       </ul>
     </div>

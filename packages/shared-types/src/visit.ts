@@ -61,14 +61,25 @@ export function checkVisitTimes(
 const isoDateTime = (message: string) =>
   z.iso.datetime({ offset: true, message });
 
+/** 방문에서 쓸 서식 목록. 필수·선택 규칙은 서버가 사업·담당자 직종으로 확인한다(selectForms). */
+const visitFormIds = z
+  .array(z.enum(FORM_IDS), "서식을 하나 이상 골라 주세요")
+  .min(1, "서식을 하나 이상 골라 주세요");
+
 export const CreateVisitSchema = z.object({
   recipientId: z.uuid("수급자를 선택해 주세요"),
   program: z.enum(PROGRAMS, "사업을 선택해 주세요"),
   /** 현장 직원이 직접 만들면 무시되고 본인으로 고정된다. */
   staffId: blankToNull(z.uuid("담당자를 선택해 주세요")),
   scheduledAt: isoDateTime("방문 일시 형식이 올바르지 않습니다"),
+  /** 쓸 서식(필수 서식 포함). 없으면 사업·직종의 기본값(필수 + 미리 켜 둔 선택 서식). */
+  formIds: visitFormIds.optional(),
 });
 export type CreateVisitInput = z.input<typeof CreateVisitSchema>;
+
+/** 확정 전 방문의 서식 바꾸기(선택 서식 켜고 끄기). 뺀 서식에 저장한 값은 지워진다. */
+export const UpdateVisitFormsSchema = z.object({ formIds: visitFormIds });
+export type UpdateVisitFormsInput = z.input<typeof UpdateVisitFormsSchema>;
 
 export const VISIT_LIST_DEFAULT_PAGE_SIZE = 50;
 export const VISIT_LIST_MAX_PAGE_SIZE = 200;
@@ -185,7 +196,10 @@ interface VisitBase {
   endedAt: string | null;
   confirmedAt: string | null;
   staff: VisitStaff;
-  /** 이 방문에서 쓰는 서식. 방문을 만들 때 사업과 담당자 직종으로 정해진다. */
+  /**
+   * 이 방문에서 쓰는 서식(규칙 순서). 방문을 만들 때 사업·담당자 직종의 규칙 안에서 고르고,
+   * 확정 전까지 선택 서식을 켜고 끌 수 있다.
+   */
   formIds: FormId[];
 }
 

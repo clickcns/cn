@@ -13,6 +13,7 @@ import type {
   UpdateOrganizationInput,
   UpdateRecipientInput,
   UpdateUserInput,
+  UpdateVisitFormsInput,
   UserListQuery,
   UserSummary,
   VisitDetail,
@@ -90,6 +91,9 @@ export function createCarenoteApi(http: KyInstance) {
       /** 기록 초안 저장. 확정된 방문은 409를 돌려준다. */
       saveRecord: (id: string, input: SaveVisitRecordInput) =>
         http.put(`visits/${id}/record`, { json: input }).json<VisitDetail>(),
+      /** 확정 전 선택 서식 켜고 끄기. 뺀 서식에 저장한 값은 지워진다. */
+      updateForms: (id: string, input: UpdateVisitFormsInput) =>
+        http.put(`visits/${id}/forms`, { json: input }).json<VisitDetail>(),
       confirm: (id: string) =>
         http.post(`visits/${id}/confirm`).json<VisitDetail>(),
       /** 예정 상태의 방문만 지울 수 있다. */

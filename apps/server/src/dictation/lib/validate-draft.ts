@@ -326,14 +326,9 @@ export function validateDraft(
   for (const formId of formIds) {
     draft[formId] = checkForm(checker, formId, raw[formId] ?? {});
   }
-  // 같은 방문의 두 서식에 같은 문제가 나오면 한 번만 보여 준다.
-  const seen = new Set<string>();
-  const issues = checker.issues.filter((issue) => {
-    if (seen.has(issue.message)) return false;
-    seen.add(issue.message);
-    return true;
-  });
-  return { draft, issues };
+  // 두 서식에 같은 문제가 나와도 서식마다 남긴다(서식을 빼면 그 서식 것만 지운다).
+  // 같은 문구를 한 번만 보여 주는 것은 화면이 한다.
+  return { draft, issues: checker.issues };
 }
 
 /**

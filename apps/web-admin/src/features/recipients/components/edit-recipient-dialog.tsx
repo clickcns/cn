@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { FormDialogFooter } from "@/components/ui/form-dialog-footer";
 import { SwitchField } from "@/components/ui/switch-field";
+import { useOrganizationPrograms } from "@/features/organizations/hooks/use-organizations";
 import { RecipientFields } from "@/features/recipients/components/recipient-fields";
 import { useUpdateRecipient } from "@/features/recipients/hooks/use-recipients";
 import { toEditRecipientFormValues } from "@/features/recipients/lib/recipient-form";
@@ -49,6 +50,7 @@ function EditRecipientForm({
   onDone: () => void;
 }) {
   const updateRecipient = useUpdateRecipient();
+  const programsOf = useOrganizationPrograms();
   const form = useForm({
     resolver: zodResolver(UpdateRecipientSchema),
     defaultValues: toEditRecipientFormValues(recipient),
@@ -71,7 +73,11 @@ function EditRecipientForm({
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="grid gap-5">
-          <RecipientFields idPrefix="edit-recipient" />
+          <RecipientFields
+            idPrefix="edit-recipient"
+            organizationPrograms={programsOf(recipient.organizationId)}
+            programsRequired={false}
+          />
           <SwitchField
             control={form.control}
             name="isActive"

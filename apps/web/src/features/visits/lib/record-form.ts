@@ -2,6 +2,7 @@ import {
   addKstDays,
   formatKstDate,
   formatKstTime,
+  formRulesFor,
   FORMS,
   isIsoDate,
   SaveVisitRecordSchema,
@@ -52,10 +53,29 @@ const isoToTime = (iso: string | null) =>
 const isoToDate = (iso: string | null) =>
   iso ? formatKstDate(new Date(iso)) : null;
 
+/** 서식 한 장의 시작 상태: 저장한 값, 없으면 지난 방문에서 가져온 이월 값. */
+export function toFormInitialState(
+  visit: VisitDetail,
+  formId: FormId,
+): FormState {
+  return toFormState(
+    FORMS[formId],
+    visit.forms[formId] ?? visit.carryOver[formId],
+  );
+}
+
 /**
- * 저장한 서식이 있으면 그 값으로, 없으면 지난 방문에서 가져온 이월 값으로 시작한다.
+ * 방문의 서식은 저장한 값이나 이월 값으로 시작한다. 켜지 않은 선택 서식도 빈 상태로 넣어 두어
+ * 서식을 더하고 뺄 때 폼의 기본값이 있게 한다(뺀 서식을 기본값으로 되돌려 "저장 안 됨"이 남지 않게).
  */
 export function toRecordFormValues(visit: VisitDetail): RecordFormValues {
+  const formIds = new Set([
+    ...visit.formIds,
+    ...formRulesFor(visit.program, visit.staff.profession).map(
+      (rule) => rule.formId,
+    ),
+  ]);
+
   const startDate = isoToDate(visit.startedAt);
   const endDate = isoToDate(visit.endedAt);
 
@@ -66,13 +86,7 @@ export function toRecordFormValues(visit: VisitDetail): RecordFormValues {
     // YYYY-MM-DD는 문자열 비교가 곧 날짜 비교다.
     endsNextDay: startDate !== null && endDate !== null && endDate > startDate,
     forms: Object.fromEntries(
-      visit.formIds.map((formId) => [
-        formId,
-        toFormState(
-          FORMS[formId],
-          visit.forms[formId] ?? visit.carryOver[formId],
-        ),
-      ]),
+      [...formIds].map((formId) => [formId, toFormInitialState(visit, formId)]),
     ),
   };
 }

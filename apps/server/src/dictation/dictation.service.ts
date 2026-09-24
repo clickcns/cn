@@ -9,7 +9,9 @@ import {
 } from "@nestjs/common";
 import {
   DICTATION_MAX_SECONDS,
+  keepDraftForms,
   type DictationSentence,
+  type FormId,
   type VisitDictation,
   type VisitDictationResponse,
 } from "@repo/shared-types";
@@ -48,12 +50,19 @@ type DraftFields = Pick<
 /** DB JSON 칸에 넣는다(Prisma의 InputJsonValue로 바꾼다). */
 const asJson = (value: unknown) => value as Prisma.InputJsonValue;
 
-const draftColumns = (fields: DraftFields) => ({
-  draft: asJson(fields.draft),
-  issues: asJson(fields.issues),
-  questions: asJson(fields.questions),
-  draftError: fields.draftError,
-});
+/**
+ * 초안을 DB 칸으로 바꾼다. 음성인식·초안을 만드는 사이에 방문에서 뺀 서식은 지운다
+ * (formIds는 저장 직전 잠근 상태에서 읽은 방문의 서식이다).
+ */
+const draftColumns = (fields: DraftFields, formIds: readonly FormId[]) => {
+  const kept = keepDraftForms(fields, formIds);
+  return {
+    draft: asJson(kept.draft),
+    issues: asJson(kept.issues),
+    questions: asJson(kept.questions),
+    draftError: fields.draftError,
+  };
+};
 
 @Injectable()
 export class DictationService implements OnModuleDestroy {
@@ -151,23 +160,24 @@ export class DictationService implements OnModuleDestroy {
     const sentences = [...previousSentences, ...newSentences];
     const draft = await this.makeDraft(visitId, sentences, context, previous);
 
-    const data = {
-      sentences: asJson(sentences),
-      ...draftColumns(draft),
-      takes: take,
-      audioSeconds: (previous?.audioSeconds ?? 0) + seconds,
-    };
     // 음성인식·초안에 걸린 사이에 확정됐으면 저장하지 않는다.
     const row = await this.visitService.writeIfStillWritable(
       actor,
       visitId,
       CONFIRMED_WHILE_PROCESSING,
-      (tx) =>
-        tx.visitDictation.upsert({
+      (tx, visit) => {
+        const data = {
+          sentences: asJson(sentences),
+          ...draftColumns(draft, visit.formIds),
+          takes: take,
+          audioSeconds: (previous?.audioSeconds ?? 0) + seconds,
+        };
+        return tx.visitDictation.upsert({
           where: { visitId },
           create: { visitId, ...data },
           update: data,
-        }),
+        });
+      },
     );
     this.logger.log(
       {
@@ -206,10 +216,10 @@ export class DictationService implements OnModuleDestroy {
       actor,
       visitId,
       CONFIRMED_WHILE_PROCESSING,
-      (tx) =>
+      (tx, visit) =>
         tx.visitDictation.update({
           where: { visitId },
-          data: draftColumns(draft),
+          data: draftColumns(draft, visit.formIds),
         }),
     );
     return toVisitDictation(updated);

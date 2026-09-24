@@ -261,14 +261,15 @@ describe("validateDraft", () => {
     ]);
   });
 
-  it("같은 방문의 두 서식에 같은 문제가 나오면 한 번만 알린다", () => {
+  it("두 서식에 같은 문제가 나와도 서식마다 남긴다(한 번만 보여 주는 것은 화면)", () => {
     const answer = { visitReason: pick("REGULAR", []) };
     const { issues } = validateDraft(
       ["HOME_CARE_DOCTOR", "HOME_CARE_DOCTOR"],
       { HOME_CARE_DOCTOR: answer },
       sentences,
     );
-    assert.equal(issues.length, 1);
+    assert.equal(issues.length, 2);
+    assert.equal(issues[0]?.message, issues[1]?.message);
   });
 });
 

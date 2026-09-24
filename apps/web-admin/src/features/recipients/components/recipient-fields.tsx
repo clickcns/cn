@@ -4,8 +4,13 @@ import {
   formatKstDate,
   GENDER_LABELS,
   GENDERS,
+  PROGRAM_LABELS,
+  requiresCareGrade,
+  type Program,
 } from "@repo/shared-types";
-import { useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
+import { CheckboxGroup } from "@/components/ui/checkbox-group";
+import { DateInput } from "@/components/ui/date-input";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -15,9 +20,20 @@ import type { RecipientFieldValues } from "@/features/recipients/lib/recipient-f
 /**
  * 수급자 등록·수정 폼의 공통 입력 칸. FormProvider 안에서 쓴다.
  * 비워 둔 선택 입력("")은 스키마가 null로 바꾼다.
+ * organizationPrograms는 수급자 기관이 하는 사업이다(등록 사업은 이 안에서 고른다). 기관을 아직 모르면 undefined.
  */
-export function RecipientFields({ idPrefix }: { idPrefix: string }) {
+export function RecipientFields({
+  idPrefix,
+  organizationPrograms,
+  programsRequired,
+}: {
+  idPrefix: string;
+  organizationPrograms: readonly Program[] | undefined;
+  /** 등록할 때는 등록 사업이 하나 이상 있어야 한다(수정할 때는 비워도 저장된다). */
+  programsRequired: boolean;
+}) {
   const {
+    control,
     register,
     formState: { errors },
   } = useFormContext<RecipientFieldValues>();
@@ -46,12 +62,18 @@ export function RecipientFields({ idPrefix }: { idPrefix: string }) {
         htmlFor={id("birthDate")}
         error={errors.birthDate?.message}
       >
-        <Input
-          id={id("birthDate")}
-          type="date"
-          max={formatKstDate()}
-          aria-invalid={!!errors.birthDate}
-          {...register("birthDate")}
+        <Controller
+          control={control}
+          name="birthDate"
+          render={({ field }) => (
+            <DateInput
+              id={id("birthDate")}
+              max={formatKstDate()}
+              aria-invalid={!!errors.birthDate}
+              {...field}
+              value={field.value ?? ""}
+            />
+          )}
         />
       </FormField>
       <FormField
@@ -104,6 +126,44 @@ export function RecipientFields({ idPrefix }: { idPrefix: string }) {
           aria-invalid={!!errors.ltcCertNumber}
           {...register("ltcCertNumber")}
         />
+      </FormField>
+      <FormField
+        label="등록 사업"
+        className="col-span-6"
+        required={programsRequired}
+        error={errors.programs?.message}
+        hint="수급자가 동의·등록한 사업입니다. 방문은 이 중에서 고르고, 재택의료센터 수급자의 의사 방문은 별지 제4호를 함께 씁니다"
+      >
+        {organizationPrograms === undefined ? (
+          <p className="text-muted-foreground text-sm">
+            기관을 먼저 선택해 주세요.
+          </p>
+        ) : organizationPrograms.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            이 기관에 설정된 사업이 없습니다. 기관 메뉴에서 사업을 설정해
+            주세요.
+          </p>
+        ) : (
+          <Controller
+            control={control}
+            name="programs"
+            render={({ field }) => (
+              <CheckboxGroup
+                label="등록 사업"
+                className="flex flex-wrap gap-x-5 gap-y-2"
+                options={organizationPrograms.map((program) => ({
+                  value: program,
+                  label: PROGRAM_LABELS[program],
+                  note: requiresCareGrade(program)
+                    ? "(장기요양등급 필요)"
+                    : undefined,
+                }))}
+                value={field.value ?? []}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        )}
       </FormField>
       <FormField
         label="연락처"

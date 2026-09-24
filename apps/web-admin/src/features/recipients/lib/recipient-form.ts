@@ -14,6 +14,7 @@ export const EMPTY_RECIPIENT_FIELDS = {
   guardianName: null,
   guardianPhone: null,
   notes: null,
+  programs: [],
 } satisfies RecipientFieldValues;
 
 /** 수정 폼 기본값: 수급자에서 폼 칸만 고른다. */
@@ -31,6 +32,7 @@ export function toEditRecipientFormValues(
     guardianName,
     guardianPhone,
     notes,
+    programs,
     isActive,
   } = recipient;
   return {
@@ -44,6 +46,7 @@ export function toEditRecipientFormValues(
     guardianName,
     guardianPhone,
     notes,
+    programs,
     isActive,
   };
 }

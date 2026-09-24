@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toWav16kMono } from "@/features/dictation/lib/wav";
 
-const dictationKey = (visitId: string) => ["dictation", visitId] as const;
+export const dictationKey = (visitId: string) =>
+  ["dictation", visitId] as const;
 
 /** 브라우저가 녹음 파일을 디코딩하지 못했다(서버 오류와 구분해 보여 준다). */
 export class RecordingDecodeError extends Error {

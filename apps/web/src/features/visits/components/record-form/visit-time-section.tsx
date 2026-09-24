@@ -7,6 +7,7 @@ import {
 } from "@repo/shared-types";
 import { Clock, TriangleAlert } from "lucide-react";
 import {
+  Controller,
   useController,
   useWatch,
   type Control,
@@ -15,6 +16,7 @@ import {
 } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -120,12 +122,17 @@ export function VisitTimeSection({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="visit-date">방문 날짜</Label>
-        <Input
-          id="visit-date"
-          type="date"
-          className="text-lg tabular-nums"
-          aria-invalid={isValidDate ? undefined : true}
-          {...register("visitDate")}
+        <Controller
+          control={control}
+          name="visitDate"
+          render={({ field }) => (
+            <DateInput
+              id="visit-date"
+              className="text-lg tabular-nums"
+              aria-invalid={isValidDate ? undefined : true}
+              {...field}
+            />
+          )}
         />
       </div>
 

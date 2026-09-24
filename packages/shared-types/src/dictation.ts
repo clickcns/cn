@@ -48,7 +48,10 @@ export function fieldEvidence(
   };
 }
 
-/** 방문의 서식별 초안. 말하지 않았거나 검사를 통과하지 못한 값은 비어 있다. */
+/**
+ * 방문의 서식별 초안. 말하지 않았거나 검사를 통과하지 못한 값은 비어 있다.
+ * 초안을 만들 때 쓴 서식마다 키가 있으므로(채운 칸이 없어도), 키에 없는 서식은 그 뒤에 방문에 더한 서식이다.
+ */
 export type RecordDraft = Partial<Record<FormId, FormDraft>>;
 
 /**
@@ -88,4 +91,31 @@ export interface VisitDictation {
 
 export interface VisitDictationResponse {
   dictation: VisitDictation | null;
+}
+
+/**
+ * 초안에서 이 서식들만 남긴다. 방문에서 뺀 서식의 초안 값·검사 결과·되묻기를 지울 때 쓴다
+ * (여러 서식에 걸친 되묻기는 남은 서식의 칸만 남긴다).
+ */
+export function keepDraftForms(
+  dictation: Pick<VisitDictation, "draft" | "issues" | "questions">,
+  formIds: readonly FormId[],
+): Pick<VisitDictation, "draft" | "issues" | "questions"> {
+  const kept = (field: string) =>
+    formIds.some((formId) => field.startsWith(`${formId}.`));
+  return {
+    draft: Object.fromEntries(
+      formIds.flatMap((formId) => {
+        const form = dictation.draft[formId];
+        return form ? [[formId, form]] : [];
+      }),
+    ),
+    issues: dictation.issues.filter((issue) => kept(issue.field)),
+    questions: dictation.questions
+      .map((question) => ({
+        ...question,
+        fields: question.fields.filter(kept),
+      }))
+      .filter((question) => question.fields.length > 0),
+  };
 }

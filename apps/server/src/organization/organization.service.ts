@@ -64,10 +64,25 @@ export class OrganizationService {
     dto: z.output<typeof UpdateOrganizationSchema>,
   ): Promise<Organization> {
     try {
-      const row = await this.prisma.organization.update({
-        where: { id },
-        data: dto,
-        include: organizationInclude,
+      const row = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.organization.update({
+          where: { id },
+          data: dto,
+          include: organizationInclude,
+        });
+        if (dto.programs) {
+          // 수급자 등록 사업은 기관 사업의 부분집합이다. 기관이 그만둔 사업은 수급자에게서도 뺀다.
+          await tx.$executeRaw`
+            UPDATE recipients
+            SET programs = ARRAY(
+                  SELECT p FROM unnest(programs) AS p
+                  WHERE p = ANY(${dto.programs}::"Program"[])
+                ),
+                "updatedAt" = now()
+            WHERE "organizationId" = ${id}
+              AND NOT (programs <@ ${dto.programs}::"Program"[])`;
+        }
+        return updated;
       });
       return toOrganization(row);
     } catch (error) {

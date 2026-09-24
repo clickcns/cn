@@ -73,12 +73,13 @@ export function useUpdateOrganization() {
       input: UpdateOrganizationInput;
     }) => api.organizations.update(id, input),
     onSuccess: async () => {
-      // 사용자 목록에 기관 이름이 함께 나온다.
+      // 사용자 목록에 기관 이름이 함께 나오고, 기관이 그만둔 사업은 수급자 등록 사업에서도 빠진다.
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.organizations.all,
         }),
         queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.recipients.all }),
       ]);
       toast.success("기관 정보를 수정했습니다");
     },

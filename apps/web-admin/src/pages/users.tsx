@@ -21,7 +21,10 @@ import {
   useCurrentUser,
   useIsAdmin,
 } from "@/features/auth/hooks/use-current-user";
-import { useScopeOrganizationId } from "@/features/organizations/hooks/use-organization-scope";
+import {
+  useScopeOrganizationId,
+  useShowsAllOrganizations,
+} from "@/features/organizations/hooks/use-organization-scope";
 import { CreateUserDialog } from "@/features/users/components/create-user-dialog";
 import { EditUserDialog } from "@/features/users/components/edit-user-dialog";
 import { ResetPasswordDialog } from "@/features/users/components/reset-password-dialog";
@@ -34,6 +37,7 @@ export default function UsersPage() {
   const currentUser = useCurrentUser();
   const isAdmin = useIsAdmin();
   const scopeOrganizationId = useScopeOrganizationId();
+  const showsAllOrganizations = useShowsAllOrganizations();
   const [role, setRole] = useState<Role | undefined>(undefined);
   const [createOpen, setCreateOpen] = useState(false);
   const [dialog, setDialog] = useState<UserDialog | null>(null);
@@ -58,8 +62,8 @@ export default function UsersPage() {
         title="사용자"
         description={
           isAdmin
-            ? "운영자·기관 관리자·간호사 계정을 관리합니다."
-            : "우리 기관의 기관 관리자·간호사 계정을 관리합니다."
+            ? "운영자·기관 관리자·현장 직원(의사·간호사·사회복지사) 계정을 관리합니다."
+            : "우리 기관의 기관 관리자·현장 직원(의사·간호사·사회복지사) 계정을 관리합니다."
         }
         actions={
           <Button onClick={() => setCreateOpen(true)}>
@@ -131,6 +135,7 @@ export default function UsersPage() {
           <UserTable
             users={users}
             currentUserId={currentUser?.id}
+            grouped={showsAllOrganizations}
             onEdit={(user) => openDialog("edit", user)}
             onResetPassword={(user) => openDialog("password", user)}
           />

@@ -80,6 +80,7 @@ export function toRecipient(row: RecipientRow): Recipient {
   return {
     ...toVisitRecipient(row),
     organizationId: row.organizationId,
+    programs: row.programs,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

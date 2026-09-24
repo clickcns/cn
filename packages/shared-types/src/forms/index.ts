@@ -24,5 +24,10 @@ export const FORMS: Record<FormId, FormDef> = {
   LTC_NURSING: LTC_NURSING_FORM,
 };
 
+/** 서식을 이름으로 가리킬 때: "별지 제4호 방문진료 점검서식". */
+export function formLabel(formId: FormId): string {
+  return `${FORMS[formId].code} ${FORMS[formId].shortTitle}`;
+}
+
 /** 서식별 값. 방문 한 건에 서식이 여러 개일 수 있다(재택의료 의사: 별지 4·6호). */
 export type VisitForms = Partial<Record<FormId, FormData>>;

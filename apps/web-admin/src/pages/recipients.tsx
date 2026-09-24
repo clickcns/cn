@@ -49,7 +49,7 @@ export default function RecipientsPage() {
     <>
       <PageHeader
         title="수급자"
-        description="방문간호를 받는 장기요양 수급자를 등록하고 정보를 관리합니다."
+        description="방문 의료·간호·복지를 받는 수급자를 등록하고 정보를 관리합니다."
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <PlusIcon />

@@ -20,6 +20,8 @@ type OrganizationSelectFieldProps<
   id: string;
   /** 칸 아래 도움말. 검증 오류가 있으면 오류가 대신 보인다. */
   hint?: React.ReactNode;
+  /** 사용자가 기관을 바꿨을 때(그 기관에 딸린 다른 칸을 맞출 때 쓴다) */
+  onValueChange?: (organizationId: string | null) => void;
 };
 
 /**
@@ -35,6 +37,7 @@ export function OrganizationSelectField<
   name,
   id,
   hint,
+  onValueChange,
 }: OrganizationSelectFieldProps<TFieldValues, TName, TTransformedValues>) {
   const { data: organizations, isPending } = useOrganizations();
 
@@ -57,7 +60,11 @@ export function OrganizationSelectField<
             ref={field.ref}
             value={field.value ?? ""}
             onBlur={field.onBlur}
-            onChange={(event) => field.onChange(event.target.value || null)}
+            onChange={(event) => {
+              const organizationId = event.target.value || null;
+              field.onChange(organizationId);
+              onValueChange?.(organizationId);
+            }}
           >
             <option value="">
               {isPending ? "기관 목록을 불러오는 중…" : "기관을 선택해 주세요"}

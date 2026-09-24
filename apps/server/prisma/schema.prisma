@@ -119,6 +119,8 @@ model Recipient {
   guardianName   String?
   guardianPhone  String?
   notes          String?
+  /// 등록한(동의한) 사업. 기관 사업의 부분집합이며, 방문은 이 중에서 고른다.
+  programs       Program[] @default([])
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -138,7 +140,8 @@ model Visit {
   /// 담당자(의사·간호사·사회복지사)
   staffId        String
   program        Program
-  /// 이 방문에서 쓰는 서식(shared-types FORM_IDS). 만들 때 사업과 담당자 직종으로 정한다.
+  /// 이 방문에서 쓰는 서식(shared-types FORM_IDS, 규칙 순서). 사업·담당자 직종의 규칙(필수·선택) 안에서
+  /// 만들 때 고르고, 확정 전까지 선택 서식을 켜고 끌 수 있다.
   formIds        String[]
   scheduledAt    DateTime
   startedAt      DateTime?

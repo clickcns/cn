@@ -6,9 +6,12 @@ import {
 import { LoginForm } from "@/features/auth/components/login-form";
 
 const HIGHLIGHTS = [
-  { icon: CalendarCheckIcon, text: "방문 일정을 등록하고 간호사에게 배정" },
+  {
+    icon: CalendarCheckIcon,
+    text: "방문 일정을 등록하고 의사·간호사·사회복지사에게 배정",
+  },
   { icon: ClipboardCheckIcon, text: "작성·확정된 방문 기록을 한곳에서 확인" },
-  { icon: UsersRoundIcon, text: "수급자와 간호사 계정을 기관별로 관리" },
+  { icon: UsersRoundIcon, text: "수급자와 직원 계정을 기관별로 관리" },
 ];
 
 export default function LoginPage() {
@@ -28,7 +31,7 @@ export default function LoginPage() {
         </div>
         <div className="max-w-md">
           <h1 className="text-3xl leading-snug font-bold tracking-tight">
-            방문간호 기록을
+            방문 의료·간호 기록을
             <br />
             기관 단위로 관리합니다
           </h1>

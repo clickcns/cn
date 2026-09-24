@@ -1,21 +1,25 @@
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   canHandleProgram,
   CARE_GRADE_LABELS,
   CreateVisitSchema,
   formatKstDate,
-  formIdsFor,
-  FORMS,
+  formLabel,
+  formRulesFor,
   HHMM_REGEX,
   PROGRAM_LABELS,
   PROGRAMS,
+  resolveFormIds,
   toKstIsoDateTime,
+  type FormChoices,
   type Program,
   type Recipient,
   type UserSummary,
 } from "@repo/shared-types";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { CheckboxGroup } from "@/components/ui/checkbox-group";
 import {
   Dialog,
   DialogBody,
@@ -26,13 +30,13 @@ import {
 } from "@/components/ui/dialog";
 import { FormDialogFooter } from "@/components/ui/form-dialog-footer";
 import { FormField } from "@/components/ui/form-field";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
   useOrganizationColumnNames,
   useScopeOrganizationId,
 } from "@/features/organizations/hooks/use-organization-scope";
-import { useOrganizationPrograms } from "@/features/organizations/hooks/use-organizations";
 import { useRecipients } from "@/features/recipients/hooks/use-recipients";
 import { useVisitStaff } from "@/features/users/hooks/use-users";
 import { staffLabel } from "@/features/users/lib/staff-label";
@@ -93,20 +97,14 @@ function fits(
 /** 폼의 사업 값("" 또는 사업 코드)을 사업으로 좁힌다. */
 const toProgram = (value: string) => PROGRAMS.find((p) => p === value);
 
-/** 사업·담당자 직종으로 정해지는 서식 안내: "별지 제4호 방문진료 점검서식 · 별지 제6호 …" */
-function formsHint(program: Program, staff: UserSummary | undefined) {
-  if (!staff) return undefined;
-  const formIds = formIdsFor(program, staff.profession);
-  return `작성 서식: ${formIds
-    .map((formId) => `${FORMS[formId].code} ${FORMS[formId].shortTitle}`)
-    .join(" · ")}`;
-}
+/** 수급자가 등록한 사업만 고를 수 있다(등록 사업은 기관 사업 안에 있다). */
+const programsFor = (recipient: Recipient | undefined) =>
+  recipient?.programs ?? [];
 
 function CreateVisitForm({ onDone }: { onDone: () => void }) {
   const scopeOrganizationId = useScopeOrganizationId();
   // 운영자가 "전체 기관"을 볼 때만 있다. 선택 항목에 기관 이름을 붙인다.
   const organizationNames = useOrganizationColumnNames();
-  const programsOf = useOrganizationPrograms();
   const createVisit = useCreateVisit();
 
   const recipientsQuery = useRecipients({
@@ -138,8 +136,16 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
   const program = toProgram(useWatch({ control, name: "program" }));
   const staffId = useWatch({ control, name: "staffId" });
   const selectedRecipient = recipients.find((r) => r.id === recipientId);
-  // 사업은 수급자 기관이 하는 것 중에서 고른다.
-  const programOptions = programsOf(selectedRecipient?.organizationId);
+  const programOptions = programsFor(selectedRecipient);
+  const selectedStaff = staff.find((user) => user.id === staffId);
+
+  // 작성 서식: 켜고 끈 선택 서식. 손대지 않은 서식은 규칙의 기본값을 따른다.
+  const [formChoices, setFormChoices] = useState<FormChoices>({});
+  const profession = selectedStaff?.profession ?? null;
+  const formRules = program ? formRulesFor(program, profession) : [];
+  const formIds = program
+    ? resolveFormIds(program, profession, formChoices)
+    : [];
   // 담당자는 수급자와 같은 기관이고, 고른 사업을 맡을 수 있는 직종이어야 한다.
   const staffOptions = staff.filter((user) =>
     fits(user, selectedRecipient, program),
@@ -151,7 +157,7 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
   /** 수급자·사업을 바꿔 지금 담당자·사업이 맞지 않게 되면 비운다. */
   const clearMismatches = (nextRecipientId: string, nextProgram: string) => {
     const recipient = recipients.find((r) => r.id === nextRecipientId);
-    const programs = programsOf(recipient?.organizationId);
+    const programs = programsFor(recipient);
     let programValue = toProgram(nextProgram);
     if (recipient) {
       if (programValue && !programs.includes(programValue)) {
@@ -177,6 +183,7 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
           program,
           staffId,
           scheduledAt: toKstIsoDateTime(date, time),
+          formIds,
         },
         { onSuccess: onDone },
       );
@@ -189,8 +196,8 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
         <DialogTitle>방문 등록</DialogTitle>
         <DialogDescription>
           수급자·사업·담당자와 방문 예정 일시를 정합니다. 작성 서식은 사업과
-          담당자 직종으로 정해지고, 등록한 방문은 현장 웹 일정에 바로
-          나타납니다.
+          담당자 직종으로 정해지며 선택 서식은 고를 수 있습니다. 등록한 방문은
+          현장 웹 일정에 바로 나타납니다.
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="grid gap-4">
@@ -252,7 +259,7 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
           error={errors.program?.message}
           hint={
             selectedRecipient && programOptions.length === 0
-              ? "이 수급자의 기관에 등록된 사업이 없습니다. 기관 메뉴에서 사업을 설정해 주세요."
+              ? "이 수급자의 등록 사업이 없습니다. 수급자 메뉴에서 등록 사업을 설정해 주세요."
               : undefined
           }
         >
@@ -295,12 +302,7 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
           hint={
             !staffPending && staffOptions.length === 0
               ? "조건에 맞는 활성 담당자가 없습니다. 사용자 메뉴에서 직종을 확인해 주세요."
-              : program
-                ? formsHint(
-                    program,
-                    staffOptions.find((user) => user.id === staffId),
-                  )
-                : undefined
+              : undefined
           }
         >
           <Controller
@@ -333,6 +335,34 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
             )}
           />
         </FormField>
+        {selectedStaff && formRules.length > 0 && (
+          <FormField
+            label="작성 서식"
+            hint="필수 서식은 뺄 수 없습니다. 현장 웹 기록 화면에서도 확정 전까지 바꿀 수 있습니다."
+          >
+            <CheckboxGroup
+              label="작성 서식"
+              options={formRules.map((rule) => ({
+                value: rule.formId,
+                label: formLabel(rule.formId),
+                note: rule.required ? "필수" : rule.when,
+                disabled: rule.required,
+              }))}
+              value={formIds}
+              onChange={(next) =>
+                setFormChoices((current) => ({
+                  ...current,
+                  ...Object.fromEntries(
+                    formRules.map((rule) => [
+                      rule.formId,
+                      next.includes(rule.formId),
+                    ]),
+                  ),
+                }))
+              }
+            />
+          </FormField>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <FormField
             label="방문 날짜"
@@ -340,11 +370,16 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
             required
             error={errors.date?.message}
           >
-            <Input
-              id="create-visit-date"
-              type="date"
-              aria-invalid={!!errors.date}
-              {...register("date")}
+            <Controller
+              control={control}
+              name="date"
+              render={({ field }) => (
+                <DateInput
+                  id="create-visit-date"
+                  aria-invalid={!!errors.date}
+                  {...field}
+                />
+              )}
             />
           </FormField>
           <FormField

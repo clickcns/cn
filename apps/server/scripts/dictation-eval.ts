@@ -168,8 +168,12 @@ async function main(): Promise<void> {
       }
       console.log("\n[자동 검사]");
       if (result.issues.length === 0) console.log("  문제 없음");
+      // 두 서식에 같은 문제가 나오면 한 번만 적는다.
+      const printed = new Set<string>();
       for (const issue of result.issues) {
-        console.log(`  (${issue.severity}) ${issue.message}`);
+        const line = `  (${issue.severity}) ${issue.message}`;
+        if (!printed.has(line)) console.log(line);
+        printed.add(line);
       }
       console.log("\n[되묻기]");
       if (result.questions.length === 0) console.log("  없음");

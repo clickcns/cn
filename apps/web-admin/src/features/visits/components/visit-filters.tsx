@@ -1,4 +1,5 @@
 import {
+  isIsoDate,
   PROGRAM_LABELS,
   PROGRAMS,
   VISIT_STATUS_LABELS,
@@ -6,7 +7,7 @@ import {
 } from "@repo/shared-types";
 import { RotateCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import {
@@ -43,25 +44,28 @@ export function VisitFilters({
       <div className="grid gap-1.5">
         <Label htmlFor="visit-filter-from">기간</Label>
         <div className="flex items-center gap-1.5">
-          <Input
+          <DateInput
             id="visit-filter-from"
-            type="date"
             aria-label="시작일"
-            className="w-38"
+            containerClassName="w-38"
             value={filters.from}
             max={filters.to}
-            onChange={(event) => onChange("from", event.target.value)}
+            // 목록 조건은 온전한 날짜일 때만 바꾼다(치는 중인 글자는 칸이 들고 있다).
+            onChange={(value) => {
+              if (isIsoDate(value)) onChange("from", value);
+            }}
           />
           <span className="text-muted-foreground" aria-hidden>
             ~
           </span>
-          <Input
-            type="date"
+          <DateInput
             aria-label="종료일"
-            className="w-38"
+            containerClassName="w-38"
             value={filters.to}
             min={filters.from}
-            onChange={(event) => onChange("to", event.target.value)}
+            onChange={(value) => {
+              if (isIsoDate(value)) onChange("to", value);
+            }}
           />
         </div>
       </div>

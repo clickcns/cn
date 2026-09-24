@@ -3,6 +3,8 @@ import { getErrorMessage } from "@repo/api-client";
 import {
   DICTATION_MAX_SECONDS,
   FORMS,
+  formLabel,
+  withParticle,
   type FormId,
   type VisitDictation,
 } from "@repo/shared-types";
@@ -203,6 +205,10 @@ export function DictationPanel({
   });
 
   const isRecording = recorder.status !== "idle";
+  // 초안을 만든 뒤 방문에 더한 서식(초안에는 만들 때 쓴 서식마다 키가 있다). 초안 다시 만들기로 채운다.
+  const addedAfterDraft = dictation
+    ? formIds.filter((formId) => !(formId in dictation.draft))
+    : [];
   const isBusy =
     isRecording ||
     recordDictation.isPending ||
@@ -247,6 +253,18 @@ export function DictationPanel({
         toast.error(getErrorMessage(error, "초안을 만들지 못했습니다")),
     });
   };
+
+  // 초안 실패·서식 추가 안내에 함께 쓴다.
+  const redraftButton = (
+    <Button variant="outline" onClick={handleRedraft} disabled={isBusy}>
+      {redraft.isPending ? (
+        <LoaderCircle className="animate-spin" />
+      ) : (
+        <RotateCw />
+      )}
+      초안 다시 만들기
+    </Button>
+  );
 
   const controls = (() => {
     if (isRecording) {
@@ -340,7 +358,7 @@ export function DictationPanel({
 
       {dictation && (
         <>
-          {dictation.draftError && (
+          {dictation.draftError ? (
             <div
               role="alert"
               className="border-warning/20 bg-warning-soft flex flex-col gap-3 rounded-xl border p-4"
@@ -349,19 +367,25 @@ export function DictationPanel({
                 <TriangleAlert className="mt-0.5 size-5 shrink-0" />
                 {dictation.draftError}
               </p>
-              <Button
-                variant="outline"
-                onClick={handleRedraft}
-                disabled={isBusy}
-              >
-                {redraft.isPending ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : (
-                  <RotateCw />
-                )}
-                초안 다시 만들기
-              </Button>
+              {redraftButton}
             </div>
+          ) : (
+            addedAfterDraft.length > 0 && (
+              <div
+                role="status"
+                className="border-primary/20 bg-primary-soft/60 flex flex-col gap-3 rounded-xl border p-4"
+              >
+                <p className="text-primary font-semibold">
+                  초안을 만든 뒤{" "}
+                  {withParticle(
+                    addedAfterDraft.map(formLabel).join(", "),
+                    "을/를",
+                  )}{" "}
+                  더했습니다. 초안을 다시 만들면 더한 서식도 채웁니다.
+                </p>
+                {redraftButton}
+              </div>
+            )
           )}
 
           <DraftReview dictation={dictation} formIds={formIds} />
