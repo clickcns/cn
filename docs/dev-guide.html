@@ -1167,7 +1167,7 @@
     </figure>
 
     <h3 class="sub-h" id="ambient">방문 중 녹음(WellSky Scribe)은 왜 우리 서식에는 효과가 작은가</h3>
-    <p class="lead">WellSky Scribe는 담당자가 방문 평가를 시작할 때 켜 두면, AI가 환자와의 문진 대화에서 답을 뽑아 자사 전자기록(EHR)의 평가 서식 칸을 미리 채웁니다. 방문 뒤 담당자가 검토·수정해 몇 분 안에 제출하고, 대화에서 안 나온 문항은 음성 비서(WILA)가 방문 뒤 묻습니다. 효과가 큰 까닭은 녹음 기술이 아니라 <b>서식의 성격</b>에 있습니다.</p>
+    <p class="lead">WellSky Scribe는 담당자가 방문 평가를 시작할 때 켜 두면, AI가 환자와의 문진 대화에서 답을 뽑아 자사 전자기록(EHR)의 평가 서식 칸을 미리 채웁니다. 방문 뒤 담당자가 검토·수정해 몇 분 안에 제출하고, 대화에서 안 나온 문항은 음성 비서(WILA)가 방문 뒤 묻습니다. 효과가 큰 까닭은 녹음 기술이 아니라 <b>서식의 성격</b>에 있습니다. 제품으로서의 역할 차이는 <a href="#wellsky-role">현장 앱 절</a>에 있습니다.</p>
     <div class="table-wrap">
       <table class="cmp">
         <thead><tr><th></th><th>미국 방문간호 평가표 OASIS<br><span class="pill plain">WellSky Scribe</span></th><th>케어노트 서식<br><span class="pill">제4·6·7·8·14호</span></th></tr></thead>
@@ -1413,6 +1413,23 @@
       </table>
     </div>
     <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부(선택 녹음, 애드온, 자사 관리 화면만, 필수 항목 누락 검사) · ○ 없음 · — 해당 없음(AI 초안 없이 직접 작성) · ? 공개 자료로 확인 못 함. 기록 앱의 공통점은 "초안 → 담당자 검토·확정"이고, 해외 앱은 자사 기록 시스템에 바로 넣지만 케어노트는 공식 전산에 API가 없어 사람이 옮깁니다. 와플랫은 기록 앱이 아니라 AI가 어르신과 대화해 안부·위험을 살피는 지자체 돌봄 앱이라 담당자 기록 기능은 없습니다(2026.9 기준, 아래).</p>
+
+    <h3 class="sub-h" id="wellsky-role">WellSky Scribe와 케어노트의 역할 차이</h3>
+    <p class="lead">둘 다 "AI가 초안을 만들고 담당자가 확정한다"는 점은 같지만, 맡은 역할이 다릅니다. WellSky Scribe는 <b>기록 시스템(EHR) 안에서 방문 대화를 받아 적어 공식 기록 칸을 직접 채우는 기능</b>이고, 케어노트는 <b>공식 전산 옆에서 방문 뒤 구술로 입력할 내용을 미리 만들어 주는 도우미</b>입니다.</p>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th></th><th>WellSky Scribe<br><span class="pill plain">미국 방문간호</span></th><th>케어노트<br><span class="pill">한국 방문의료·간호·복지</span></th></tr></thead>
+        <tbody>
+          <tr><th>제품 안의 위치</th><td data-label="WellSky Scribe">자사 전자기록(WellSky Home Health EHR)의 한 기능. 기록 시스템 자체다</td><td data-label="케어노트">공식 전산(심평원 자료제출 시스템·공단 정보마당·스마트장기요양 앱) 옆의 보조 앱. 기록 시스템이 아니다</td></tr>
+          <tr><th>무엇을 채우나</th><td data-label="WellSky Scribe">EHR의 OASIS 평가·방문 기록 칸. 그대로 공식 기록과 청구 자료가 된다</td><td data-label="케어노트">별지 서식(제4·6·7·8·14호)의 초안. 담당자가 확정한 뒤 공식 화면에 옮겨 입력한다</td></tr>
+          <tr><th>누가, 언제 말하나</th><td data-label="WellSky Scribe">방문 중 담당자와 환자의 대화(담당자가 켜고 끔)</td><td data-label="케어노트">방문 뒤 담당자 혼자 1~3분 구술</td></tr>
+          <tr><th>빠진 것 채우기</th><td data-label="WellSky Scribe">방문 뒤 음성 비서(WILA)가 빠진 OASIS 문항을 대화로 묻는다</td><td data-label="케어노트">빠진 항목을 필수·부가로 나눠 질문·예시와 함께 보여 주고, 답을 이어서 구술</td></tr>
+          <tr><th>사람이 하는 일</th><td data-label="WellSky Scribe">채워진 칸을 검토·수정해 제출(몇 분)</td><td data-label="케어노트">초안을 확인해 서식에 채우고 확정한 뒤, 공식 화면에 옮겨 입력</td></tr>
+          <tr><th>제출·청구</th><td data-label="WellSky Scribe">EHR에서 바로 이어진다</td><td data-label="케어노트">케어노트는 청구하지 않는다. 담당자가 심평원·공단 화면에 입력(공개 API 없음)</td></tr>
+          <tr class="ours"><th>녹음 방식을 가른 이유</th><td data-label="WellSky Scribe">OASIS는 환자에게 묻는 문진형이라 대화가 곧 답이다</td><td data-label="케어노트">우리 서식은 담당자의 관찰·판단을 고르는 점검형이라 방문 뒤 구술이 맞다(<a href="#ambient">서식 성격 비교</a>)</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <h3 class="sub-h">케어노트 기록이 기관의 공식 기록(원본)이 되려면 필요한 것</h3>
     <p class="lead">지금 케어노트의 확정 기록은 담당자가 공식 전산에 옮겨 입력하기 위한 작성본입니다. 기관이 5년 이상 보관할 원본은 종이(비전자기록물)나 전자문서 중 기관 대표자가 정합니다(재택 지침 Q5-3). 아래 요건은 두 묶음입니다. <b>위 넷은 케어노트 기록 자체를 원본(전자문서)으로 쓸 때</b> 필요하고, 원본을 종이로 하면 빠집니다. <b>아래 넷은 원본을 종이로 해도</b> 케어노트가 실제 수급자의 건강정보(민감정보)를 다루는 순간 필요합니다.</p>
