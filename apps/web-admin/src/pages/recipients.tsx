@@ -12,7 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { ListCount } from "@/components/ui/list-count";
 import { PageHeader } from "@/components/ui/page-header";
-import { OrganizationScopeFilter } from "@/features/organizations/components/organization-scope-select";
 import {
   useOrganizationColumnNames,
   useScopeOrganizationId,
@@ -62,10 +61,6 @@ export default function RecipientsPage() {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-4 border-b px-5 py-4">
           <div className="flex flex-wrap items-center gap-5">
-            <OrganizationScopeFilter
-              id="recipient-filter-organization"
-              showLabel={false}
-            />
             <div className="relative w-80">
               <SearchIcon
                 aria-hidden

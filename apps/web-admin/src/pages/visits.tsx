@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/data-state";
 import { ListCount } from "@/components/ui/list-count";
 import { PageHeader } from "@/components/ui/page-header";
-import { OrganizationScopeFilter } from "@/features/organizations/components/organization-scope-select";
 import {
   useOrganizationColumnNames,
   useScopeOrganizationId,
@@ -79,8 +78,6 @@ export default function VisitsPage() {
               value={visitView.view}
               onChange={visitView.setView}
             />
-            {/* 운영자만: 헤더 [기관 선택]과 같은 값 */}
-            <OrganizationScopeFilter id="visit-filter-organization" />
             <VisitFilters
               filters={filters}
               onChange={setFilter}

@@ -21,7 +21,6 @@ import {
   useCurrentUser,
   useIsAdmin,
 } from "@/features/auth/hooks/use-current-user";
-import { OrganizationScopeFilter } from "@/features/organizations/components/organization-scope-select";
 import {
   useScopeOrganizationId,
   useShowsAllOrganizations,
@@ -77,7 +76,6 @@ export default function UsersPage() {
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4 border-b px-5 py-4">
           <div className="flex flex-wrap items-end gap-3">
-            <OrganizationScopeFilter id="user-filter-organization" />
             <div className="grid gap-1.5">
               <Label htmlFor="user-filter-role">역할</Label>
               <Select

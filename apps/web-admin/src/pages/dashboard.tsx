@@ -29,7 +29,6 @@ import {
   OVERDUE_STATUSES,
 } from "@/features/dashboard/lib/overdue";
 import { recipientChecks } from "@/features/dashboard/lib/recipient-checks";
-import { OrganizationScopeFilter } from "@/features/organizations/components/organization-scope-select";
 import {
   useOrganizationColumnNames,
   useScopeOrganizationId,
@@ -118,7 +117,6 @@ export default function DashboardPage() {
       <PageHeader
         title="현황판"
         description={`${formatDateLabel(today)} 기준 오늘 방문, 확정 안 된 기록, 이달 방문 현황입니다.`}
-        actions={<OrganizationScopeFilter id="dashboard-organization" />}
       />
 
       <div className="grid gap-4">

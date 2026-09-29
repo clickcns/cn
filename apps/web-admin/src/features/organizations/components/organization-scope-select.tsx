@@ -1,6 +1,4 @@
-import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { useIsAdmin } from "@/features/auth/hooks/use-current-user";
 import {
   useScopeOrganizationId,
   useSetScopeOrganization,
@@ -8,17 +6,15 @@ import {
 import { useOrganizations } from "@/features/organizations/hooks/use-organizations";
 
 /**
- * 운영자의 기관 범위 콤보박스. 헤더 [기관 선택]과 목록 필터 줄의 "기관"이 같은 값(저장된 선택)을
- * 쓰므로 어느 쪽에서 바꿔도 모든 목록이 그 기관으로 좁혀진다.
+ * 운영자의 기관 범위 콤보박스(헤더 [기관 선택]). 고른 값은 저장되어 모든 화면의 목록을
+ * 그 기관으로 좁힌다.
  */
 export function OrganizationScopeSelect({
   id,
   containerClassName,
-  "aria-label": ariaLabel,
 }: {
   id: string;
   containerClassName?: string;
-  "aria-label"?: string;
 }) {
   // 저장된 기관이 목록에 없으면(삭제 등) undefined라 전체로 보인다.
   const organizationId = useScopeOrganizationId();
@@ -28,7 +24,6 @@ export function OrganizationScopeSelect({
   return (
     <Select
       id={id}
-      aria-label={ariaLabel}
       containerClassName={containerClassName}
       value={organizationId ?? ""}
       disabled={isPending && !organizationId}
@@ -45,33 +40,5 @@ export function OrganizationScopeSelect({
         </option>
       ))}
     </Select>
-  );
-}
-
-/**
- * 목록 필터 줄의 "기관"(운영자만 보인다). showLabel이 false면 위 이름표 없이
- * 콤보박스만 둔다(이름표 없는 필터 줄).
- */
-export function OrganizationScopeFilter({
-  id,
-  showLabel = true,
-}: {
-  id: string;
-  showLabel?: boolean;
-}) {
-  const isAdmin = useIsAdmin();
-  if (!isAdmin) return null;
-
-  return showLabel ? (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>기관</Label>
-      <OrganizationScopeSelect id={id} containerClassName="w-52" />
-    </div>
-  ) : (
-    <OrganizationScopeSelect
-      id={id}
-      aria-label="기관"
-      containerClassName="w-52"
-    />
   );
 }

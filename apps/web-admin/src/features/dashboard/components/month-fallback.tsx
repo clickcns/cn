@@ -33,7 +33,7 @@ export function MonthFallback({
       <EmptyState
         icon={Building2Icon}
         title="방문이 많아 여기서는 보여 줄 수 없습니다"
-        description="위의 기관 선택에서 기관을 골라 주세요."
+        description="화면 위 [기관 선택]에서 기관을 골라 주세요."
         className="py-10"
       />
     );
