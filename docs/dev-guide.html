@@ -199,6 +199,18 @@
   tbody th { font-weight: 600; white-space: nowrap; }
   td.c, th.c { text-align: center; }
   tr.ours th, tr.ours td { background: var(--accent-soft); }
+  /* 두 서식 비교표: 항목 칸은 좁게 줄바꿈하고 칸은 위로 맞춘다. */
+  table.cmp { min-width: 540px; }
+  table.cmp th, table.cmp td { vertical-align: top; }
+  table.cmp tbody th { white-space: normal; width: 6.5em; }
+  /* 좁은 화면: 표 대신 항목마다 두 서식을 위아래로 */
+  @media (max-width: 640px) {
+    table.cmp { min-width: 0; }
+    table.cmp thead { display: none; }
+    table.cmp tr, table.cmp tbody th, table.cmp td { display: block; width: auto; }
+    table.cmp td { border-top: 0; padding-top: 2px; }
+    table.cmp td::before { content: attr(data-label); display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  }
   .dot { font-size: 16px; line-height: 1; }
   .dot.y { color: var(--good); }
   .dot.p { color: var(--warn); }
@@ -1152,6 +1164,35 @@
       <figcaption>방문 서식은 대부분 담당자가 관찰하고 판단한 내용이라, 대화를 녹음해도 채워지지 않습니다. 인지저하·치매 수급자처럼 대화가 없는 경우에도 구술은 영향을 받지 않습니다.</figcaption>
     </figure>
 
+    <h3 class="sub-h" id="ambient">방문 중 녹음(WellSky Scribe)은 왜 우리 서식에는 효과가 작은가</h3>
+    <p class="lead">WellSky Scribe는 담당자가 방문 평가를 시작할 때 켜 두면, AI가 환자와의 문진 대화에서 답을 뽑아 자사 전자기록(EHR)의 평가 서식 칸을 미리 채웁니다. 방문 뒤 담당자가 검토·수정해 몇 분 안에 제출하고, 대화에서 안 나온 문항은 음성 비서(WILA)가 방문 뒤 묻습니다. 효과가 큰 까닭은 녹음 기술이 아니라 <b>서식의 성격</b>에 있습니다.</p>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th></th><th>미국 방문간호 평가표 OASIS<br><span class="pill plain">WellSky Scribe</span></th><th>케어노트 서식<br><span class="pill">제4·6·7·8·14호</span></th></tr></thead>
+        <tbody>
+          <tr><th>서식</th><td data-label="OASIS(WellSky)">메디케어 방문간호 표준 평가표. 첫 방문(SOC) 평가는 100칸이 넘는다</td><td data-label="케어노트">시범사업 점검표·기록지. 서식마다 수십 칸</td></tr>
+          <tr><th>채우는 방식</th><td data-label="OASIS(WellSky)"><b>문진형</b>: 환자에게 묻고 답을 적는다(일상생활 수행능력, 기능 상태, 투약, 상처, 증상)</td><td data-label="케어노트"><b>점검형</b>: 담당자가 관찰·판단해 고른다(방문사유, 기능 변화, 제공한 간호, 향후계획, 총평)</td></tr>
+          <tr><th>답이 나오는 곳</th><td data-label="OASIS(WellSky)">환자와의 대화. 녹음이 곧 데이터</td><td data-label="케어노트">담당자의 관찰과 판단. 대화에 잘 나오지 않는다(인지저하·치매 수급자는 대화 자체가 어렵다)</td></tr>
+          <tr><th>들어가는 곳</th><td data-label="OASIS(WellSky)">자사 EHR 칸에 바로</td><td data-label="케어노트">공식 전산(심평원·공단)에 API가 없어 사람이 옮긴다</td></tr>
+          <tr><th>방문 중 녹음의 효과</th><td data-label="OASIS(WellSky)"><span class="pill good">크다</span> 업체 발표: 기록 시간 최대 50% 감소(400곳 넘는 기관), 업무 시간 뒤 기록 22% 감소</td><td data-label="케어노트"><span class="pill warn">작다</span> 채워지는 칸은 적은데, 수급자·가족 음성 수집 동의와 화자 분리 부담은 크다</td></tr>
+          <tr class="ours"><th>맞는 방식</th><td data-label="OASIS(WellSky)">방문 중 녹음 + 방문 뒤 음성 비서가 빠진 문항 묻기</td><td data-label="케어노트">방문 뒤 담당자가 1~3분 구술 + 빠진 항목 되묻기(WellSky의 방문 뒤 음성 비서와 같은 자리)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tiles t3">
+      <div class="tile"><b>우리 서식에서 방문 중 녹음이 맞는 곳</b><span class="s">별지 제5호 포괄평가: 의사·간호사·사회복지사가 함께 30분 이상 하는 구조화 평가라 OASIS와 성격이 비슷하다</span><span class="pill plain">나중</span></div>
+      <div class="tile"><b>넣는다면 먼저 갖출 것</b><span class="s">문진·교육 구간만 녹음, 수급자·가족 동의 기록, 담당자가 자리를 비우면 자동 멈춤, 법률 검토</span><span class="pill warn">조건</span></div>
+      <div class="tile"><b>이미 같은 것</b><span class="s">초안은 기록이 아니고 담당자가 검토·확정한다. 빠진 항목은 방문 뒤 되묻는다</span><span class="pill good">됨</span></div>
+    </div>
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>WellSky Scribe(2025.10.8 출시): 담당자가 방문 중 켜면 청취한 평가에서 용어·정보를 찾아 WellSky Home Health EHR의 서식·칸을 채우고, 방문 뒤 담당자가 확인·제출한다. 첫 방문 평가는 100칸이 넘는다. 방문 중 못 잡은 OASIS 문항은 음성 비서 WILA(2025.12)가 채운다. 환자 동의 절차는 보도자료에 없다.</li>
+        <li>2026.5.28 방문 간호사용 Point of Care 앱에 방문 중 녹음을 합쳤고("평가 중 AI 청취, 담당자 확인용으로 미리 채움"), 2026.8.5부터 Home Health EHR 고객에게 추가 비용 없이 준다. 꾸준히 쓰는 간호사는 한 달에 환자를 8.6명 더 보고, 업무 시간 뒤 기록이 22% 줄었다고 발표했다(업체 수치).</li>
+        <li>케어노트 서식도 "대상자 구분·거동불편 유형·이동 정보"처럼 문진으로 알 수 있는 칸은 대개 지난 방문 값을 이어받는 칸(carryOver)이라, 방문마다 대화로 새로 채울 일이 적다.</li>
+      </ul>
+    </details>
+
     <h3 class="sub-h" id="diarization">화자 분리가 필요한가</h3>
     <figure>
       <div class="fig fig-scroll">
@@ -1371,7 +1412,8 @@
     </div>
     <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부(선택 녹음, 애드온, 자사 관리 화면만, 필수 항목 누락 검사) · ○ 없음 · — 해당 없음(AI 초안 없이 직접 작성) · ? 공개 자료로 확인 못 함. 기록 앱의 공통점은 "초안 → 담당자 검토·확정"이고, 해외 앱은 자사 기록 시스템에 바로 넣지만 케어노트는 공식 전산에 API가 없어 사람이 옮깁니다. 와플랫은 기록 앱이 아니라 AI가 어르신과 대화해 안부·위험을 살피는 지자체 돌봄 앱이라 담당자 기록 기능은 없습니다(2026.9 기준, 아래).</p>
 
-    <h3 style="margin-top:32px; font-size:17px">기관 기록이 되려면 필요한 것</h3>
+    <h3 class="sub-h">케어노트 기록이 기관의 공식 기록(원본)이 되려면 필요한 것</h3>
+    <p class="lead">지금 케어노트의 확정 기록은 담당자가 공식 전산에 옮겨 입력하기 위한 작성본입니다. 기관이 5~10년 보관해야 하는 원본을 무엇으로 할지(PDF를 인쇄해 서명·편철한 종이, 또는 전자문서)는 아직 정하지 않았습니다. 케어노트에 저장된 기록 자체를 기관의 원본(전자문서·전자의무기록)으로 인정받으려면 법령이 정한 아래 요건을 갖춰야 합니다. 파일럿에서 원본을 케어노트로 할지 정할 때 쓰는 목록입니다.</p>
     <div class="tiles">
       <div class="tile"><b>전자서명</b><span class="s">서명자·서명값·일시</span><span class="pill bad">아직</span></div>
       <div class="tile"><b>수정 이력</b><span class="s">확정본마다 1차·2차… 보관, 해시로 원본 확인. 칸별 수정 전후는 아직</span><span class="pill warn">일부</span></div>
@@ -1502,6 +1544,7 @@
         <ul>
           <li>WellSky Scribe: <a href="https://wellsky.com/wellsky-introduces-ai-powered-ambient-listening-and-transcription-capabilities-within-ehr-to-transform-the-home-health-visit/">wellsky.com</a> · Apricot: <a href="https://www.apricothealth.ai/">apricothealth.ai</a> · Apricot 파일럿: <a href="https://homehealthcarenews.com/2024/06/elara-caring-choice-health-at-home-praise-new-home-health-ai-tool-apricot/">homehealthcarenews.com</a></li>
           <li>カイポケ訪問看護: <a href="https://houkan.kaipoke.biz/function/">houkan.kaipoke.biz</a> · 介護のマナ: <a href="https://lifeshift-inc.com/kaipoke-houmon-kiroku-app/">lifeshift-inc.com</a> · ENBASE スタンドLM 제휴(2026.9.17): <a href="https://prtimes.jp/main/html/rd/p/000000027.000154525.html">prtimes.jp</a></li>
+          <li>WellSky Scribe 출시(2025.10.8): <a href="https://wellsky.com/wellsky-introduces-ai-powered-ambient-listening-and-transcription-capabilities-within-ehr-to-transform-the-home-health-visit/">wellsky.com</a></li>
           <li>WellSky Point of Care 앱(2026.5.28): <a href="https://wellsky.com/wellsky-unifies-ai-and-the-patient-record-in-new-point-of-care-app-for-home-health-clinicians/">wellsky.com</a> · SkySense AI 포함(2026.8.5): <a href="https://wellsky.com/wellsky-scribe-solution-helps-home-health-clinicians-see-more-patients-spend-less-time-on-after-hours-documentation/">wellsky.com</a></li>
           <li>노보젠 MINT: <a href="https://www.novogen.co.kr">novogen.co.kr</a> · 업체 소개 자료 "MINT 방문의료센터를 위한 업무효율화 서비스" v4.0(2026.1, 업체 제공)</li>
           <li>와플랫 공공 서비스: <a href="https://waplat.co.kr/government">waplat.co.kr</a> · 회사 소개: <a href="https://waplat.co.kr/about">waplat.co.kr</a> · 앱: <a href="https://play.google.com/store/apps/details?id=com.nhn.waplat">Google Play</a> · AX Sprint 스마트홈 선정(2026.5): <a href="https://waplat.co.kr/news/?bmode=view&amp;idx=171168380&amp;t=board">waplat.co.kr</a> · 42개 지자체·기관(2026.8.31): <a href="https://www.ajunews.com/view/20260831150601985">ajunews.com</a></li>
