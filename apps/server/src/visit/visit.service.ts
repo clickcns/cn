@@ -54,6 +54,7 @@ import { isAssignableStaff, planVisitUpdate } from "./visit-update.js";
 import {
   calendarItemArgs,
   toFormIds,
+  toCalendarDays,
   toVisitCalendarItem,
   toVisitDetail,
   toVisitSummary,
@@ -134,6 +135,7 @@ async function findWritable(
       staffId: true,
       status: true,
       program: true,
+      profession: true,
       formIds: true,
       startedAt: true,
       endedAt: true,
@@ -235,7 +237,9 @@ export class VisitService {
     query: z.output<typeof VisitCalendarQuerySchema>,
   ): Promise<VisitCalendarResponse> {
     const where = filterWhere(actor, query, scheduledRange(query));
-    if (query.withVisits === "true") {
+    const withVisits = query.withVisits === "true";
+    if (withVisits) {
+      // 칩 목록이 상한 안이면 그 목록으로 센다(쿼리 한 번).
       const rows = await this.prisma.visit.findMany({
         ...calendarItemArgs,
         where,
@@ -249,13 +253,14 @@ export class VisitService {
         };
       }
     }
-    const rows = await this.prisma.visit.findMany({
+    // 건수만 줄 때(현장 웹, 상한 초과)는 DB가 한국 날짜 생성 열로 센다.
+    const groups = await this.prisma.visit.groupBy({
+      by: ["scheduledDate", "status"],
       where,
-      select: { scheduledAt: true, status: true },
+      _count: { _all: true },
     });
-    return query.withVisits === "true"
-      ? { days: countVisitsByDay(rows), visits: null }
-      : { days: countVisitsByDay(rows) };
+    const days = toCalendarDays(groups);
+    return withVisits ? { days, visits: null } : { days };
   }
 
   async get(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
@@ -328,6 +333,7 @@ export class VisitService {
         recipientId: dto.recipientId,
         staffId,
         program: dto.program,
+        profession: staff.profession,
         formIds: selection.formIds,
         scheduledAt: new Date(dto.scheduledAt),
       },
@@ -370,18 +376,11 @@ export class VisitService {
         recipientId: query.recipientId,
         scheduledAt: scheduledRange({ date: query.date }),
       },
-      select: {
-        scheduledAt: true,
-        program: true,
-        staff: { select: { profession: true } },
-      },
+      select: { scheduledAt: true, program: true, profession: true },
       orderBy: { scheduledAt: "asc" },
     });
     const conflicts = sameDay.filter((visit) =>
-      conflictsOnSameDay(planned, {
-        program: visit.program,
-        profession: visit.staff.profession,
-      }),
+      conflictsOnSameDay(planned, visit),
     );
     if (conflicts.length === 0) return { warnings: [] };
     const visits = conflicts
@@ -454,8 +453,8 @@ export class VisitService {
   ): Promise<VisitDetail> {
     const row = await this.prisma.$transaction(async (tx) => {
       const visit = await this.lockWritable(tx, actor, id);
-      // 쓰는 사람이 곧 담당자다. 확정 전 방문이 있으면 직종을 바꿀 수 없으므로 방문을 만들 때의 직종과 같다.
-      const selection = selectForms(visit.program, actor.profession, formIds);
+      // 서식 규칙은 방문한 직종(Visit.profession)으로 정한다.
+      const selection = selectForms(visit.program, visit.profession, formIds);
       if (!selection.ok) throw new BadRequestException(selection.message);
       const removed = visit.formIds.filter(
         (formId) => !selection.formIds.includes(formId),
@@ -571,7 +570,7 @@ export class VisitService {
           staffId: true,
           scheduledAt: true,
           formIds: true,
-          staff: { select: { profession: true } },
+          profession: true,
           dictation: { select: { id: true } },
         },
       });
@@ -598,7 +597,7 @@ export class VisitService {
           scheduledAt: visit.scheduledAt,
           formIds: toFormIds(visit.formIds),
           hasDictation: visit.dictation !== null,
-          currentProfession: visit.staff.profession,
+          profession: visit.profession,
         },
         dto,
         newStaff,

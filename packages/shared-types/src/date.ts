@@ -1,4 +1,8 @@
 /** 서비스 기준 시간대는 한국 표준시(UTC+9, 서머타임 없음)다. */
+/**
+ * 한국 표준시(UTC+9, 서머타임 없음). DB의 visits."scheduledDate" 생성 열도 같은 +9시간으로
+ * 한국 날짜를 계산한다(마이그레이션 20260929100000, schema.prisma의 dbgenerated). 바꾸면 그 열도 바꾼다.
+ */
 export const KST_OFFSET = "+09:00";
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 

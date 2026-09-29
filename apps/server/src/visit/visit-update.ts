@@ -23,8 +23,8 @@ export interface VisitUpdateTarget {
   formIds: FormId[];
   /** 담당자가 녹음한 구술이 있는지(예정 방문에도 있을 수 있다) */
   hasDictation: boolean;
-  /** 지금 담당자의 직종. 확정하지 않은 방문이 있으면 직종을 바꿀 수 없으므로 방문 때와 같다. */
-  currentProfession: Profession | null;
+  /** 방문한 직종(Visit.profession) */
+  profession: Profession;
 }
 
 /** 새 담당자(담당자를 바꿀 때만). */
@@ -39,6 +39,8 @@ export interface VisitUpdateStaff {
 export interface VisitUpdateData {
   scheduledAt?: Date;
   staffId?: string;
+  /** 담당자를 바꾸면 새 담당자의 직종 */
+  profession?: Profession;
   formIds?: FormId[];
 }
 
@@ -50,7 +52,7 @@ export type VisitUpdatePlan =
 export function isAssignableStaff(
   staff: VisitUpdateStaff | null,
   organizationId: string,
-): staff is VisitUpdateStaff {
+): staff is VisitUpdateStaff & { profession: Profession } {
   return (
     !!staff?.isActive &&
     canBeAssignedVisits(staff) &&
@@ -111,12 +113,13 @@ export function planVisitUpdate(
         formIdsForNewStaff(
           visit.program,
           visit.formIds,
-          visit.currentProfession,
+          visit.profession,
           newStaff.profession,
         ),
     );
     if (!selection.ok) return invalid(selection.message);
     data.staffId = dto.staffId;
+    data.profession = newStaff.profession;
     data.formIds = selection.formIds;
   }
 

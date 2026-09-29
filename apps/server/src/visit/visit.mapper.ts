@@ -1,11 +1,15 @@
-import type {
-  FormData,
-  FormId,
-  VisitCalendarItem,
-  VisitDetail,
-  VisitForms,
-  VisitSummary,
+import {
+  tallyVisitDays,
+  type FormData,
+  type FormId,
+  type VisitCalendarDay,
+  type VisitCalendarItem,
+  type VisitDetail,
+  type VisitForms,
+  type VisitStatus,
+  type VisitSummary,
 } from "@repo/shared-types";
+import { fromDbDate } from "../core/utils/db-date.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import {
   toCareGrade,
@@ -42,6 +46,7 @@ export const calendarItemArgs = {
     id: true,
     organizationId: true,
     program: true,
+    profession: true,
     status: true,
     scheduledAt: true,
     formIds: true,
@@ -52,11 +57,29 @@ export const calendarItemArgs = {
 
 type CalendarItemRow = Prisma.VisitGetPayload<typeof calendarItemArgs>;
 
+/** DB가 센 한국 날짜·상태별 건수(scheduledDate·status로 groupBy)를 달력 날짜 목록으로. */
+export function toCalendarDays(
+  groups: readonly {
+    scheduledDate: Date;
+    status: VisitStatus;
+    _count: { _all: number };
+  }[],
+): VisitCalendarDay[] {
+  return tallyVisitDays(
+    groups.map((group) => ({
+      date: fromDbDate(group.scheduledDate),
+      status: group.status,
+      count: group._count._all,
+    })),
+  );
+}
+
 export function toVisitCalendarItem(row: CalendarItemRow): VisitCalendarItem {
   return {
     id: row.id,
     organizationId: row.organizationId,
     program: row.program,
+    profession: row.profession,
     status: row.status,
     scheduledAt: row.scheduledAt.toISOString(),
     formIds: toFormIds(row.formIds),
@@ -82,6 +105,7 @@ function toVisitBase(row: VisitSummaryRow | VisitDetailRow) {
     id: row.id,
     organizationId: row.organizationId,
     program: row.program,
+    profession: row.profession,
     status: row.status,
     scheduledAt: row.scheduledAt.toISOString(),
     startedAt: row.startedAt?.toISOString() ?? null,

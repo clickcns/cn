@@ -23,6 +23,15 @@ export function useRecipients(query: RecipientListQuery) {
   });
 }
 
+/** 수급자 한 명. id가 없으면 묻지 않는다. 다른 기관 수급자는 서버가 404로 답한다(운영자 제외). */
+export function useRecipient(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.recipients.detail(id ?? ""),
+    queryFn: () => api.recipients.get(id!),
+    enabled: id !== undefined,
+  });
+}
+
 function invalidateRecipientRelated(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.recipients.all }),

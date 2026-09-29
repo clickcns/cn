@@ -17,6 +17,9 @@ import {
 } from "@/features/visits/lib/calendar-dom";
 import { cn } from "@/lib/utils";
 
+/** 방문이 없는 날. 칸마다 새 빈 배열을 넘기면 칸을 매번 다시 그린다. */
+const NO_ITEMS: readonly VisitCalendarItem[] = [];
+
 interface VisitCalendarProps {
   /** YYYY-MM */
   month: string;
@@ -55,10 +58,6 @@ export function VisitCalendar({
   onSelect,
   onOpenVisit,
 }: VisitCalendarProps) {
-  const dates = monthGridDates(month);
-  const weeks = Array.from({ length: dates.length / 7 }, (_, index) =>
-    dates.slice(index * 7, index * 7 + 7),
-  );
   const gridRef = useRef<HTMLDivElement>(null);
   // 키보드로 옮긴 날짜. 다시 그린 뒤(달이 바뀌어도) 그 칸으로 포커스를 옮긴다.
   const pendingFocus = useRef<string | null>(null);
@@ -88,6 +87,13 @@ export function VisitCalendar({
     pendingFocus.current = next;
     onSelect(next);
   };
+
+  // 훅 호출 뒤에 계산해야 React Compiler가 칸 목록·onCellKeyDown을 기억한다
+  // (기억 범위는 훅 호출을 넘지 못한다).
+  const dates = monthGridDates(month);
+  const weeks = Array.from({ length: dates.length / 7 }, (_, index) =>
+    dates.slice(index * 7, index * 7 + 7),
+  );
 
   return (
     <div className="overflow-x-auto">
@@ -124,11 +130,12 @@ export function VisitCalendar({
                 isPast={date < today}
                 isSelected={date === selected}
                 day={days.get(date)}
-                items={itemsByDay ? (itemsByDay.get(date) ?? []) : null}
+                items={itemsByDay ? (itemsByDay.get(date) ?? NO_ITEMS) : null}
                 chipLabel={chipLabel}
                 expandAll={expandAll}
                 onExpandAll={onExpandAll}
-                dnd={dnd}
+                isDropTarget={dnd.dropDate === date}
+                dnd={dnd.handlers}
                 canDrag={canDrag}
                 onSelect={onSelect}
                 onOpenVisit={onOpenVisit}

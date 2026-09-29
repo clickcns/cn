@@ -3,6 +3,11 @@
  * 개발 포트를 쓰는 이전 dev 프로세스를 끝낸다. `pnpm dev`·`dev:server`·`dev:web`·`dev:admin`이
  * turbo를 띄우기 전에 부른다. 사용: node scripts/free-dev-ports.mjs 3210 5210 5211
  *
+ * 왜 남는가(2026-09, turbo 2.11.2·Windows에서 확인): turbo는 자신이나 실행기(node_modules/.bin/turbo)가
+ * 끝나면 그 아래 작업(vite·nest·서버)을 함께 끝낸다. 그러나 실행기 **위**의 프로세스(pnpm·스크립트용
+ * 셸·편집기나 에이전트가 띄운 셸)만 끝나면 실행기와 turbo가 부모 없이 그대로 돌며 포트를 잡는다.
+ * 이것은 우리 스크립트가 아니라 프로세스를 끝내는 쪽의 문제라 여기서 다음 실행 때 치운다.
+ *
  * 포트를 잡은 프로세스만 끝내면 그 프로세스를 띄운 watch(nest start --watch 등)가 남아 다시 포트를
  * 잡으므로, 위로 거슬러 올라가 이전 dev 실행 묶음(turbo·pnpm·스크립트용 셸)의 맨 위를 트리째 끝낸다.
  * 사용자가 쓰는 셸(PowerShell·bash 창 등)과 지금 이 스크립트를 띄운 프로세스는 건드리지 않는다.

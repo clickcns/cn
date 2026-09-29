@@ -123,13 +123,16 @@ async function seedVisits(
   const count = await prisma.visit.count({ where: { organizationId } });
   if (count > 0) return;
   for (const visit of visits) {
+    const { profession } = visit.staff;
+    if (!profession) throw new Error("방문 담당자는 직종이 있어야 합니다");
     await prisma.visit.create({
       data: {
         organizationId,
         recipientId: recipients.get(visit.recipient)!,
         staffId: visit.staff.id,
         program: visit.program,
-        formIds: resolveFormIds(visit.program, visit.staff.profession),
+        profession,
+        formIds: resolveFormIds(visit.program, profession),
         scheduledAt: visit.scheduledAt,
         startedAt: visit.startedAt,
         endedAt: visit.endedAt,

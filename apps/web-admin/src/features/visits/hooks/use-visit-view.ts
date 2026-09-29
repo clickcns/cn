@@ -5,6 +5,7 @@ import {
   monthOf,
 } from "@repo/shared-types";
 import { useSearchParams } from "react-router";
+import { useSearchParamsUpdater } from "@/hooks/use-search-params-updater";
 
 export type VisitView = "list" | "calendar";
 
@@ -13,7 +14,7 @@ export type VisitView = "list" | "calendar";
  * 상세 화면에 갔다가 돌아와도 유지된다. 고른 날은 늘 보고 있는 달 안에 있다.
  */
 export function useVisitView() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const today = formatKstDate();
 
   const view: VisitView =
@@ -35,19 +36,8 @@ export function useVisitView() {
         ? today
         : `${month}-01`;
 
-  const update = (changes: Record<string, string | undefined>) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        for (const [key, value] of Object.entries(changes)) {
-          if (value) next.set(key, value);
-          else next.delete(key);
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  // 바꾸는 함수는 늘 같다(방향키로 날짜를 옮겨도 달력 칸·수급자 패널에 넘긴 함수가 그대로라 다시 그리지 않는다).
+  const update = useSearchParamsUpdater();
 
   return {
     view,

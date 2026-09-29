@@ -10,7 +10,6 @@ import { daysBetween, formatKstDate, monthOf } from "./date.js";
 import {
   HOME_CARE_MONTHLY_VISITS,
   PROGRAMS,
-  visitProfession,
   type Program,
 } from "./programs.js";
 import type { CareGrade, Recipient } from "./recipient.js";
@@ -332,6 +331,11 @@ interface VisitBase {
   confirmedAt: string | null;
   staff: VisitStaff;
   /**
+   * 방문한 직종. 만들 때 담당자 직종으로 정하고 담당자를 바꾸면 새 직종이 된다(담당자의 지금 직종과
+   * 다를 수 있다). 같은 날 산정 제외·재택의료 월 요건·서식 규칙은 이 값을 쓴다.
+   */
+  profession: Profession;
+  /**
    * 이 방문에서 쓰는 서식(규칙 순서). 방문을 만들 때 사업·담당자 직종의 규칙 안에서 고르고,
    * 확정 전까지 선택 서식을 켜고 끌 수 있다.
    */
@@ -355,7 +359,6 @@ export interface VisitDetail extends VisitBase {
   carryOver: VisitForms;
 }
 
-/** 방문 목록 응답. 건수는 페이지와 상관없이 조건에 맞는 전체 기준이다. */
 /** 한 기관의 방문 건수(조건 전체 기준). */
 export interface VisitOrganizationCount {
   organizationId: string;
@@ -363,6 +366,7 @@ export interface VisitOrganizationCount {
   statusCounts: Record<VisitStatus, number>;
 }
 
+/** 방문 목록 응답. 건수는 페이지와 상관없이 조건에 맞는 전체 기준이다. */
 export interface VisitListResponse {
   items: VisitSummary[];
   /** 조건에 맞는 전체 건수 */
@@ -390,7 +394,8 @@ export interface VisitCalendarItem {
   program: Program;
   status: VisitStatus;
   scheduledAt: string;
-  /** 방문을 만들 때 고정한 서식. 방문한 직종 판정(visitProfession)에도 쓴다. */
+  /** 방문한 직종(VisitSummary.profession과 같다) */
+  profession: Profession;
   formIds: FormId[];
   recipient: { id: string; name: string; careGrade: CareGrade | null };
   staff: VisitStaff & { isActive: boolean };
@@ -407,22 +412,37 @@ export interface VisitCalendarResponse {
 }
 
 /**
- * 방문을 한국 날짜별 상태 건수로 묶는다. 방문이 있는 날만, 날짜 오름차순.
- * 방문 일시는 UTC로 저장되므로 한국 날짜로 바꿔서 센다(자정 직후 방문이 전날로 가지 않게).
+ * (한국 날짜, 상태, 건수) 목록을 달력 날짜 목록으로 합친다. 방문이 있는 날만, 날짜 오름차순.
+ * 방문을 세는 countVisitsByDay와 서버의 DB 집계(날짜·상태별 groupBy)가 같은 모양을 만들도록 함께 쓴다.
  */
-export function countVisitsByDay(
-  visits: readonly { scheduledAt: Date | string; status: VisitStatus }[],
+export function tallyVisitDays(
+  entries: Iterable<{ date: string; status: VisitStatus; count: number }>,
 ): VisitCalendarDay[] {
   const byDate = new Map<string, Record<VisitStatus, number>>();
-  for (const visit of visits) {
-    const date = formatKstDate(new Date(visit.scheduledAt));
+  for (const { date, status, count } of entries) {
     const counts = byDate.get(date) ?? emptyStatusCounts();
-    counts[visit.status] += 1;
+    counts[status] += count;
     byDate.set(date, counts);
   }
   return [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([date, counts]) => ({ date, counts, total: totalCount(counts) }));
+}
+
+/**
+ * 방문을 한국 날짜별 상태 건수로 묶는다(tallyVisitDays).
+ * 방문 일시는 UTC로 저장되므로 한국 날짜로 바꿔서 센다(자정 직후 방문이 전날로 가지 않게).
+ */
+export function countVisitsByDay(
+  visits: readonly { scheduledAt: Date | string; status: VisitStatus }[],
+): VisitCalendarDay[] {
+  return tallyVisitDays(
+    visits.map((visit) => ({
+      date: formatKstDate(new Date(visit.scheduledAt)),
+      status: visit.status,
+      count: 1,
+    })),
+  );
 }
 
 /** 달력 한 장의 요약(두 웹의 달력 머리·지난 미확정 안내). */
@@ -475,7 +495,7 @@ export interface MonthRecipientSummary {
   confirmed: number;
   /** 이달 첫 방문 날짜 */
   firstDate: string;
-  /** 재택의료센터 방문이 있으면 직종별 건수(방문의 서식으로 판정), 없으면 null */
+  /** 재택의료센터 방문이 있으면 방문한 직종별 건수, 없으면 null */
   homeCare: HomeCareVisitCounts | null;
   /** 재택의료 월 요건(HOME_CARE_MONTHLY_VISITS)에서 모자란 건수의 합. 0이면 충족 */
   homeCareShortfall: number;
@@ -497,7 +517,7 @@ export function homeCareShortfall(counts: HomeCareVisitCounts): number {
 
 /**
  * 달력 항목을 수급자별로 묶는다(month 안의 방문만). 이름순이다.
- * 재택의료 직종별 건수는 담당자의 지금 직종이 아니라 방문의 서식으로 센다.
+ * 재택의료 직종별 건수는 담당자의 지금 직종이 아니라 방문한 직종(profession)으로 센다.
  */
 export function summarizeMonthRecipients(
   items: readonly VisitCalendarItem[],
@@ -525,8 +545,7 @@ export function summarizeMonthRecipients(
     if (date < summary.firstDate) summary.firstDate = date;
     if (item.program === "HOME_CARE_CENTER") {
       summary.homeCare ??= emptyHomeCareCounts();
-      const profession = visitProfession(item.program, item.formIds);
-      if (profession) summary.homeCare[profession] += 1;
+      summary.homeCare[item.profession] += 1;
     }
   }
   const summaries = [...byRecipient.values()];

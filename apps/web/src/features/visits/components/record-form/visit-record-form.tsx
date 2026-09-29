@@ -64,10 +64,7 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
   const updateForms = useUpdateVisitForms(visit.id);
   const isPending =
     saveRecord.isPending || confirmVisit.isPending || updateForms.isPending;
-  const canChangeForms = hasOptionalForms(
-    visit.program,
-    visit.staff.profession,
-  );
+  const canChangeForms = hasOptionalForms(visit.program, visit.profession);
 
   const blocker = useUnsavedChangesGuard(isDirty);
 

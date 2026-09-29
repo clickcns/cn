@@ -71,9 +71,7 @@ export function toFormInitialState(
 export function toRecordFormValues(visit: VisitDetail): RecordFormValues {
   const formIds = new Set([
     ...visit.formIds,
-    ...formRulesFor(visit.program, visit.staff.profession).map(
-      (rule) => rule.formId,
-    ),
+    ...formRulesFor(visit.program, visit.profession).map((rule) => rule.formId),
   ]);
 
   const startDate = isoToDate(visit.startedAt);

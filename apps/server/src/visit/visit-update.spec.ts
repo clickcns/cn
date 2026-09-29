@@ -6,7 +6,6 @@ import {
   formIdsForNewStaff,
   formRulesFor,
   UpdateVisitSchema,
-  visitProfession,
 } from "@repo/shared-types";
 import {
   planVisitUpdate,
@@ -25,7 +24,7 @@ function target(overrides: Partial<VisitUpdateTarget> = {}): VisitUpdateTarget {
     scheduledAt: new Date(AT),
     formIds: ["HOME_CARE_DOCTOR"],
     hasDictation: false,
-    currentProfession: "DOCTOR",
+    profession: "DOCTOR",
     ...overrides,
   };
 }
@@ -82,7 +81,7 @@ describe("planVisitUpdate: 일정", () => {
 });
 
 describe("planVisitUpdate: 담당자", () => {
-  it("다른 직종으로 넘기면 새 직종 서식으로 바꾼다", () => {
+  it("다른 직종으로 넘기면 방문 직종과 서식을 새 직종으로 바꾼다", () => {
     const plan = planVisitUpdate(
       target(),
       parse({ staffId: "11111111-1111-4111-8111-111111111111" }),
@@ -92,6 +91,7 @@ describe("planVisitUpdate: 담당자", () => {
       ok: true,
       data: {
         staffId: "11111111-1111-4111-8111-111111111111",
+        profession: "NURSE",
         formIds: ["HOME_CARE_NURSE"],
       },
     });
@@ -139,7 +139,7 @@ describe("planVisitUpdate: 담당자", () => {
       target({
         program: "LTC_NURSING",
         formIds: ["LTC_NURSING"],
-        currentProfession: "NURSE",
+        profession: "NURSE",
       }),
       parse({ staffId }),
       { ...nurse, profession: "SOCIAL_WORKER" },
@@ -148,7 +148,7 @@ describe("planVisitUpdate: 담당자", () => {
   });
 });
 
-describe("담당자 바꿀 때 서식과 방문 직종", () => {
+describe("담당자 바꿀 때 서식", () => {
   it("간호사 방문을 의사에게 넘기면 제4호가 기본으로 켜진다", () => {
     assert.deepEqual(
       formIdsForNewStaff(
@@ -189,22 +189,6 @@ describe("담당자 바꿀 때 서식과 방문 직종", () => {
       ]),
       { PRIMARY_CARE_CHECK: false, HOME_CARE_DOCTOR: true },
     );
-  });
-
-  it("방문의 필수 서식으로 직종을 판정한다", () => {
-    assert.equal(
-      visitProfession("HOME_CARE_CENTER", [
-        "PRIMARY_CARE_CHECK",
-        "HOME_CARE_DOCTOR",
-      ]),
-      "DOCTOR",
-    );
-    assert.equal(
-      visitProfession("HOME_CARE_CENTER", ["HOME_CARE_SOCIAL"]),
-      "SOCIAL_WORKER",
-    );
-    assert.equal(visitProfession("LTC_NURSING", ["LTC_NURSING"]), "NURSE");
-    assert.equal(visitProfession("PRIMARY_CARE", []), null);
   });
 });
 

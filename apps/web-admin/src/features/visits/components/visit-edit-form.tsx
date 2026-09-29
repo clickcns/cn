@@ -79,7 +79,7 @@ export function VisitEditForm({ visit, onDone, onCancel }: VisitEditFormProps) {
         ...choicesForNewStaff(
           visit.program,
           visit.formIds,
-          visit.staff.profession,
+          visit.profession,
           newProfession,
         ),
         ...formChoices,

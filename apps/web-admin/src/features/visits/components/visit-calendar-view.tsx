@@ -1,4 +1,4 @@
-import { getErrorMessage } from "@repo/api-client";
+import { getErrorMessage, getErrorStatus } from "@repo/api-client";
 import {
   formChoicesFor,
   formatDateLabel,
@@ -11,7 +11,6 @@ import {
   monthOf,
   summarizeCalendarMonth,
   summarizeMonthRecipients,
-  visitProfession,
   VISIT_STATUS_LABELS,
   VISIT_STATUSES,
   withKstDate,
@@ -37,7 +36,10 @@ import {
 } from "@/components/ui/data-state";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { useRecipients } from "@/features/recipients/hooks/use-recipients";
+import {
+  useRecipient,
+  useRecipients,
+} from "@/features/recipients/hooks/use-recipients";
 import {
   CalendarContextMenu,
   type CalendarMenuActions,
@@ -99,7 +101,7 @@ export function VisitCalendarView({
   selectedDay,
   today,
   conditions,
-  recipientId,
+  recipientId: requestedRecipientId,
   organizationId,
   organizationNames,
   onMonthChange,
@@ -117,13 +119,29 @@ export function VisitCalendarView({
     organizationId,
     withVisits: "true",
   };
-  // 칸·칩은 수급자 필터를 적용하고, 패널은 적용하지 않은 목록을 쓴다(필터가 없으면 같은 요청).
-  const calendarQuery = useVisitCalendar({ ...baseQuery, recipientId });
-  const panelQuery = useVisitCalendar(baseQuery);
   const recipientsQuery = useRecipients({
     organizationId,
     includeInactive: "false",
   });
+  // 수급자 필터는 지금 기관 범위의 수급자일 때만 쓴다. 기관을 바꾸면(어느 화면에서든) 이전 기관의
+  // 수급자가 주소에 남을 수 있다. 사용 중지된 수급자도 고를 수 있어 그 한 명을 따로 받는다
+  // (기관 관리자에게 다른 기관 수급자는 404). 받기 전에는 맞다고 본다.
+  const filterRecipientQuery = useRecipient(requestedRecipientId);
+  const filterRecipient = filterRecipientQuery.data;
+  const recipientInScope =
+    !requestedRecipientId ||
+    (filterRecipientQuery.isError
+      ? getErrorStatus(filterRecipientQuery.error) !== 404
+      : !filterRecipient ||
+        !organizationId ||
+        filterRecipient.organizationId === organizationId);
+  const recipientId = recipientInScope ? requestedRecipientId : undefined;
+  useEffect(() => {
+    if (!recipientInScope) onSelectRecipient(undefined);
+  }, [recipientInScope, onSelectRecipient]);
+  // 칸·칩은 수급자 필터를 적용하고, 패널은 적용하지 않은 목록을 쓴다(필터가 없으면 같은 요청).
+  const calendarQuery = useVisitCalendar({ ...baseQuery, recipientId });
+  const panelQuery = useVisitCalendar(baseQuery);
   const [quickView, setQuickView] = useState<{
     visit: QuickViewVisit;
     mode: "view" | "edit";
@@ -139,14 +157,6 @@ export function VisitCalendarView({
   const updateVisit = useUpdateVisit();
   const expandAll = useCalendarPrefsStore((state) => state.expandAll);
   const setExpandAll = useCalendarPrefsStore((state) => state.setExpandAll);
-
-  // 기관 범위를 바꾸면 이전 기관의 수급자 필터를 푼다.
-  const previousOrganization = useRef(organizationId);
-  useEffect(() => {
-    if (previousOrganization.current === organizationId) return;
-    previousOrganization.current = organizationId;
-    if (recipientId) onSelectRecipient(undefined);
-  }, [organizationId, recipientId, onSelectRecipient]);
 
   const calendarData = calendarQuery.data;
   const days = useMemo(
@@ -204,8 +214,8 @@ export function VisitCalendarView({
   }, [showRequirements, summaries, conditions.program, recipientsQuery.data]);
 
   const selectedRecipientName = recipientId
-    ? (summaries?.find((s) => s.recipient.id === recipientId)?.recipient.name ??
-      recipientsQuery.data?.find((r) => r.id === recipientId)?.name ??
+    ? (filterRecipient?.name ??
+      summaries?.find((s) => s.recipient.id === recipientId)?.recipient.name ??
       "선택한 수급자")
     : null;
 
@@ -279,10 +289,7 @@ export function VisitCalendarView({
     },
     copyVisit: (item) => {
       // 원래 방문의 서식 선택을 잇는다(담당자를 바꾸면 등록 창이 새 직종 규칙으로 다시 고른다).
-      const rules = formRulesFor(
-        item.program,
-        visitProfession(item.program, item.formIds),
-      );
+      const rules = formRulesFor(item.program, item.profession);
       onCreate({
         date: addKstDays(visitDate(item), 7),
         time: visitTime(item),
@@ -305,10 +312,13 @@ export function VisitCalendarView({
     },
     filterRecipient: onSelectRecipient,
   };
+  // 요청 중이거나 이전 달을 임시로 보여 주는 동안에는 끌 수 없다. 값만 꺼내 두어야
+  // canDrag가 늘 같은 함수로 남아 칩을 다시 그리지 않는다(쿼리·뮤테이션 객체는 매번 새것).
+  const dragLocked = updateVisit.isPending || calendarQuery.isPlaceholderData;
   const canDrag = (item: VisitCalendarItem) =>
-    canRescheduleVisit(item.status) &&
-    !updateVisit.isPending &&
-    !calendarQuery.isPlaceholderData;
+    !dragLocked && canRescheduleVisit(item.status);
+  const calendarError = calendarQuery.error;
+  const retryCalendar = calendarQuery.refetch;
 
   const monthNumber = Number(month.slice(5));
   const thisMonth = monthOf(today);
@@ -412,11 +422,11 @@ export function VisitCalendarView({
 
       <div className="grid gap-4 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_16rem]">
         <div className="flex min-w-0 flex-col gap-2">
-          {calendarQuery.isError ? (
+          {calendarError ? (
             <ErrorState
-              error={calendarQuery.error}
+              error={calendarError}
               title="달력을 불러오지 못했습니다"
-              onRetry={() => void calendarQuery.refetch()}
+              onRetry={() => void retryCalendar()}
             />
           ) : (
             <CalendarContextMenu

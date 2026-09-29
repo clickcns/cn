@@ -22,6 +22,7 @@ export const queryKeys = {
   recipients: {
     all: ["recipients"] as const,
     list: (query: RecipientListQuery) => ["recipients", "list", query] as const,
+    detail: (id: string) => ["recipients", "detail", id] as const,
   },
   visits: {
     all: ["visits"] as const,

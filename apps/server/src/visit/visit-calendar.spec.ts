@@ -16,6 +16,7 @@ import {
   withKstDate,
   type VisitCalendarItem,
 } from "@repo/shared-types";
+import { toCalendarDays } from "./visit.mapper.js";
 
 describe("countVisitsByDay", () => {
   it("한국 날짜로 묶어 상태별로 센다(자정 직후 방문은 그날로)", () => {
@@ -42,6 +43,42 @@ describe("countVisitsByDay", () => {
 
   it("방문이 없으면 빈 목록이다", () => {
     assert.deepEqual(countVisitsByDay([]), []);
+  });
+});
+
+describe("toCalendarDays", () => {
+  it("DB가 센 날짜·상태별 건수를 날짜 오름차순 달력 날짜로 바꾼다", () => {
+    assert.deepEqual(
+      toCalendarDays([
+        {
+          scheduledDate: new Date("2026-09-24T00:00:00Z"),
+          status: "SCHEDULED",
+          _count: { _all: 2 },
+        },
+        {
+          scheduledDate: new Date("2026-09-23T00:00:00Z"),
+          status: "CONFIRMED",
+          _count: { _all: 1 },
+        },
+        {
+          scheduledDate: new Date("2026-09-24T00:00:00Z"),
+          status: "DRAFT",
+          _count: { _all: 1 },
+        },
+      ]),
+      [
+        {
+          date: "2026-09-23",
+          counts: { SCHEDULED: 0, DRAFT: 0, CONFIRMED: 1 },
+          total: 1,
+        },
+        {
+          date: "2026-09-24",
+          counts: { SCHEDULED: 2, DRAFT: 1, CONFIRMED: 0 },
+          total: 3,
+        },
+      ],
+    );
   });
 });
 
@@ -149,6 +186,7 @@ function calendarItem(
     program: "HOME_CARE_CENTER",
     status: "SCHEDULED",
     scheduledAt: "2026-09-10T01:00:00.000Z",
+    profession: "NURSE",
     formIds: ["HOME_CARE_NURSE"],
     staff: { id: "s", name: "직원", profession: "NURSE", isActive: true },
     ...overrides,
@@ -159,13 +197,14 @@ describe("summarizeMonthRecipients", () => {
   const kim = { id: "r1", name: "김영자", careGrade: "2" as const };
   const lee = { id: "r2", name: "이순자", careGrade: null };
 
-  it("이달 방문만 수급자별로 세고, 재택의료는 방문의 서식으로 직종을 센다", () => {
+  it("이달 방문만 수급자별로 세고, 재택의료는 방문한 직종으로 센다", () => {
     const summaries = summarizeMonthRecipients(
       [
         calendarItem({
           recipient: kim,
+          profession: "DOCTOR",
           formIds: ["PRIMARY_CARE_CHECK", "HOME_CARE_DOCTOR"],
-          // 담당자의 지금 직종이 바뀌어도 방문의 서식(의사)으로 센다
+          // 담당자의 지금 직종이 바뀌어도 방문한 직종(의사)으로 센다
           staff: { id: "d", name: "의사", profession: "NURSE", isActive: true },
           status: "CONFIRMED",
           scheduledAt: "2026-09-03T01:00:00.000Z",

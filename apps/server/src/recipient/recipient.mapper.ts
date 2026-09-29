@@ -4,20 +4,8 @@ import type {
   VisitRecipient,
   VisitRecipientSummary,
 } from "@repo/shared-types";
+import { fromDbDate } from "../core/utils/db-date.js";
 import type { Prisma } from "../generated/prisma/client.js";
-
-/** DB에는 @db.Date(UTC 자정)로 저장한다. undefined는 "변경 없음". */
-export function toDbDate(
-  date: string | null | undefined,
-): Date | null | undefined {
-  if (date === undefined) return undefined;
-  if (date === null) return null;
-  return new Date(`${date}T00:00:00.000Z`);
-}
-
-function fromDbDate(date: Date | null): string | null {
-  return date ? date.toISOString().slice(0, 10) : null;
-}
 
 /** 입력 시 CARE_GRADES로 검증해 저장하므로 문자열 컬럼을 그대로 좁힌다. */
 export function toCareGrade(value: string | null): CareGrade | null {

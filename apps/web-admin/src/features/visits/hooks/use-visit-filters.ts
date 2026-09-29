@@ -8,6 +8,7 @@ import {
   type VisitStatus,
 } from "@repo/shared-types";
 import { useSearchParams } from "react-router";
+import { useSearchParamsUpdater } from "@/hooks/use-search-params-updater";
 
 export interface VisitFilters {
   /** YYYY-MM-DD (한국 날짜) */
@@ -50,7 +51,7 @@ export function defaultVisitRange(today: string = formatKstDate()) {
  * 값이 없거나 잘못되면 기본값을 쓴다.
  */
 export function useVisitFilters() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const defaults = defaultVisitRange();
 
   const from = searchParams.get("from");
@@ -66,28 +67,11 @@ export function useVisitFilters() {
   };
   const isCustomized = FILTER_KEYS.some((key) => searchParams.has(key));
 
-  const setFilter = (key: FilterKey, value: string | undefined) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value) next.set(key, value);
-        else next.delete(key);
-        return next;
-      },
-      { replace: true },
-    );
-  };
-
-  const resetFilters = () => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        for (const key of FILTER_KEYS) next.delete(key);
-        return next;
-      },
-      { replace: true },
-    );
-  };
+  const update = useSearchParamsUpdater();
+  const setFilter = (key: FilterKey, value: string | undefined) =>
+    update({ [key]: value });
+  const resetFilters = () =>
+    update(Object.fromEntries(FILTER_KEYS.map((key) => [key, undefined])));
 
   return { filters, setFilter, resetFilters, isCustomized };
 }

@@ -13,7 +13,7 @@ import {
   VisitChip,
   type ChipLabel,
 } from "@/features/visits/components/visit-chip";
-import type { CalendarDnd } from "@/features/visits/hooks/use-calendar-dnd";
+import type { CalendarDndHandlers } from "@/features/visits/hooks/use-calendar-dnd";
 import {
   CELL_SELECTOR,
   CHIP_OR_MORE_SELECTOR,
@@ -37,7 +37,10 @@ export interface CalendarCellProps {
   /** 방문을 모두 보여 준다("+N건 더"로 줄이지 않는다). */
   expandAll: boolean;
   onExpandAll: () => void;
-  dnd: CalendarDnd;
+  /** 끌고 있는 칩을 놓을 수 있는 칸으로 강조 */
+  isDropTarget: boolean;
+  /** 끌어다 놓기 핸들러(모든 칸이 같은 객체) */
+  dnd: CalendarDndHandlers;
   canDrag: (item: VisitCalendarItem) => boolean;
   onSelect: (date: string) => void;
   onOpenVisit: (item: VisitCalendarItem) => void;
@@ -75,6 +78,7 @@ export function CalendarCell({
   chipLabel,
   expandAll,
   onExpandAll,
+  isDropTarget,
   dnd,
   canDrag,
   onSelect,
@@ -123,8 +127,7 @@ export function CalendarCell({
         !inMonth && "bg-muted/40",
         overdue && "border-warning/60",
         isSelected && "border-primary ring-primary ring-1",
-        dnd.dropDate === date &&
-          "border-primary bg-primary-soft/50 border-dashed",
+        isDropTarget && "border-primary bg-primary-soft/50 border-dashed",
       )}
     >
       <div className="flex items-center justify-between gap-1 px-0.5">

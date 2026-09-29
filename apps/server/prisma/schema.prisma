@@ -140,10 +140,16 @@ model Visit {
   /// 담당자(의사·간호사·사회복지사)
   staffId        String
   program        Program
+  /// 방문한 직종. 만들 때 담당자 직종으로 정하고 담당자를 바꾸면 새 직종이 된다(담당자의 지금 직종과
+  /// 다를 수 있다). 같은 날 산정 제외·재택의료 월 요건·서식 규칙은 이 값을 쓴다.
+  profession     Profession
   /// 이 방문에서 쓰는 서식(shared-types FORM_IDS, 규칙 순서). 사업·담당자 직종의 규칙(필수·선택) 안에서
   /// 만들 때 고르고, 확정 전까지 선택 서식을 켜고 끌 수 있다.
   formIds        String[]
   scheduledAt    DateTime
+  /// 방문 일시의 한국 날짜. DB가 scheduledAt에서 계산하는 생성 열(GENERATED ALWAYS … STORED,
+  /// 마이그레이션 20260929100000 참고)이라 읽기만 한다. 달력의 날짜별 건수를 DB에서 센다.
+  scheduledDate  DateTime    @default(dbgenerated("((\"scheduledAt\" + '09:00:00'::interval))::date")) @db.Date
   startedAt      DateTime?
   endedAt        DateTime?
   status         VisitStatus @default(SCHEDULED)

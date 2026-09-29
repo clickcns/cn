@@ -20,7 +20,8 @@ import {
   resolveTargetOrganizationId,
 } from "../core/utils/org-scope.js";
 import { handlePrismaError, PrismaService } from "../prisma/index.js";
-import { toCareGrade, toDbDate, toRecipient } from "./recipient.mapper.js";
+import { toDbDate } from "../core/utils/db-date.js";
+import { toCareGrade, toRecipient } from "./recipient.mapper.js";
 
 type CreateRecipientData = z.output<typeof CreateRecipientSchema>;
 type UpdateRecipientData = z.output<typeof UpdateRecipientSchema>;

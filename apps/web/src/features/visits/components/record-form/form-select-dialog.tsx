@@ -55,16 +55,12 @@ function FormSelectBody({
   onSubmit,
   isPending,
 }: FormSelectDialogProps) {
-  const rules = formRulesFor(visit.program, visit.staff.profession);
+  const rules = formRulesFor(visit.program, visit.profession);
   // 지금 방문의 서식에서 시작한다(선택 서식마다 켬·끔).
   const [choices, setChoices] = useState<FormChoices>(() =>
     formChoicesFor(rules, visit.formIds),
   );
-  const selected = resolveFormIds(
-    visit.program,
-    visit.staff.profession,
-    choices,
-  );
+  const selected = resolveFormIds(visit.program, visit.profession, choices);
   const removedWithContent = visit.formIds.filter(
     (formId) => !selected.includes(formId) && hasContent(formId),
   );

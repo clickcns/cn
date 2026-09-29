@@ -115,10 +115,11 @@ export function formChoicesFor(
 export function choicesForNewStaff(
   program: Program,
   currentFormIds: readonly FormId[],
-  currentProfession: Profession | null,
+  /** 방문한 직종(지금 담당자의, Visit.profession) */
+  fromProfession: Profession,
   newProfession: Profession | null,
 ): FormChoices {
-  const currentOptional = formRulesFor(program, currentProfession).filter(
+  const currentOptional = formRulesFor(program, fromProfession).filter(
     (rule) => !rule.required,
   );
   const shared = formRulesFor(program, newProfession).filter(
@@ -135,39 +136,14 @@ export function choicesForNewStaff(
 export function formIdsForNewStaff(
   program: Program,
   currentFormIds: readonly FormId[],
-  currentProfession: Profession | null,
+  fromProfession: Profession,
   newProfession: Profession | null,
 ): FormId[] {
   return resolveFormIds(
     program,
     newProfession,
-    choicesForNewStaff(
-      program,
-      currentFormIds,
-      currentProfession,
-      newProfession,
-    ),
+    choicesForNewStaff(program, currentFormIds, fromProfession, newProfession),
   );
-}
-
-/**
- * 방문한 직종. 방문을 만들 때 고정한 서식(formIds)의 필수 서식으로 판정한다.
- * 담당자의 지금 직종은 확정 뒤 바뀔 수 있어 쓰지 않는다. 판정할 수 없으면 null.
- */
-export function visitProfession(
-  program: Program,
-  formIds: readonly FormId[],
-): Profession | null {
-  const entries = Object.entries(PROGRAM_FORMS[program]) as [
-    Profession,
-    readonly FormRule[],
-  ][];
-  for (const [profession, rules] of entries) {
-    if (rules.some((rule) => rule.required && formIds.includes(rule.formId))) {
-      return profession;
-    }
-  }
-  return null;
 }
 
 /**

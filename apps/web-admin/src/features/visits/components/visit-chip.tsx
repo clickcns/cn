@@ -16,7 +16,7 @@ interface VisitChipProps {
   /** 칩 이름: 보통은 수급자, 수급자 한 명만 볼 때는 담당자 */
   label: ChipLabel;
   onOpen: (item: VisitCalendarItem) => void;
-  /** 끌어다 놓기 속성(useCalendarDnd().chipProps) */
+  /** 끌어다 놓기 속성(useCalendarDnd().handlers.chipProps) */
   dragProps?: {
     draggable: boolean;
     onDragStart?: (event: DragEvent<HTMLElement>) => void;

@@ -40,6 +40,7 @@ pnpm dev:server | dev:web | dev:admin
                      # 시작 전에 그 포트(3210·5210·5211)를 쓰는 이전 dev 실행 묶음을 끝낸다
                      # (scripts/free-dev-ports.mjs: 포트를 잡은 프로세스에서 turbo·pnpm까지 올라가 트리째 끝내고,
                      #  사용자 셸과 dev 명령이 아닌 node는 건드리지 않는다)
+                     # (남는 까닭은 스크립트 머리 주석. 떠 있는 dev가 있을 때 dev 명령을 또 실행하면 그 dev를 끝낸다)
 pnpm build           # 전체 빌드
 pnpm test            # 단위 테스트(서버: node:test + tsx, *.spec.ts)
 pnpm check-types     # 전체 타입 체크
@@ -87,9 +88,9 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
 - 방문 목록(`VisitSummary`)의 수급자는 이름·등급·주소만 싣는다. 연락처·보호자·메모는 상세(`VisitDetail`)에서만.
 - 방문 목록은 페이지 단위다(`page`, `pageSize` ≤ 200, 방문 일시·id 오름차순). 응답의 `total`·`statusCounts`는 조건 전체 기준이므로 화면의 건수는 받은 목록을 세지 말고 이 값을 쓴다.
   - `groupBy=organization`이면 기관 이름순(그 안은 방문 일시순)으로 이어서 주고 기관별 건수(`organizationCounts`)도 준다. 기관별로 묶은 표가 페이지를 넘겨도 기관 순서대로 이어지고, 묶음 머리 줄은 받은 행이 아니라 이 건수를 쓴다.
-- 방문 달력: `GET /visits/calendar`(`from`·`to` 최대 42일, 목록과 같은 권한 범위·필터에 `recipientId`)가 한국 날짜별 상태 건수를 준다(`countVisitsByDay`). 현장 웹 방문 일정(달력과 그날 방문을 한 화면에: 좁은 화면은 한 주 줄·펼치면 한 달, 넓은 화면은 한 달 달력 옆에 그날 방문)과 관리 웹 [목록|달력]이 쓰고, 날짜를 누르면 그날 목록은 기존 목록 API로 받는다. 캐시 키는 `lists` 접두어 아래라 저장·확정·삭제 뒤 목록과 함께 다시 받는다. 달력 칸 날짜는 `monthGridDates`(일요일 시작, 4~6주).
+- 방문 달력: `GET /visits/calendar`(`from`·`to` 최대 42일, 목록과 같은 권한 범위·필터에 `recipientId`)가 한국 날짜별 상태 건수를 준다. 칩 목록을 함께 주면 그 목록으로 세고(`countVisitsByDay`), 건수만 줄 때(현장 웹·상한 초과)는 DB가 센다(`Visit.scheduledDate`: `scheduledAt`에서 계산하는 한국 날짜 생성 열, 앱은 읽기만 한다. 스키마의 `dbgenerated` 기본값을 생성식과 같게 둬야 migrate diff가 비어 있다). 두 길 모두 `tallyVisitDays`로 같은 모양을 만든다. 현장 웹 방문 일정(달력과 그날 방문을 한 화면에: 좁은 화면은 한 주 줄·펼치면 한 달, 넓은 화면은 한 달 달력 옆에 그날 방문)과 관리 웹 [목록|달력]이 쓰고, 날짜를 누르면 그날 목록은 기존 목록 API로 받는다. 캐시 키는 `lists` 접두어 아래라 저장·확정·삭제 뒤 목록과 함께 다시 받는다. 달력 칸 날짜는 `monthGridDates`(일요일 시작, 4~6주).
   - `withVisits=true`면 방문 항목(`VisitCalendarItem`: 수급자 이름·등급, 담당자, 상태, 서식)도 준다. 관리 웹이 칸에 이름 칩을 그리고 "이달 수급자" 패널(`summarizeMonthRecipients`, 재택의료 월 요건 `HOME_CARE_MONTHLY_VISITS`)을 만든다. `VISIT_CALENDAR_MAX_ITEMS`(3000)를 넘으면 `visits: null`이고 칸은 건수만 보여 준다(운영자 전체 기관 보기).
-  - 관리 웹 달력: 칸에는 칩을 3건까지(4건 이하면 전부) 보이고 나머지는 "+N건 더"로 띄운다. [방문 모두 펼치기](`use-calendar-prefs-store.ts`, 브라우저에 저장)를 켜면 칸마다 전부 보인다. 칩을 누르면 빠른 보기 창(일정·담당자 변경, 삭제, 이 수급자만 보기), 우클릭(터치는 길게 누르기)하면 메뉴(`calendar-context-menu.tsx`: 칩은 보기·변경·다음 주로 복사·새로 등록·삭제, 빈 칸은 그 날짜로 등록·그날 목록), 확정 전 칩은 다른 날 칸으로 끌어 옮기고 알림의 [되돌리기]로 되돌린다. 칸은 방향키(±1일·±7일)·Home/End·PageUp/Down(`shiftCalendarDate`)으로 옮기고 Enter로 칩에 들어간다. 옮기기는 낙관적 업데이트(`moveCalendarVisit`)다.
+  - 관리 웹 달력: 칸에는 칩을 3건까지(4건 이하면 전부) 보이고 나머지는 "+N건 더"로 띄운다. [방문 모두 펼치기](`use-calendar-prefs-store.ts`, 브라우저에 저장)를 켜면 칸마다 전부 보인다. 칩을 누르면 빠른 보기 창(일정·담당자 변경, 삭제, 이 수급자만 보기), 우클릭(터치는 길게 누르기)하면 메뉴(`calendar-context-menu.tsx`: 칩은 보기·변경·다음 주로 복사·새로 등록·삭제, 빈 칸은 그 날짜로 등록·그날 목록), 확정 전 칩은 다른 날 칸으로 끌어 옮기고 알림의 [되돌리기]로 되돌린다. 칸은 방향키(±1일·±7일)·Home/End·PageUp/Down(`shiftCalendarDate`)으로 옮기고 Enter로 칩에 들어간다. 옮기기는 낙관적 업데이트(`moveCalendarVisit`, 캐시 안에서는 `countVisitsByDay`로 다시 센다)다. React Compiler가 바뀐 칸만 다시 그리도록 칸에 넘기는 값은 늘 같게 둔다: 주소를 바꾸는 함수는 `useSearchParamsUpdater`, 최신 콜백은 `useLatestRef`, 끌기는 `useCalendarDnd`의 `handlers`, 쿼리·뮤테이션 객체(매번 새것)는 넘기지 말고 필요한 값만 꺼낸다. 수급자 필터(주소의 `recipient`)는 지금 기관 범위의 수급자일 때만 쓰고, 기관을 바꿔 범위 밖이 되면 지운다.
 - 방문은 담당자의 기관에 묶인다. 확정하지 않은 방문(예정·작성 중)이 있는 사용자는 소속 기관을 바꿀 수 없다(역할을 운영자로 바꿔 기관이 비는 경우 포함, 409).
 - Prisma enum과 shared-types 상수(`ROLES`, `PROFESSIONS`, `PROGRAMS`, `GENDERS`, `VISIT_STATUSES`)는 값이 일치해야 한다.
 
@@ -104,6 +105,7 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
   - 재택의료센터 의사: 제6호(공단) 필수, 제4호(심평원) 선택·기본 켬 — 방문진료료를 청구할 때만 쓴다(의사 월 한도 초과·비청구 방문은 제6호만).
   - 방문을 만들 때 고르고(`CreateVisitSchema.formIds`, 없으면 기본값), 확정 전까지 담당자가 기록 화면에서 선택 서식을 켜고 끈다(`PUT /visits/:id/forms`, 뺀 서식의 저장 값과 구술 초안의 그 서식 부분은 지운다).
   - `Visit.formIds`에 저장해 두므로 나중에 직종·규칙이 바뀌어도 그 방문의 서식은 그대로다.
+- 방문한 직종은 `Visit.profession`에 저장한다(만들 때 담당자 직종, 담당자를 바꾸면 새 직종). 담당자의 지금 직종은 확정 뒤 바뀔 수 있으므로, 같은 날 경고·재택의료 월 요건·서식 규칙(선택 서식 켜고 끄기 포함)은 담당자가 아니라 이 값을 쓴다.
 - 같은 날 경고: 재택의료센터 간호사 방문과 장기요양 방문간호가 같은 수급자에게 같은 날 있으면 재택의료 급여를 산정하지 않는다(재택의료센터 지침). 규칙은 `conflictsOnSameDay`, 서버가 `GET /visits/same-day-warnings`로 문구만 주고(현장 직원은 다른 직원의 방문을 볼 수 없으므로) 두 웹의 방문 등록 화면이 보여 준다. 등록은 막지 않는다.
 - 서식 정의는 `shared-types/src/forms/`에 서식마다 한 파일이다. 칸 종류는 하나 고르기(`single`)·여러 개 고르기(`multi`)·숫자(`number`)·글(`text`)이고, 선택 항목에 괄호 내용(`detail`: 글·선택·제공 시간(분)+메모)을 붙일 수 있다. 이 정의 하나에서 저장 검사 스키마(`formDataSchema`), 현장 웹 입력 화면(`apps/web/src/features/forms`), 관리 웹 보기, 구술 초안 요청·검사, 표시 문구(`formatFieldValue`)가 나온다. **지침이 개정되면 서식 정의만 고친다.**
 - 칸 속성: `dictation`(구술로 채움), `carryOver`(같은 수급자의 지난 방문 값을 기본값으로 — 대상자 구분·거동불편 유형·이동 정보 등), `question`(초안에서 비면 되묻는 질문, 같은 문구는 한 번만 묻는다).

@@ -17,6 +17,7 @@ export interface QuickViewVisit {
   id: string;
   organizationId: string;
   program: VisitCalendarItem["program"];
+  profession: VisitCalendarItem["profession"];
   status: VisitStatus;
   scheduledAt: string;
   formIds: VisitCalendarItem["formIds"];
