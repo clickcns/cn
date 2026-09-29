@@ -7,6 +7,7 @@ import {
   isIsoDate,
   SaveVisitRecordSchema,
   toKstIsoDateTime,
+  type FormData,
   type FormId,
   type SaveVisitRecordInput,
   type VisitDetail,
@@ -53,15 +54,20 @@ const isoToTime = (iso: string | null) =>
 const isoToDate = (iso: string | null) =>
   iso ? formatKstDate(new Date(iso)) : null;
 
-/** 서식 한 장의 시작 상태: 저장한 값, 없으면 지난 방문에서 가져온 이월 값. */
+/** 서식 한 장의 기록 값: 저장한 값, 없으면 지난 방문에서 가져온 이월 값. */
+export function formStartValues(
+  visit: Pick<VisitDetail, "forms" | "carryOver">,
+  formId: FormId,
+): FormData | undefined {
+  return visit.forms[formId] ?? visit.carryOver[formId];
+}
+
+/** 서식 한 장의 시작 상태(formStartValues 를 입력 폼 모양으로). */
 export function toFormInitialState(
   visit: VisitDetail,
   formId: FormId,
 ): FormState {
-  return toFormState(
-    FORMS[formId],
-    visit.forms[formId] ?? visit.carryOver[formId],
-  );
+  return toFormState(FORMS[formId], formStartValues(visit, formId));
 }
 
 /**

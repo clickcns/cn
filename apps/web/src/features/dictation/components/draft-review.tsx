@@ -191,7 +191,7 @@ function IssueBox({
   );
 }
 
-/** 기록 초안 확인: 서식별로 칸마다 값과 근거 문장, 자동 검사 결과. */
+/** 기록 초안 확인: 서식별로 칸마다 값과 근거 문장, 자동 검사 결과. 빠진 항목은 패널이 따로 보여 준다. */
 export function DraftReview({
   dictation,
   formIds,
@@ -201,25 +201,28 @@ export function DraftReview({
 }) {
   const { draft, issues } = dictation;
   const sentences = new Map(dictation.sentences.map((s) => [s.id, s]));
-  const filled = formIds.filter((formId) =>
-    Object.values(draft[formId]?.values ?? {}).some(
-      (value) => !isEmptyValue(value),
-    ),
+  // 초안을 만든 뒤 더한 서식은 초안 키가 없다(패널이 [초안 다시 만들기]를 안내한다).
+  const drafted = formIds.flatMap((formId) => {
+    const formDraft = draft[formId];
+    return formDraft ? [{ formId, formDraft }] : [];
+  });
+  const nothingFilled = drafted.every(({ formDraft }) =>
+    Object.values(formDraft.values).every(isEmptyValue),
   );
 
   return (
     <div className="flex flex-col gap-5">
-      {filled.length === 0 && (
+      {nothingFilled && (
         <p className="text-muted-foreground">
           초안에 채운 항목이 없습니다. 아래 빠진 항목을 말씀해 주세요.
         </p>
       )}
 
-      {filled.map((formId) => (
+      {drafted.map(({ formId, formDraft }) => (
         <FormDraftReview
           key={formId}
           formId={formId}
-          draft={draft[formId]!}
+          draft={formDraft}
           sentences={sentences}
           showTitle={formIds.length > 1}
         />

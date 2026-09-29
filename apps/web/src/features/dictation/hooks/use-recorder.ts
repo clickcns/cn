@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLatestRef } from "@/hooks/use-latest-ref";
 
 export type RecorderStatus = "idle" | "starting" | "recording";
 
@@ -41,24 +42,29 @@ function release(session: RecordingSession) {
 /**
  * 마이크 녹음. 녹음 중에는 경과 시간과 입력 크기(0~1)를 알려 주고,
  * maxSeconds가 되면 저절로 끝낸다. 녹음하는 동안 화면이 꺼지지 않게 한다(지원하는 브라우저만).
+ * 시작하지 못하면 error 에 문구를 두고 onError 로도 알린다.
  */
 export function useRecorder({
   maxSeconds,
   onRecorded,
+  onError,
 }: {
   maxSeconds: number;
   onRecorded: (recording: Blob) => void;
+  onError?: (message: string) => void;
 }) {
   const [status, setStatus] = useState<RecorderStatus>("idle");
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const sessionRef = useRef<RecordingSession | null>(null);
-  const onRecordedRef = useRef(onRecorded);
+  const onRecordedRef = useLatestRef(onRecorded);
+  const onErrorRef = useLatestRef(onError);
 
-  useEffect(() => {
-    onRecordedRef.current = onRecorded;
-  });
+  const fail = (message: string) => {
+    setError(message);
+    onErrorRef.current?.(message);
+  };
 
   // 화면을 떠나면 녹음을 버리고 마이크를 놓는다.
   useEffect(
@@ -76,7 +82,7 @@ export function useRecorder({
     if (status !== "idle") return;
     setError(null);
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setError(
+      fail(
         "이 주소에서는 녹음할 수 없습니다. HTTPS 주소나 최신 브라우저로 접속해 주세요",
       );
       return;
@@ -97,7 +103,7 @@ export function useRecorder({
       });
     } catch (cause) {
       void audioContext.close().catch(() => undefined);
-      setError(microphoneErrorMessage(cause));
+      fail(microphoneErrorMessage(cause));
       setStatus("idle");
       return;
     }

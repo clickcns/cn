@@ -50,19 +50,24 @@ export default function VisitDetailPage() {
 
   return (
     <>
-      <PageHeader title="방문 기록" backTo={visitsPath(getVisitDate(visit))} />
+      <PageHeader
+        title="방문 기록"
+        backTo={visitsPath(getVisitDate(visit))}
+        action={
+          canDeleteVisit(visit.status) && (
+            <DeleteVisitButton
+              visit={visit}
+              onDeleted={() => setDeleted(true)}
+            />
+          )
+        }
+      />
 
       {/* 넓은 화면: 왼쪽 수급자 정보(따라옴) + 오른쪽 기록. 좁은 화면: 세로로 쌓기. */}
       <div className="flex flex-col gap-4 md:grid md:grid-cols-[17.5rem_minmax(0,1fr)] md:items-start md:gap-6 lg:grid-cols-[21rem_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4 md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
           <VisitSummaryCard visit={visit} />
           <RecipientInfoCard recipient={visit.recipient} />
-          {canDeleteVisit(visit.status) && (
-            <DeleteVisitButton
-              visit={visit}
-              onDeleted={() => setDeleted(true)}
-            />
-          )}
         </aside>
 
         <div className="min-w-0">

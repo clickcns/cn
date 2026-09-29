@@ -1,21 +1,26 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
-  DICTATION_MAX_SECONDS,
+  dictationExample,
   FORMS,
   formLabel,
+  missingDictationItems,
+  PROFESSION_LABELS,
+  PROGRAM_LABELS,
   withParticle,
   type FormId,
-  type VisitDictation,
+  type Program,
+  type Profession,
+  type VisitDetail,
+  type VisitDictationExampleLine,
+  type VisitForms,
 } from "@repo/shared-types";
 import {
   ClipboardCheck,
   LoaderCircle,
-  MessageCircleQuestion,
   Mic,
   RotateCcw,
   RotateCw,
-  Square,
   TriangleAlert,
 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
@@ -32,75 +37,24 @@ import {
   DraftReview,
   TranscriptDetails,
 } from "@/features/dictation/components/draft-review";
-import {
-  RecordingDecodeError,
-  useDictation,
-  useRecordDictation,
-  useRedraftDictation,
-  useRemoveDictation,
-} from "@/features/dictation/hooks/use-dictation";
-import { useRecorder } from "@/features/dictation/hooks/use-recorder";
+import { MissingItems } from "@/features/dictation/components/missing-items";
+import { RecordingControls } from "@/features/dictation/components/recording-controls";
+import type { DictationSession } from "@/features/dictation/hooks/use-dictation-session";
 import { mergeDraft } from "@/features/dictation/lib/merge-draft";
-import type { RecordFormValues } from "@/features/visits/lib/record-form";
+import {
+  formStartValues,
+  type RecordFormValues,
+} from "@/features/visits/lib/record-form";
 
 type RecordForm = Pick<
   UseFormReturn<RecordFormValues>,
   "getValues" | "setValue"
 >;
 
-const formatClock = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-
-function uploadErrorMessage(error: unknown): string {
-  return error instanceof RecordingDecodeError
-    ? error.message
-    : getErrorMessage(error, "녹음을 보내지 못했습니다");
-}
-
-/** 녹음 중 표시: 경과 시간, 입력 크기, 끝내기·취소. */
-function RecordingControls({
-  seconds,
-  level,
-  onStop,
-  onCancel,
-}: {
-  seconds: number;
-  level: number;
-  onStop: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="border-destructive/30 bg-destructive-soft flex flex-col gap-4 rounded-xl border p-4">
-      <div className="flex items-center gap-3" aria-live="polite">
-        <span className="bg-destructive size-3 shrink-0 animate-pulse rounded-full" />
-        <span className="text-destructive font-bold">녹음 중</span>
-        <span className="ml-auto text-2xl font-bold tabular-nums">
-          {formatClock(seconds)}
-          <span className="text-muted-foreground text-base font-normal">
-            {" "}
-            / {formatClock(DICTATION_MAX_SECONDS)}
-          </span>
-        </span>
-      </div>
-      {/* 입력 크기: 말할 때 막대가 움직이면 마이크가 소리를 받고 있다. */}
-      <div className="bg-card h-2.5 overflow-hidden rounded-full" aria-hidden>
-        <div
-          className="bg-destructive h-full rounded-full transition-[width] duration-100"
-          style={{ width: `${Math.round(level * 100)}%` }}
-        />
-      </div>
-      <div className="flex gap-3">
-        <Button size="lg" className="flex-1" onClick={onStop}>
-          <Square />
-          녹음 끝내기
-        </Button>
-        <Button size="lg" variant="outline" onClick={onCancel}>
-          취소
-        </Button>
-      </div>
-    </div>
-  );
-}
+type PanelVisit = Pick<
+  VisitDetail,
+  "formIds" | "program" | "profession" | "recipient" | "forms" | "carryOver"
+>;
 
 function Processing() {
   return (
@@ -124,35 +78,47 @@ function dictationGuide(formIds: readonly FormId[]): string[] {
   return [...new Set(formIds.flatMap((formId) => FORMS[formId].guide))];
 }
 
-/** 빠진 항목 되묻기. 음성으로 답하면 이전 구술에 이어 붙어 초안이 다시 만들어진다. */
-function FollowUpQuestions({
-  dictation,
-  disabled,
-  onAnswer,
+/** 녹음 전 안내: 이 방문(사업 × 직종)의 예시 문장을 따라 말하게 보여 주고, 말할 항목 목록은 접어 둔다. */
+function DictationExample({
+  program,
+  profession,
+  formIds,
+  lines,
 }: {
-  dictation: VisitDictation;
-  disabled: boolean;
-  onAnswer: () => void;
+  program: Program;
+  profession: Profession;
+  formIds: readonly FormId[];
+  lines: readonly VisitDictationExampleLine[];
 }) {
-  if (dictation.questions.length === 0) return null;
   return (
-    <div className="border-primary/20 bg-primary-soft/60 flex flex-col gap-3 rounded-xl border p-4">
-      <p className="text-primary flex items-center gap-2 font-bold">
-        <MessageCircleQuestion className="size-5 shrink-0" />
-        빠진 항목이 있어요
-      </p>
-      <ul className="flex list-disc flex-col gap-1 pl-6 text-lg">
-        {dictation.questions.map((question) => (
-          <li key={question.question}>{question.question}</li>
+    <div className="bg-muted/70 flex flex-col gap-3 rounded-xl p-4">
+      <div>
+        <p className="font-semibold">이렇게 말해 보세요</p>
+        <p className="text-muted-foreground text-sm">
+          {PROGRAM_LABELS[program]} {PROFESSION_LABELS[profession]} 방문
+          예시입니다. 순서는 상관없고, 오늘 한 것만 말하면 됩니다.
+        </p>
+      </div>
+      <ol className="flex flex-col gap-3">
+        {lines.map((line) => (
+          <li key={line.text} className="border-primary/40 border-l-4 pl-3">
+            <p className="text-lg">{line.text}</p>
+            <p className="text-muted-foreground text-sm">
+              {line.fills.join(" · ")}
+            </p>
+          </li>
         ))}
-      </ul>
-      <Button variant="soft" onClick={onAnswer} disabled={disabled}>
-        <Mic />
-        음성으로 답하기
-      </Button>
-      <p className="text-muted-foreground text-sm">
-        말하기 어려우면 서식에 채운 뒤 직접 입력해도 됩니다.
-      </p>
+      </ol>
+      <details>
+        <summary className="text-primary cursor-pointer font-semibold">
+          말할 항목 모두 보기
+        </summary>
+        <ul className="mt-2 flex list-disc flex-col gap-1 pl-6">
+          {dictationGuide(formIds).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </details>
     </div>
   );
 }
@@ -161,59 +127,38 @@ function FollowUpQuestions({
  * 방문 직후 음성 구술 → 서식 초안. 기록 화면 맨 위에 둔다.
  * 한 번 말하면 이 방문의 서식 모두(재택의료 의사: 별지 제4·6호)를 함께 채운다.
  * 초안은 "서식에 채우기"를 눌러야 폼에 들어가고, 저장은 기존 [임시 저장]·[확정]이 한다.
+ * 녹음 상태(session)는 기록 화면이 갖고 저장 버튼 바의 [녹음]과 함께 쓴다.
  */
 export function DictationPanel({
-  visitId,
-  formIds,
+  session,
+  panelRef,
+  visit,
   form,
 }: {
-  visitId: string;
-  formIds: readonly FormId[];
+  session: DictationSession;
+  /** 저장 버튼 바에서 녹음한 뒤 알림의 [확인하기]가 올라올 자리 */
+  panelRef: RefObject<HTMLElement | null>;
+  visit: PanelVisit;
   form: RecordForm;
 }) {
-  const dictationQuery = useDictation(visitId);
-  const dictation = dictationQuery.data ?? null;
-  const recordDictation = useRecordDictation(visitId);
-  const redraft = useRedraftDictation(visitId);
-  const removeDictation = useRemoveDictation(visitId);
-
-  /** 보내지 못한 녹음. 다시 녹음하지 않고 그대로 다시 보낼 수 있게 남겨 둔다. */
-  const [failed, setFailed] = useState<{
-    recording: Blob;
-    append: boolean;
-    message: string;
-  } | null>(null);
+  const { dictation, recorder, failed, isBusy, redraft, removeDictation } =
+    session;
+  const { formIds } = visit;
   const [overwritten, setOverwritten] = useState<string[] | null>(null);
   const [restartOpen, setRestartOpen] = useState(false);
   const [appliedAt, setAppliedAt] = useState<string | null>(null);
+  const startRecording = () => session.start("panel");
 
-  const submit = (recording: Blob, append: boolean) => {
-    setFailed(null);
-    recordDictation.mutate(
-      { recording, append },
-      {
-        onError: (error) =>
-          setFailed({ recording, append, message: uploadErrorMessage(error) }),
-      },
-    );
-  };
-
-  const recorder = useRecorder({
-    maxSeconds: DICTATION_MAX_SECONDS,
-    // 구술이 이미 있으면 이어 붙인다(되묻기 답·추가 설명).
-    onRecorded: (recording) => submit(recording, dictation !== null),
-  });
-
-  const isRecording = recorder.status !== "idle";
+  const examples = dictationExample(
+    visit.program,
+    visit.profession,
+    formIds,
+    visit.recipient.name,
+  );
   // 초안을 만든 뒤 방문에 더한 서식(초안에는 만들 때 쓴 서식마다 키가 있다). 초안 다시 만들기로 채운다.
   const addedAfterDraft = dictation
     ? formIds.filter((formId) => !(formId in dictation.draft))
     : [];
-  const isBusy =
-    isRecording ||
-    recordDictation.isPending ||
-    redraft.isPending ||
-    removeDictation.isPending;
 
   const applyDraft = (force = false) => {
     if (!dictation) return;
@@ -266,8 +211,9 @@ export function DictationPanel({
     </Button>
   );
 
+  /** 녹음 중·처리 중·보내기 실패 표시. 없으면 null(평소 버튼을 보여 준다). */
   const controls = (() => {
-    if (isRecording) {
+    if (session.isRecording) {
       return (
         <RecordingControls
           seconds={recorder.seconds}
@@ -277,7 +223,7 @@ export function DictationPanel({
         />
       );
     }
-    if (recordDictation.isPending) return <Processing />;
+    if (session.isProcessing) return <Processing />;
     if (failed) {
       return (
         <div
@@ -286,14 +232,11 @@ export function DictationPanel({
         >
           <p className="text-destructive font-semibold">{failed.message}</p>
           <div className="flex gap-3">
-            <Button
-              className="flex-1"
-              onClick={() => submit(failed.recording, failed.append)}
-            >
+            <Button className="flex-1" onClick={session.retry}>
               <RotateCw />
               다시 보내기
             </Button>
-            <Button variant="outline" onClick={() => setFailed(null)}>
+            <Button variant="outline" onClick={session.discardFailed}>
               녹음 버리기
             </Button>
           </div>
@@ -303,10 +246,15 @@ export function DictationPanel({
     return null;
   })();
 
-  if (dictationQuery.isPending) return null;
+  if (session.isLoading) return null;
+
+  // 빠진 항목은 기록에 이미 있는 값(저장한 값, 없으면 이월 값)을 빼고 센다.
+  const record: VisitForms = Object.fromEntries(
+    formIds.map((formId) => [formId, formStartValues(visit, formId)]),
+  );
 
   return (
-    <Card>
+    <Card ref={panelRef} className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mic className="text-primary size-5" />
@@ -332,27 +280,24 @@ export function DictationPanel({
 
       {!dictation && (
         <>
-          <div className="bg-muted/70 rounded-xl p-4">
-            <p className="mb-2 font-semibold">
-              이런 내용을 말해 주세요 (순서는 상관없어요)
-            </p>
-            <ul className="flex list-disc flex-col gap-1 pl-6">
-              {dictationGuide(formIds).map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
+          {/* 녹음을 누른 뒤 아래 예시를 보며 말하도록 조작을 예시 위에 둔다. */}
           {controls ?? (
             <Button
               size="lg"
               className="w-full"
-              onClick={() => void recorder.start()}
+              onClick={startRecording}
               disabled={isBusy}
             >
               <Mic />
               녹음 시작
             </Button>
           )}
+          <DictationExample
+            program={visit.program}
+            profession={visit.profession}
+            formIds={formIds}
+            lines={examples}
+          />
         </>
       )}
 
@@ -389,52 +334,53 @@ export function DictationPanel({
           )}
 
           <DraftReview dictation={dictation} formIds={formIds} />
-          <FollowUpQuestions
-            dictation={dictation}
+          <MissingItems
+            items={missingDictationItems(dictation, formIds, record)}
+            examples={examples}
             disabled={isBusy}
-            onAnswer={() => void recorder.start()}
+            onAnswer={startRecording}
           />
           <TranscriptDetails dictation={dictation} />
 
-          {controls}
-
-          {!controls && (
-            <div className="flex flex-col gap-3">
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={() => applyDraft()}
-                disabled={isBusy}
-              >
-                <ClipboardCheck />
-                서식에 채우기
-              </Button>
-              {appliedAt === dictation.updatedAt && (
-                <p className="text-success text-center font-semibold">
-                  서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
-                </p>
-              )}
-              <div className="flex gap-3">
+          <div className="flex flex-col gap-3">
+            {controls ?? (
+              <>
                 <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => void recorder.start()}
+                  size="lg"
+                  className="w-full"
+                  onClick={() => applyDraft()}
                   disabled={isBusy}
                 >
-                  <Mic />
-                  이어서 말하기
+                  <ClipboardCheck />
+                  서식에 채우기
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setRestartOpen(true)}
-                  disabled={isBusy}
-                >
-                  <RotateCcw />
-                  처음부터
-                </Button>
-              </div>
-            </div>
-          )}
+                {appliedAt === dictation.updatedAt && (
+                  <p className="text-success text-center font-semibold">
+                    서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={startRecording}
+                    disabled={isBusy}
+                  >
+                    <Mic />
+                    이어서 말하기
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setRestartOpen(true)}
+                    disabled={isBusy}
+                  >
+                    <RotateCcw />
+                    처음부터
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </>
       )}
 

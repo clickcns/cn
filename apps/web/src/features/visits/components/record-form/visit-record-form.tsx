@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
   findMissingRequired,
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DictationPanel } from "@/features/dictation/components/dictation-panel";
+import { DictationBarControl } from "@/features/dictation/components/recording-controls";
+import { useDictationSession } from "@/features/dictation/hooks/use-dictation-session";
 import { FormFields } from "@/features/forms/components/form-fields";
 import { FormHeading } from "@/features/forms/components/form-view";
 import { FormTabs } from "@/features/forms/components/form-tabs";
@@ -61,6 +63,9 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
     resetField,
   } = useForm({ defaultValues: toRecordFormValues(visit) });
   const { isDirty } = useFormState({ control });
+  // 녹음 상태는 위 패널과 아래 저장 버튼 바([녹음])가 함께 쓴다.
+  const dictationPanelRef = useRef<HTMLElement>(null);
+  const dictation = useDictationSession(visit.id, dictationPanelRef);
 
   const saveRecord = useSaveVisitRecord(visit.id);
   const confirmVisit = useConfirmVisit(visit.id);
@@ -188,8 +193,9 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
         }}
       >
         <DictationPanel
-          visitId={visit.id}
-          formIds={visit.formIds}
+          session={dictation}
+          panelRef={dictationPanelRef}
+          visit={visit}
           form={{ getValues, setValue }}
         />
         <VisitTimeSection
@@ -243,6 +249,8 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
           isPending={isPending}
           onSave={() => void handleSave()}
           onConfirm={handleConfirmClick}
+          dictation={<DictationBarControl session={dictation} />}
+          dictationActive={dictation.isRecording}
         />
       </form>
 

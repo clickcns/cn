@@ -146,6 +146,14 @@ export function missingRequiredFields(
   );
 }
 
+/** 칸 키가 속한 숫자 짝(혈압 수축기/이완기 등). */
+export function numberPairOf(
+  form: FormDef,
+  key: string,
+): NumberPair | undefined {
+  return form.numberPairs?.find((pair) => pair.keys.includes(key));
+}
+
 /** 구술에서 채우는 칸 */
 export function dictationFields(form: FormDef): FieldDef[] {
   return formFields(form).filter((field) => field.dictation);

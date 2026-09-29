@@ -1,4 +1,14 @@
-import type { FormData, FormId } from "./forms/index.js";
+import {
+  dictationFields,
+  FORMS,
+  formFields,
+  isEmptyValue,
+  numberPairOf,
+  type FieldDef,
+  type FormData,
+  type FormId,
+  type VisitForms,
+} from "./forms/index.js";
 
 /** 녹음 한 번의 최대 길이(초). */
 export const DICTATION_MAX_SECONDS = 300;
@@ -118,4 +128,115 @@ export function keepDraftForms(
       }))
       .filter((question) => question.fields.length > 0),
   };
+}
+
+/** 서식 칸 하나를 가리키는 "서식ID.칸키"(되묻기·검사 결과의 field 와 같은 모양). */
+export type FormFieldRef = `${FormId}.${string}`;
+
+function resolveRef(ref: string): { formId: FormId; field: FieldDef } | null {
+  const dot = ref.indexOf(".");
+  const formId = ref.slice(0, dot) as FormId;
+  const key = ref.slice(dot + 1);
+  const form = FORMS[formId] as (typeof FORMS)[FormId] | undefined;
+  const field = form && formFields(form).find((f) => f.key === key);
+  return field ? { formId, field } : null;
+}
+
+/** 칸 이름. 숫자 짝(혈압 수축기/이완기)은 짝 이름으로 부른다. */
+function fieldLabel(formId: FormId, field: FieldDef): string {
+  return numberPairOf(FORMS[formId], field.key)?.label ?? field.label;
+}
+
+/** 칸 이름들(띄어쓰기만 다른 같은 이름은 한 번: "향후 계획"·"향후계획"). */
+export function formFieldLabels(refs: readonly string[]): string[] {
+  const labels = new Map<string, string>();
+  for (const ref of refs) {
+    const resolved = resolveRef(ref);
+    if (!resolved) continue;
+    const label = fieldLabel(resolved.formId, resolved.field);
+    const key = label.replace(/\s/g, "");
+    if (!labels.has(key)) labels.set(key, label);
+  }
+  return [...labels.values()];
+}
+
+/** 초안에서 빠진 항목 하나(여러 칸을 한 질문으로 물으면 한 항목). */
+export interface MissingDictationItem {
+  fields: FormFieldRef[];
+  labels: string[];
+  /** 확정 전에 꼭 채울 칸이 있다 */
+  required: boolean;
+  /** 되묻는 질문(서버가 초안과 함께 만든 것). 없으면 화면이 칸 종류로 안내한다 */
+  question: string | null;
+  /** 고르는 칸이면 고를 수 있는 항목 이름 */
+  options: string[];
+  /** 숫자 칸이면 단위 */
+  unit: string | null;
+}
+
+function missingItem(
+  refs: readonly string[],
+  question: string | null,
+): MissingDictationItem {
+  const fields = refs.flatMap((ref) => resolveRef(ref)?.field ?? []);
+  const choice = fields.find(
+    (field) => field.type === "single" || field.type === "multi",
+  );
+  const number = fields.find((field) => field.type === "number");
+  return {
+    fields: refs as FormFieldRef[],
+    labels: formFieldLabels(refs),
+    required: fields.some((field) => field.required === true),
+    question,
+    options: choice ? choice.options.map((option) => option.label) : [],
+    unit: number?.unit ?? null,
+  };
+}
+
+/**
+ * 초안에서 빠진 항목: 서버가 되물은 질문(필수 칸·질문이 있는 칸·followUps)과, 질문은 없지만 비어 있는
+ * 구술 칸(부가 항목, 숫자 짝은 한 항목)을 합쳐 필수 먼저 돌려준다(묶음 안은 질문 → 서식 칸 순서).
+ * record 는 기록에 이미 있는 값(저장한 값, 없으면 이월 값)이다. 거기 값이 있는 칸은 빠진 것으로 보지 않고,
+ * followUps 의 "이 중 하나" 묶음은 한 칸이라도 차 있으면 나머지를 묻지 않는다.
+ */
+export function missingDictationItems(
+  dictation: Pick<VisitDictation, "draft" | "questions">,
+  formIds: readonly FormId[],
+  record: VisitForms = {},
+): MissingDictationItem[] {
+  const isFilled = (formId: FormId, key: string) =>
+    !isEmptyValue(dictation.draft[formId]?.values[key]) ||
+    !isEmptyValue(record[formId]?.[key]);
+  const isMissing = (ref: string) => {
+    const dot = ref.indexOf(".");
+    return !isFilled(ref.slice(0, dot) as FormId, ref.slice(dot + 1));
+  };
+
+  const asked = new Set(dictation.questions.flatMap((q) => q.fields));
+  const items = dictation.questions.flatMap((q) => {
+    const refs = q.fields.filter(isMissing);
+    return refs.length > 0 ? [missingItem(refs, q.question)] : [];
+  });
+  for (const formId of formIds) {
+    if (!dictation.draft[formId]) continue;
+    const form = FORMS[formId];
+    const satisfied = new Set(
+      (form.followUps ?? [])
+        .filter((group) => group.anyOf.some((key) => isFilled(formId, key)))
+        .flatMap((group) => group.anyOf),
+    );
+    for (const field of dictationFields(form)) {
+      const pair = numberPairOf(form, field.key);
+      if (pair && pair.keys[0] !== field.key) continue;
+      if (satisfied.has(field.key)) continue;
+      const refs = (pair?.keys ?? [field.key])
+        .map((key) => `${formId}.${key}`)
+        .filter((ref) => isMissing(ref) && !asked.has(ref));
+      if (refs.length > 0) items.push(missingItem(refs, null));
+    }
+  }
+  return [
+    ...items.filter((item) => item.required),
+    ...items.filter((item) => !item.required),
+  ];
 }

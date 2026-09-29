@@ -11,7 +11,8 @@ import { formatDateTimeLabel } from "@/lib/date";
 import { visitKeys } from "@/lib/query-keys";
 
 /**
- * 예정 방문 삭제(기록을 저장하기 전까지). 지운 뒤의 이동은 onDeleted가 한다.
+ * 예정 방문 삭제(기록을 저장하기 전까지). 화면 제목 줄 오른쪽의 작은 버튼이고, 지운 뒤의 이동은
+ * onDeleted가 한다.
  */
 export function DeleteVisitButton({
   visit,
@@ -46,11 +47,11 @@ export function DeleteVisitButton({
     <>
       <Button
         variant="destructive-outline"
-        className="w-full"
+        size="sm"
         onClick={() => setOpen(true)}
       >
         <Trash2 />
-        방문 삭제
+        삭제
       </Button>
       <ConfirmDialog
         open={open}
