@@ -20,6 +20,7 @@ import {
 import { OrganizationGroupedRows } from "@/features/organizations/components/organization-grouped-rows";
 import { RoleBadge } from "@/features/users/components/role-badge";
 import {
+  compareText,
   sortRows,
   useTableSort,
   type SortValues,
@@ -41,6 +42,18 @@ const SORT_VALUES = {
 } satisfies SortValues<UserSummary>;
 type UserSortKey = keyof typeof SORT_VALUES;
 
+/**
+ * 기본 순서: 역할(운영자 → 기관 관리자 → 현장 직원), 같은 역할은 아이디순. 기관별 묶음 안에서도
+ * 이 순서이고, 열을 눌러 정렬하면 값이 같은 행끼리 이 순서를 지킨다. 담당자 선택 목록 등은
+ * 같은 API를 이름순으로 쓰므로 서버 순서는 두고 이 표에서만 정한다.
+ */
+function byRoleThenUsername(a: UserSummary, b: UserSummary): number {
+  return (
+    ROLES.indexOf(a.role) - ROLES.indexOf(b.role) ||
+    compareText(a.username, b.username)
+  );
+}
+
 interface UserTableProps {
   users: UserSummary[];
   currentUserId: string | undefined;
@@ -58,7 +71,11 @@ export function UserTable({
   onResetPassword,
 }: UserTableProps) {
   const sorting = useTableSort<UserSortKey>();
-  const sorted = sortRows(users, sorting.sort, SORT_VALUES);
+  const sorted = sortRows(
+    users.toSorted(byRoleThenUsername),
+    sorting.sort,
+    SORT_VALUES,
+  );
 
   const renderRow = (user: UserSummary) => (
     <UserRow
