@@ -1,0 +1,1560 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>케어노트 개발 지침</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --ink: #15202a;
+    --ink-2: #3a4854;
+    --muted: #63717d;
+    --line: #dee4e9;
+    --line-strong: #b9c3cc;
+    --accent: #2446b0;
+    --accent-ink: #1d3c9e;
+    --accent-soft: #e8edfa;
+    --hira: #0f766e;
+    --hira-soft: #dcf2ee;
+    --nhis: #6a3fbf;
+    --nhis-soft: #efe8fb;
+    --keep: #8e5b06;
+    --keep-soft: #fbefd6;
+    --good: #1c7447;
+    --good-soft: #e2f2e8;
+    --warn: #8e5b06;
+    --warn-soft: #fbefd6;
+    --bad: #b3342a;
+    --bad-soft: #fbe6e3;
+    --font-display: "Hahmlet", "Noto Serif KR", "AppleMyungjo", serif;
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0e141a;
+      --surface: #151d25;
+      --surface-2: #1b252e;
+      --ink: #e7edf2;
+      --ink-2: #c3ced7;
+      --muted: #91a0ac;
+      --line: #27333d;
+      --line-strong: #455461;
+      --accent: #8da7ff;
+      --accent-ink: #afc1ff;
+      --accent-soft: #1c2746;
+      --hira: #5fd0c2;
+      --hira-soft: #12352f;
+      --nhis: #b99cff;
+      --nhis-soft: #291f44;
+      --keep: #e8b75a;
+      --keep-soft: #33270e;
+      --good: #62cc92;
+      --good-soft: #14301f;
+      --warn: #e8b75a;
+      --warn-soft: #33270e;
+      --bad: #f38c7e;
+      --bad-soft: #3a1c18;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e141a;
+    --surface: #151d25;
+    --surface-2: #1b252e;
+    --ink: #e7edf2;
+    --ink-2: #c3ced7;
+    --muted: #91a0ac;
+    --line: #27333d;
+    --line-strong: #455461;
+    --accent: #8da7ff;
+    --accent-ink: #afc1ff;
+    --accent-soft: #1c2746;
+    --hira: #5fd0c2;
+    --hira-soft: #12352f;
+    --nhis: #b99cff;
+    --nhis-soft: #291f44;
+    --keep: #e8b75a;
+    --keep-soft: #33270e;
+    --good: #62cc92;
+    --good-soft: #14301f;
+    --warn: #e8b75a;
+    --warn-soft: #33270e;
+    --bad: #f38c7e;
+    --bad-soft: #3a1c18;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  a { color: var(--accent-ink); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+  h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
+  b { font-weight: 600; }
+  code { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-2); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding-inline: 20px; }
+
+  .toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .toc-inner { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 10px; }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc a { flex: none; padding: 5px 12px; border-radius: 999px; font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { background: var(--surface); }
+
+  .hero { padding-block: 44px 0; display: grid; gap: 12px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  .hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.25; }
+  .hero .lead { font-size: 17.5px; color: var(--ink-2); max-width: 60ch; }
+
+  .musts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 20px; counter-reset: m; }
+  .musts li { counter-increment: m; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 8px; font-size: 15px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .musts li::before { content: counter(m); font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+
+  section.sec { padding-block: 60px 0; scroll-margin-top: 56px; }
+  .sec-label { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); }
+  .sec h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3vw, 29px); line-height: 1.35; margin-top: 6px; }
+  .sec .lead { margin-top: 8px; font-size: 16px; color: var(--ink-2); max-width: 64ch; }
+
+  figure { margin: 20px 0 0; }
+  .fig { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .fig-scroll { overflow-x: auto; }
+  .fig-scroll svg { min-width: 680px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-2); max-width: 72ch; }
+
+  .dg { color: var(--ink); }
+  .dg text { font-family: var(--font-body); font-size: 12px; fill: currentColor; }
+  .dg .b { font-size: 13px; font-weight: 600; }
+  .dg .s { font-size: 11px; fill: var(--muted); }
+  .dg .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+  .dg .soft { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+  .dg .acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+  .dg .hira { fill: var(--hira-soft); stroke: var(--hira); stroke-width: 1.2; }
+  .dg .nhis { fill: var(--nhis-soft); stroke: var(--nhis); stroke-width: 1.2; }
+  .dg .keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.2; }
+  .dg .good { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.2; }
+  .dg .bad { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 1.4; }
+  .dg .dash { fill: none; stroke: var(--line-strong); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-nhis { fill: none; stroke: var(--nhis); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .ln { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+  .dg .ln-d { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-dasharray: 5 4; }
+  .dg .snd { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 3; }
+  .dg .ah { fill: var(--ink-2); }
+  .dg .t-acc { fill: var(--accent-ink); }
+  .dg .t-hira { fill: var(--hira); }
+  .dg .t-nhis { fill: var(--nhis); }
+  .dg .t-keep { fill: var(--keep); }
+  .dg .t-good { fill: var(--good); }
+  .dg .t-bad { fill: var(--bad); }
+  .dg .f-acc { fill: var(--accent); }
+  .dg .f-nhis { fill: var(--nhis); }
+  .dg .f-hira { fill: var(--hira); }
+  .dg .f-muted { fill: var(--line-strong); }
+  .dg .o-acc { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1.2px solid; }
+  .legend .l-hira { background: var(--hira-soft); border-color: var(--hira); }
+  .legend .l-nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .legend .l-dash { border-style: dashed; border-color: var(--line-strong); }
+  .legend .l-acc { background: var(--accent-soft); border-color: var(--accent); }
+  .legend .l-keep { background: var(--keep-soft); border-color: var(--keep); }
+
+  .multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .multi .fig { display: grid; gap: 8px; align-content: start; }
+  .multi h3 { font-size: 15px; font-weight: 600; }
+  .multi .span2 { grid-column: 1 / -1; }
+  .note-sm { font-size: 13.5px; color: var(--ink-2); }
+  .note-sm b { color: var(--ink); }
+
+  .pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; line-height: 1; padding: 5px 8px; border-radius: 999px; white-space: nowrap; background: var(--accent-soft); color: var(--accent-ink); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.plain { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14.5px; }
+  th, td { padding: 10px 14px; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); }
+  thead th { border-top: 0; font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+  tbody th { font-weight: 600; white-space: nowrap; }
+  td.c, th.c { text-align: center; }
+  tr.ours th, tr.ours td { background: var(--accent-soft); }
+  .dot { font-size: 16px; line-height: 1; }
+  .dot.y { color: var(--good); }
+  .dot.p { color: var(--warn); }
+  .dot.n { color: var(--line-strong); }
+  .dot.q { color: var(--muted); font-size: 13px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .tile b { font-size: 14.5px; line-height: 1.45; }
+  .tile span.s { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .tile .pill { justify-self: start; }
+
+  .lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .lane { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 8px; align-content: start; }
+  .lane h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .lane li { font-size: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
+
+  .qd { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .qd .fig h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .qd ol { display: grid; gap: 0; counter-reset: q; }
+  .qd ol li { counter-increment: q; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 6px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .qd ol li:first-child { border-top: 0; }
+  .qd ol li .pill { margin-left: 6px; }
+  .qd ol li::before { content: counter(q); font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+
+  details.more { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in { margin-top: 10px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in li { padding-left: 14px; position: relative; }
+  details.more .in li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  details.more .src { font-size: 12.5px; color: var(--muted); }
+
+  .sources { display: grid; gap: 10px; margin-top: 16px; }
+  .sources details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  .sources summary { cursor: pointer; font-weight: 600; font-size: 14.5px; }
+  .sources ul { margin-top: 8px; display: grid; gap: 5px; font-size: 13.5px; color: var(--ink-2); }
+  .sources a { overflow-wrap: anywhere; }
+
+  footer { padding-block: 48px 64px; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+
+  .tiles.t3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dest { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .dcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+  .dcard .dtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dcard .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; }
+  .dcard .org.hira { background: var(--hira-soft); border-color: var(--hira); color: var(--ink); }
+  .dcard .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); color: var(--ink); }
+  .dcard > b { font-size: 16px; }
+  .dcard > code { justify-self: start; font-size: 13px; }
+  .dcard dl { margin: 4px 0 0; display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 5px 10px; font-size: 14px; }
+  .dcard dt { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .dcard dd { margin: 0; color: var(--ink-2); line-height: 1.55; }
+  .dcard .tagline { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; }
+  .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; color: var(--ink); }
+  .org.hira { background: var(--hira-soft); border-color: var(--hira); }
+  .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .org.paper { background: var(--surface-2); border-color: var(--line-strong); }
+  .dg .hit { cursor: pointer; }
+  .dg .hit:focus { outline: none; }
+  .dg .ring { fill: none; stroke: var(--accent); stroke-width: 2.4; opacity: 0; }
+  .dg .hit:hover .ring { opacity: 0.45; }
+  .dg .hit.on .ring, .dg .hit:focus-visible .ring { opacity: 1; }
+  .where { margin-top: 12px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 8px; }
+  .where .w-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .where .w-title { font-size: 16px; }
+  .where .w-form { font-size: 13.5px; color: var(--muted); }
+  .where .w-form b { color: var(--ink); }
+  .where .w-row { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .where .w-row .k { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .where a, .dcard a { overflow-wrap: anywhere; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 1px 0 3px; }
+  .crumbs.in-line { display: inline-flex; margin: 0 0 0 4px; vertical-align: middle; }
+  .crumbs li { display: inline-flex; align-items: center; }
+  .crumbs li span { font-size: 12.5px; line-height: 1.4; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 6px; padding: 2px 7px; color: var(--ink); }
+  .crumbs li:not(:last-child)::after { content: "›"; margin: 0 5px; color: var(--muted); font-size: 13px; }
+  .dcard dd b { font-weight: 600; color: var(--ink); }
+  .sub-h { margin-top: 36px; font-size: 18px; font-weight: 700; }
+  @media (max-width: 760px) {
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tiles.t3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding-inline: 16px; }
+    .musts, .multi, .lanes, .qd, .dest { grid-template-columns: 1fr; }
+    .fig { padding: 12px; }
+    section.sec { padding-block: 48px 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="목차">
+  <div class="wrap toc-inner">
+    <a href="#top">한눈에</a>
+    <a href="#forms">서식</a>
+    <a href="#billing">산정 규칙</a>
+    <a href="#group">여러 명 방문</a>
+    <a href="#assessment">포괄평가</a>
+    <a href="#pdf">PDF</a>
+    <a href="#voice">녹음</a>
+    <a href="#ai">AI 초안</a>
+    <a href="#industry">현장 앱</a>
+    <a href="#todo">남은 일</a>
+    <a href="#confirm">확인·결정</a>
+    <a href="#sources">출처</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero" id="top">
+    <div class="eyebrow">개발 지침 · 2026년 9월 24일 기준</div>
+    <h1>케어노트 개발 지침</h1>
+    <p class="lead">케어노트를 올바르게 만들기 위해 알아야 할 사실을 그림으로 정리했습니다. 근거(지침 쪽수)와 세부 내용은 각 그림 아래 "근거와 자세히"에 있습니다.</p>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 240" role="img" aria-label="방문 후 담당자가 구술하면 케어노트가 초안을 만들고, 담당자가 확정한 뒤 공식 화면에 직접 입력합니다. PDF는 보관·제공·요청용입니다.">
+          <defs><marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="box" x="0" y="85" width="110" height="60" rx="8"/>
+          <text class="b" x="55" y="111" text-anchor="middle">방문</text>
+          <text class="s" x="55" y="129" text-anchor="middle">수급자 가정</text>
+          <line class="ln" x1="110" y1="115" x2="148" y2="115" marker-end="url(#m1)"/>
+          <text class="s" x="129" y="106" text-anchor="middle">끝나면</text>
+          <rect class="box" x="150" y="85" width="140" height="60" rx="8"/>
+          <text class="b" x="220" y="111" text-anchor="middle">담당자 구술</text>
+          <text class="s" x="220" y="129" text-anchor="middle">차 안에서 1~3분</text>
+          <line class="ln" x1="290" y1="115" x2="328" y2="115" marker-end="url(#m1)"/>
+          <text class="s" x="309" y="106" text-anchor="middle">녹음</text>
+          <rect class="acc" x="330" y="85" width="170" height="60" rx="8"/>
+          <text class="b t-acc" x="415" y="111" text-anchor="middle">케어노트 초안</text>
+          <text class="s" x="415" y="129" text-anchor="middle">근거 표시 · 숫자 검사</text>
+          <line class="ln" x1="500" y1="115" x2="538" y2="115" marker-end="url(#m1)"/>
+          <text class="s" x="519" y="106" text-anchor="middle">확인</text>
+          <rect class="box" x="540" y="85" width="130" height="60" rx="8"/>
+          <text class="b" x="605" y="111" text-anchor="middle">담당자 확정</text>
+          <text class="s" x="605" y="129" text-anchor="middle">확정은 사람만</text>
+          <polyline class="ln" points="670,115 705,115"/>
+          <line class="ln" x1="705" y1="50" x2="705" y2="195"/>
+          <line class="ln" x1="705" y1="50" x2="748" y2="50" marker-end="url(#m1)"/>
+          <line class="ln-d" x1="705" y1="195" x2="748" y2="195" marker-end="url(#m1)"/>
+          <text class="s" x="698" y="74" text-anchor="end">제출</text>
+          <text class="s" x="698" y="170" text-anchor="end">보관·제공</text>
+          <rect class="box" x="750" y="10" width="210" height="100" rx="8"/>
+          <text class="b" x="855" y="29" text-anchor="middle">공식 화면 · 사람이 입력</text>
+          <rect class="hira" x="762" y="38" width="186" height="20" rx="4"/>
+          <text x="855" y="52" text-anchor="middle">심평원 자료제출 시스템</text>
+          <rect class="nhis" x="762" y="62" width="186" height="20" rx="4"/>
+          <text x="855" y="76" text-anchor="middle">공단 요양기관정보마당</text>
+          <rect class="nhis" x="762" y="86" width="186" height="20" rx="4"/>
+          <text x="855" y="100" text-anchor="middle">스마트장기요양 앱</text>
+          <text class="s" x="855" y="127" text-anchor="middle">공개 API 없음</text>
+          <rect class="dash-keep" x="750" y="165" width="210" height="60" rx="8"/>
+          <text class="b t-keep" x="855" y="190" text-anchor="middle">PDF·종이 (아직 없음)</text>
+          <text class="s" x="855" y="208" text-anchor="middle">원본 보관 · 수급자 제공 · 자료 요청</text>
+        </svg>
+      </div>
+      <figcaption>케어노트는 확정할 기록 초안까지 만듭니다. 제출은 담당자가 심평원·공단 화면에 옮겨 입력하고, PDF는 제출이 아니라 보관·제공·요청에 씁니다.</figcaption>
+    </figure>
+
+    <ol class="musts" aria-label="꼭 지킬 것">
+      <li><span>서식은 <b>사업 × 직종 × 방문 종류</b>로 정해진다</span></li>
+      <li><span>별지 번호는 <b>지침마다 다르다</b>. 항상 지침 이름과 함께 부른다</span></li>
+      <li><span><b>같은 날 겹치면</b> 산정되지 않는 방문이 있다</span></li>
+      <li><span>제출은 <b>화면 입력</b>, PDF는 보관·제공·요청용</span></li>
+      <li><span>녹음은 <b>담당자 본인의 방문 후 구술</b>이 기본</span></li>
+      <li><span>AI 초안은 기록이 아니다. <b>숫자는 코드로 재대조</b>, 확정은 사람</span></li>
+      <li><span>기관 원본이 되려면 <b>전자서명·수정 이력·접속기록</b></span></li>
+      <li><span>실제 대상자 데이터 전에 <b>AI·음성 처리 위치와 보안</b>을 갖춘다</span></li>
+    </ol>
+  </header>
+
+  <!-- 서식 -->
+  <section class="sec" id="forms">
+    <div class="sec-label">방문 목적별 서식</div>
+    <h2>누가, 어떤 사업으로 방문하면 어떤 서식을 쓰나</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 434" role="img" aria-label="사업과 직종별 서식 표. 일차의료 의사는 별지 제4호를 심평원 자료제출 시스템에, 재택의료센터 의사는 제6호를 공단 요양기관정보마당에 쓰고 청구할 때 제4호도 씁니다. 재택 간호사 제7호, 사회복지사 제8호, 팀 포괄평가 제5호는 요양기관정보마당, 장기요양 방문간호 기록은 스마트장기요양 앱에 입력합니다.">
+          <rect class="hira" x="110" y="0" width="270" height="48" rx="8"/>
+          <text class="b" x="245" y="21" text-anchor="middle">일차의료 방문진료</text>
+          <text class="s" x="245" y="38" text-anchor="middle">심평원 · 2026.4 지침</text>
+          <rect class="nhis" x="390" y="0" width="290" height="48" rx="8"/>
+          <text class="b" x="535" y="21" text-anchor="middle">장기요양 재택의료센터</text>
+          <text class="s" x="535" y="38" text-anchor="middle">공단 · 2026.2 지침</text>
+          <rect class="nhis" x="690" y="0" width="270" height="48" rx="8"/>
+          <text class="b" x="825" y="21" text-anchor="middle">장기요양 방문간호</text>
+          <text class="s" x="825" y="38" text-anchor="middle">공단 · 노인장기요양보험법</text>
+
+          <text class="b" x="0" y="118">의사</text>
+          <text class="b" x="0" y="224">간호사</text>
+          <text class="b" x="0" y="309">사회복지사</text>
+          <text class="b" x="0" y="386">팀 함께</text>
+          <text class="s" x="0" y="403">재택 포괄평가</text>
+
+          <rect class="soft" x="110" y="58" width="270" height="112" rx="6"/>
+          <rect class="soft" x="390" y="58" width="290" height="112" rx="6"/>
+          <rect class="soft" x="690" y="58" width="270" height="112" rx="6"/>
+          <rect class="soft" x="110" y="180" width="270" height="80" rx="6"/>
+          <rect class="soft" x="390" y="180" width="290" height="80" rx="6"/>
+          <rect class="soft" x="690" y="180" width="270" height="80" rx="6"/>
+          <rect class="soft" x="110" y="270" width="270" height="70" rx="6"/>
+          <rect class="soft" x="390" y="270" width="290" height="70" rx="6"/>
+          <rect class="soft" x="690" y="270" width="270" height="70" rx="6"/>
+          <rect class="soft" x="110" y="350" width="270" height="80" rx="6"/>
+          <rect class="soft" x="390" y="350" width="290" height="80" rx="6"/>
+          <rect class="soft" x="690" y="350" width="270" height="80" rx="6"/>
+
+          <g class="hit" data-k="p4" tabindex="0" role="button" aria-pressed="true" aria-label="일차의료 별지 제4호 점검서식, 입력하는 곳 보기">
+            <rect class="ring" x="118" y="66" width="254" height="38" rx="8"/>
+            <rect class="hira" x="122" y="70" width="246" height="30" rx="6"/>
+            <text class="b" x="134" y="90">별지 제4호 점검서식</text>
+            <text class="s" x="356" y="90" text-anchor="end">aq.hira</text>
+            <text class="s" x="122" y="124">매 방문 · 제출해야 방문진료료 산정</text>
+          </g>
+
+          <g class="hit" data-k="h6" tabindex="0" role="button" aria-pressed="false" aria-label="재택의료센터 별지 제6호 방문점검 기록지 의사, 입력하는 곳 보기">
+            <rect class="ring" x="398" y="66" width="274" height="38" rx="8"/>
+            <rect class="nhis" x="402" y="70" width="266" height="30" rx="6"/>
+            <text class="b" x="414" y="90">별지 제6호 방문점검(의사)</text>
+            <text class="s" x="656" y="90" text-anchor="end">정보마당</text>
+          </g>
+          <g class="hit" data-k="p4h" tabindex="0" role="button" aria-pressed="false" aria-label="재택의료센터 의사가 청구할 때 쓰는 일차의료 별지 제4호, 입력하는 곳 보기">
+            <rect class="ring" x="398" y="104" width="274" height="38" rx="8"/>
+            <rect class="hira" x="402" y="108" width="266" height="30" rx="6"/>
+            <text class="b" x="414" y="128">일차의료 별지 제4호</text>
+            <text class="s" x="656" y="128" text-anchor="end">aq.hira</text>
+          </g>
+          <text class="s" x="402" y="158">제6호는 필수, 제4호는 방문진료료 청구할 때</text>
+
+          <g class="hit" data-k="order" tabindex="0" role="button" aria-pressed="false" aria-label="방문간호지시서, 보관하는 곳 보기">
+            <rect class="ring" x="698" y="66" width="254" height="38" rx="8"/>
+            <rect class="dash" x="702" y="70" width="246" height="30" rx="6"/>
+            <text x="714" y="90">방문간호지시서 발급</text>
+            <text class="s" x="936" y="90" text-anchor="end">종이</text>
+            <text class="s" x="702" y="124">180일 · 기관 보관 · 케어노트 범위 밖</text>
+          </g>
+
+          <text class="s" x="245" y="224" text-anchor="middle">— 동반하면 가산만</text>
+          <g class="hit" data-k="h7" tabindex="0" role="button" aria-pressed="false" aria-label="재택의료센터 별지 제7호 방문점검 기록지 간호사, 입력하는 곳 보기">
+            <rect class="ring" x="398" y="188" width="274" height="38" rx="8"/>
+            <rect class="nhis" x="402" y="192" width="266" height="30" rx="6"/>
+            <text class="b" x="414" y="212">별지 제7호 방문점검(간호사)</text>
+            <text class="s" x="656" y="212" text-anchor="end">정보마당</text>
+            <text class="s" x="402" y="246">월 2회 이상 + 추가 3회까지</text>
+          </g>
+          <g class="hit" data-k="ltc" tabindex="0" role="button" aria-pressed="false" aria-label="장기요양 방문간호 급여제공기록지, 입력하는 곳 보기">
+            <rect class="ring" x="698" y="188" width="254" height="38" rx="8"/>
+            <rect class="nhis" x="702" y="192" width="246" height="30" rx="6"/>
+            <text class="b" x="714" y="212">급여제공기록지(방문간호)</text>
+            <text class="s" x="936" y="212" text-anchor="end">앱</text>
+            <text class="s" x="702" y="246">스마트장기요양 앱 · 집의 NFC 태그 인식</text>
+          </g>
+
+          <text class="s" x="245" y="309" text-anchor="middle">—</text>
+          <g class="hit" data-k="h8" tabindex="0" role="button" aria-pressed="false" aria-label="재택의료센터 별지 제8호 업무기록지 사회복지사, 입력하는 곳 보기">
+            <rect class="ring" x="398" y="278" width="274" height="38" rx="8"/>
+            <rect class="nhis" x="402" y="282" width="266" height="30" rx="6"/>
+            <text class="b" x="414" y="302">별지 제8호 업무기록지</text>
+            <text class="s" x="656" y="302" text-anchor="end">정보마당</text>
+            <text class="s" x="402" y="330">매월 · 방문 또는 전화 상담</text>
+          </g>
+          <text class="s" x="825" y="309" text-anchor="middle">—</text>
+
+          <text class="s" x="245" y="394" text-anchor="middle">—</text>
+          <g class="hit" data-k="h5" tabindex="0" role="button" aria-pressed="false" aria-label="재택의료센터 별지 제5호 포괄평가 및 케어플랜 기록지, 입력하는 곳 보기">
+            <rect class="ring" x="398" y="358" width="274" height="38" rx="8"/>
+            <rect class="dash-nhis" x="402" y="362" width="266" height="30" rx="6"/>
+            <text class="b" x="414" y="382">별지 제5호 포괄평가·케어플랜</text>
+            <text class="s" x="656" y="382" text-anchor="end">정보마당</text>
+            <text class="s" x="402" y="414">최초·1년마다 · 셋이 함께 30분 이상</text>
+          </g>
+          <text class="s" x="825" y="394" text-anchor="middle">—</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="l-hira"></i>심평원에 제출</span>
+        <span><i class="l-nhis"></i>공단에 제출</span>
+        <span><i class="l-dash"></i>케어노트가 아직 쓰지 않는 서식</span>
+        <span><b style="color: var(--accent-ink)">서식 칸을 누르면 입력하는 곳이 아래에 나옵니다</b></span>
+      </div>
+      <div class="where" id="where" aria-live="polite">
+        <div class="w-head"><span class="org hira">심평원</span><span class="pill plain">PC 웹</span><b class="w-title">시범사업 자료제출 시스템</b></div>
+        <div class="w-form">선택한 서식: <b>일차의료 별지 제4호 점검서식</b></div>
+        <div class="w-row"><span class="k">주소</span><span><a href="https://biz.hira.or.kr/">https://biz.hira.or.kr</a> 요양기관업무포털에 공동인증서로 로그인 → [시범사업 자료제출 시스템] 선택 → <a href="https://aq.hira.or.kr/hira_mc/">https://aq.hira.or.kr/hira_mc/</a> 가 열림</span></div>
+        <div class="w-row"><span class="k">메뉴</span><ol class="crumbs"><li><span>시범사업 서식관리</span></li><li><span>재택의료ㆍ주치의 시범사업</span></li><li><span>일차의료 방문진료 수가 시범사업</span></li><li><span>대상자 조회 및 점검서식 작성</span></li></ol></div>
+        <div class="w-row"><span class="k">언제</span><span>매 방문 뒤. 제출해야 방문진료료를 산정합니다</span></div>
+        <div class="w-row"><span class="k">작성</span><span>의사 성명·면허번호·방문진료실시일 입력 → 점검서식 → 임시저장 → 최종 제출(이후 수정 불가)</span></div>
+      </div>
+      <figcaption>같은 의사라도 일차의료 방문이면 제4호, 재택의료센터 방문이면 제6호(청구하면 제4호도)를 씁니다. 재택의료센터 지침의 "제4호"는 현황 통보서라 번호만으로 부르면 헷갈립니다. 로그인 뒤 메뉴는 화면 안에서만 바뀌어 메뉴마다 따로 된 주소는 없습니다.</figcaption>
+    </figure>
+
+    <h3 class="sub-h">어디에 입력하나</h3>
+    <p class="lead">케어노트에서 작성·확정한 뒤, 담당자가 아래 사이트나 앱에 옮겨 입력합니다.</p>
+    <div class="dest">
+      <div class="dcard">
+        <div class="dtop"><span class="org hira">심평원</span><span class="pill plain">PC 웹</span></div>
+        <b>시범사업 자료제출 시스템</b>
+        <a href="https://biz.hira.or.kr/"><code>https://biz.hira.or.kr</code></a>
+        <dl>
+          <dt>로그인</dt><dd>요양기관업무포털, 공동인증서</dd>
+          <dt>경로</dt><dd><ol class="crumbs"><li><span>시범사업 자료제출시스템</span></li><li><span>시범사업 서식관리</span></li><li><span>재택의료ㆍ주치의 시범사업</span></li><li><span>일차의료 방문진료 수가 시범사업</span></li><li><span>대상자 조회 및 점검서식 작성</span></li></ol></dd>
+          <dt>작성</dt><dd>의사 성명·면허번호·방문진료실시일 입력 → 점검서식 → 임시저장 → 최종 제출(이후 수정 불가)</dd>
+          <dt>기타</dt><dd>같은 메뉴의 "공지사항"에서 철회 요청서 서식. 참여 신청은 상단 메뉴 <ol class="crumbs in-line"><li><span>시범사업 신청</span></li><li><span>시범사업 대상기관 신청</span></li></ol></dd>
+        </dl>
+        <span class="tagline">표시: aq.hira · biz.hira는 요양기관업무포털(대문), <a href="https://aq.hira.or.kr/hira_mc/">https://aq.hira.or.kr/hira_mc/</a>는 그 안의 자료제출 시스템 화면(넥사크로)입니다. 한의 지침은 aq.hira로 바로 접속하라고 안내합니다</span>
+      </div>
+      <div class="dcard">
+        <div class="dtop"><span class="org nhis">공단</span><span class="pill plain">PC 웹</span></div>
+        <b>요양기관정보마당 (재택의료센터 전산)</b>
+        <a href="https://medicare.nhis.or.kr/portal/common/login.do"><code>https://medicare.nhis.or.kr</code></a>
+        <dl>
+          <dt>경로</dt><dd><ol class="crumbs"><li><span>요양기관정보마당</span></li><li><span>재택의료센터 전산시스템</span></li></ol></dd>
+          <dt>메뉴</dt><dd><ol class="crumbs"><li><span>기관정보등록</span></li><li><span>인력현황</span></li><li><span>재택인력정보목록</span></li></ol> 인력 변경·종료일 입력<br><ol class="crumbs"><li><span>자격확인</span></li><li><span>수진자 자격확인</span></li></ol> 본인부담 경감 확인</dd>
+          <dt>서식</dt><dd>대상자 등록(제1·2호), 포괄평가 제5호, 방문점검 제6~8호, 청구 제9·10호. <b>기록지 입력 메뉴 이름은 지침에 없어 확인 필요</b></dd>
+          <dt>주의</dt><dd>매달 청구 때 함께 제출. 여기서 출력한 기록지는 원본으로 인정되지 않음</dd>
+        </dl>
+        <span class="tagline">표시: 정보마당</span>
+      </div>
+      <div class="dcard">
+        <div class="dtop"><span class="org nhis">공단</span><span class="pill plain">휴대폰 앱</span></div>
+        <b>스마트장기요양 앱</b>
+        <a href="https://play.google.com/store/apps/details?id=kr.or.nhis.longtermcare.android"><code>Google Play · App Store</code></a>
+        <dl>
+          <dt>로그인</dt><dd>건강보험·공동·금융인증서 (2025.6 개편)</dd>
+          <dt>흐름</dt><dd><ol class="crumbs"><li><span>태그 인식</span></li><li><span>건강관리</span></li><li><span>간호처치</span></li><li><span>특이사항(200자)</span></li><li><span>요양요원 서명</span></li><li><span>수급자 서명</span></li><li><span>종료 전송</span></li></ol></dd>
+          <dt>주의</dt><dd>수급자 집의 NFC 태그 인식 후 10분 안에 종료 전송</dd>
+        </dl>
+        <span class="tagline">표시: 앱</span>
+      </div>
+      <div class="dcard">
+        <div class="dtop"><span class="org nhis">공단</span><span class="pill plain">PC 웹</span></div>
+        <b>노인장기요양보험 포털</b>
+        <a href="https://www.longtermcare.or.kr/"><code>https://www.longtermcare.or.kr</code></a>
+        <dl>
+          <dt>쓰임</dt><dd>방문간호기관의 급여비용 청구·일정 관리</dd>
+          <dt>경로</dt><dd><ol class="crumbs"><li><span>로그인</span></li><li><span>기타</span></li><li><span>엑셀다운로드</span></li><li><span>일정계획 탭</span></li></ol></dd>
+          <dt>연동</dt><dd>민간 장기요양 프로그램이 여기서 일정·급여계약통보서·청구내역상세 엑셀을 내려받아 가져감</dd>
+        </dl>
+        <span class="tagline">청구용 · 방문 기록 서식은 여기에 쓰지 않음</span>
+      </div>
+    </div>
+    <p class="legend" style="margin-top:10px">종이·기관 보관: 일차의료 동의서(별지 제3호), 방문간호지시서, 기관이 5년 보관하는 원본. 진료기록부는 각 기관의 EMR에 씁니다.</p>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>일차의료: 첫 방문 전 별지 제3호 동의서를 받아 기관이 보관(제출 안 함). 매 방문 별지 제4호 점검서식을 제출해야 방문진료료를 산정합니다. <span class="src">일차의료 지침 2026.4 11쪽</span></li>
+        <li>재택의료센터: 의사 월 1회 이상, 간호사 월 2회 이상(추가 월 3회까지), 사회복지사 매월 상담(방문 또는 전화, 단순 안부 확인 제외). 포괄평가는 셋이 같은 시간에 함께 방문해 30분 이상, 최초와 1년마다. 포괄평가 날은 제6~8호를 쓰지 않아도 됩니다. <span class="src">재택 지침 2026.2 13·18쪽</span></li>
+        <li>재택의료센터 의사의 방문진료료는 일차의료 방문진료 기준으로 청구합니다(별지 제4호, 심평원). 월 한도를 넘었거나 청구하지 않는 방문은 제6호만. <span class="src">재택 지침 12·18쪽</span></li>
+        <li>장기요양 방문간호: 의사·한의사·치과의사가 발급한 방문간호지시서(시행규칙 별지 제29호, 180일)로 시작. 매 방문 앱 태그와 급여제공기록지(시행규칙 별지 제14호). 케어노트의 기록지는 원본 양식 확인 전 초안입니다.</li>
+        <li>한의사의 한의 방문진료는 별도 지침·별도 점검서식이며 케어노트는 아직 지원하지 않습니다.</li>
+        <li>입력하는 곳: 요양기관업무포털 공동인증서 로그인 → 시범사업 자료제출 시스템(일차의료 지침 2026.4 32~35쪽, 한의 지침은 aq.hira.or.kr/hira_mc 바로 접속 안내). 재택의료센터 전산은 요양기관정보마당 medicare.nhis.or.kr(재택 지침 19·30쪽). 자료제출 시스템 메뉴 경로와 공지사항은 일차의료 지침 34·38쪽, 정보마당의 인력 메뉴는 재택 지침 Q1-2(64쪽), 수진자 자격확인은 일차의료 지침 38쪽, 포털의 엑셀다운로드 경로는 케어포 주야간보호 매뉴얼 35쪽. 방문간호는 스마트장기요양 앱 태그·서명 흐름, 태그 후 10분 안 종료 전송(재가급여전자관리시스템 가이드북 2023.12). 앱 로그인 방식은 2025.6 개편 보도 기준입니다.</li>
+        <li>코드: 규칙은 <code>programs.ts</code>의 <code>PROGRAM_FORMS</code> 한 곳에 있습니다. 방문의 서식 목록은 방문에 저장해 나중에 규칙이 바뀌어도 그대로입니다. 재택의료센터와 일차의료를 함께 등록하지 않는 규칙은 지침에서 추론한 것으로 확인 대기입니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 산정 규칙 -->
+  <section class="sec" id="billing">
+    <div class="sec-label">산정 규칙</div>
+    <h2>같은 날 겹치면 재택의료 급여가 산정되지 않는다</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 206" role="img" aria-label="재택의료센터 간호사 방문과 장기요양 방문간호가 같은 날 있으면 재택의료 급여를 산정하지 않습니다. 가정간호, 주야간보호, 시설·단기보호 등 다섯 가지 겹침도 같습니다.">
+          <defs><marker id="m2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="box" x="0" y="10" width="290" height="186" rx="10"/>
+          <rect class="soft" x="0" y="10" width="290" height="36" rx="10"/>
+          <text class="b" x="145" y="33" text-anchor="middle">같은 날 · 같은 수급자</text>
+          <rect class="nhis" x="16" y="62" width="258" height="36" rx="6"/>
+          <text class="b" x="145" y="85" text-anchor="middle">재택의료센터 간호사 방문</text>
+          <rect class="nhis" x="16" y="110" width="258" height="36" rx="6"/>
+          <text class="b" x="145" y="133" text-anchor="middle">장기요양 방문간호</text>
+          <text class="s" x="145" y="178" text-anchor="middle">재택 지침 15쪽</text>
+          <line class="ln" x1="290" y1="104" x2="346" y2="104" marker-end="url(#m2)"/>
+          <rect class="bad" x="350" y="54" width="260" height="100" rx="10"/>
+          <text class="b t-bad" x="480" y="96" text-anchor="middle">재택의료 급여 산정 안 함</text>
+          <text class="s" x="480" y="121" text-anchor="middle">케어노트: 등록할 때 경고 (작업 중)</text>
+          <line class="ln" x1="668" y1="104" x2="614" y2="104" marker-end="url(#m2)"/>
+          <text class="s" x="641" y="96" text-anchor="middle">같은 결과</text>
+          <text class="b" x="672" y="24">케어노트가 모르는 다른 겹침</text>
+          <rect class="dash" x="670" y="36" width="290" height="26" rx="5"/>
+          <text x="682" y="54">가정간호(건강보험) 같은 날 · 간호사</text>
+          <rect class="dash" x="670" y="68" width="290" height="26" rx="5"/>
+          <text x="682" y="86">주야간보호·방문목욕 이용 시간</text>
+          <rect class="dash" x="670" y="100" width="290" height="26" rx="5"/>
+          <text x="682" y="118">시설급여·단기보호 이용일</text>
+          <rect class="dash" x="670" y="132" width="290" height="26" rx="5"/>
+          <text x="682" y="150">방문요양 사회복지사 급여관리 시간</text>
+          <rect class="dash" x="670" y="164" width="290" height="26" rx="5"/>
+          <text x="682" y="182">만성질환관리·장애인 주치의 이용일</text>
+        </svg>
+      </div>
+      <figcaption>오른쪽 겹침은 케어노트 밖 서비스라 지금은 알 수 없습니다. 수급자 정보에 이용 중인 서비스를 적어 두고 방문 등록 때 확인하게 하는 방식이 후보입니다.</figcaption>
+    </figure>
+
+    <div class="multi">
+      <div class="fig">
+        <h3>의사 1명 · 한 달 방문진료료</h3>
+        <svg class="dg" viewBox="0 0 440 124" role="img" aria-label="의사 1명의 월 방문진료료는 일차의료만 참여하면 60회, 재택의료센터 참여기관이면 140회까지입니다.">
+          <text class="s" x="98" y="40" text-anchor="middle">일차의료만</text>
+          <text class="s" x="280" y="40" text-anchor="middle">재택의료센터 참여기관</text>
+          <text class="b t-bad" x="397" y="42" text-anchor="middle">✕</text>
+          <rect class="hira" x="20" y="48" width="156" height="22"/>
+          <rect class="nhis" x="176" y="48" width="208" height="22"/>
+          <rect class="bad" x="384" y="48" width="26" height="22"/>
+          <line class="ln" x1="20" y1="70" x2="20" y2="77"/>
+          <line class="ln" x1="176" y1="70" x2="176" y2="77"/>
+          <line class="ln" x1="384" y1="70" x2="384" y2="77"/>
+          <text x="20" y="92" text-anchor="middle">0</text>
+          <text class="b" x="176" y="92" text-anchor="middle">60회</text>
+          <text class="b" x="384" y="92" text-anchor="middle">140회</text>
+          <text class="s" x="20" y="116">한도를 넘은 방문은 산정하지 않음 (재택의료기본료 청구 건 포함)</text>
+        </svg>
+      </div>
+      <div class="fig">
+        <h3>재택의료센터 간호사 · 수급자 1명 한 달</h3>
+        <svg class="dg" viewBox="0 0 440 124" role="img" aria-label="재택의료센터 간호사 방문은 기본 월 2회에 추가간호 3회까지 모두 5회이고, 그 이상은 장기요양 방문간호기관에 연계합니다.">
+          <rect class="f-nhis" x="20" y="24" width="44" height="44" rx="6"/>
+          <rect class="f-nhis" x="82" y="24" width="44" height="44" rx="6"/>
+          <rect class="nhis" x="144" y="24" width="44" height="44" rx="6"/>
+          <rect class="nhis" x="206" y="24" width="44" height="44" rx="6"/>
+          <rect class="nhis" x="268" y="24" width="44" height="44" rx="6"/>
+          <rect class="dash" x="330" y="24" width="44" height="44" rx="6"/>
+          <text class="b" x="42" y="51" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b" x="104" y="51" text-anchor="middle" style="fill: var(--surface)">2</text>
+          <text class="b" x="166" y="51" text-anchor="middle">3</text>
+          <text class="b" x="228" y="51" text-anchor="middle">4</text>
+          <text class="b" x="290" y="51" text-anchor="middle">5</text>
+          <text class="b t-bad" x="352" y="51" text-anchor="middle">✕</text>
+          <text x="73" y="90" text-anchor="middle">기본 2회</text>
+          <text x="228" y="90" text-anchor="middle">추가간호 3회 · 30분 이상</text>
+          <text x="352" y="90" text-anchor="middle">연계</text>
+          <text class="s" x="20" y="116">6번째부터는 장기요양 방문간호기관에 연계 · 의사 동행 방문은 추가간호 아님</text>
+        </svg>
+      </div>
+      <div class="fig fig-scroll span2">
+        <h3>환자 1명 · 한 주(월~일) 방문진료료는 3번까지</h3>
+        <p class="note-sm">방문 횟수 제한이 아니라 <b>방문진료료를 청구할 수 있는 횟수</b>입니다. 주는 월요일에 새로 셉니다.</p>
+        <svg class="dg" viewBox="0 0 880 256" role="img" aria-label="보통 환자는 한 주에 3번까지 방문진료료를 산정하고 4번째는 산정하지 않습니다. 말기 암 등 집중 진료가 필요하면 점검서식에 예외 사유를 적고 4번째부터도 산정합니다. 주는 월요일에 새로 셉니다.">
+          <text class="b" x="180" y="22" text-anchor="middle">월</text>
+          <text class="b" x="250" y="22" text-anchor="middle">화</text>
+          <text class="b" x="320" y="22" text-anchor="middle">수</text>
+          <text class="b" x="390" y="22" text-anchor="middle">목</text>
+          <text class="b" x="460" y="22" text-anchor="middle">금</text>
+          <text class="b" x="530" y="22" text-anchor="middle">토</text>
+          <text class="b" x="600" y="22" text-anchor="middle">일</text>
+          <text class="b" x="690" y="22" text-anchor="middle">다음 주 월</text>
+          <line class="ln-d" x1="645" y1="34" x2="645" y2="246"/>
+
+          <text class="b" x="0" y="62">보통 환자</text>
+          <text class="s" x="0" y="78">주 3번 방문</text>
+          <circle class="soft" cx="250" cy="64" r="15"/>
+          <circle class="soft" cx="390" cy="64" r="15"/>
+          <circle class="soft" cx="530" cy="64" r="15"/>
+          <circle class="soft" cx="600" cy="64" r="15"/>
+          <circle class="f-acc" cx="180" cy="64" r="15"/>
+          <circle class="f-acc" cx="320" cy="64" r="15"/>
+          <circle class="f-acc" cx="460" cy="64" r="15"/>
+          <text class="b" x="180" y="69" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b" x="320" y="69" text-anchor="middle" style="fill: var(--surface)">2</text>
+          <text class="b" x="460" y="69" text-anchor="middle" style="fill: var(--surface)">3</text>
+          <text class="b t-good" x="735" y="69">✓</text>
+          <text x="754" y="69">3번 모두 산정</text>
+
+          <text class="b" x="0" y="114">4번째 방문</text>
+          <text class="s" x="0" y="130">같은 주에 한 번 더</text>
+          <circle class="soft" cx="250" cy="116" r="15"/>
+          <circle class="soft" cx="390" cy="116" r="15"/>
+          <circle class="soft" cx="600" cy="116" r="15"/>
+          <circle class="f-acc" cx="180" cy="116" r="15"/>
+          <circle class="f-acc" cx="320" cy="116" r="15"/>
+          <circle class="f-acc" cx="460" cy="116" r="15"/>
+          <circle class="bad" cx="530" cy="116" r="15"/>
+          <text class="b" x="180" y="121" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b" x="320" y="121" text-anchor="middle" style="fill: var(--surface)">2</text>
+          <text class="b" x="460" y="121" text-anchor="middle" style="fill: var(--surface)">3</text>
+          <text class="b" x="530" y="121" text-anchor="middle">4</text>
+          <text class="b t-bad" x="735" y="121">✕</text>
+          <text x="754" y="121">4번째는 산정 안 됨</text>
+
+          <text class="b" x="0" y="166">말기 암 등</text>
+          <text class="s" x="0" y="182">집중 진료가 필요할 때</text>
+          <circle class="soft" cx="530" cy="168" r="15"/>
+          <circle class="soft" cx="600" cy="168" r="15"/>
+          <circle class="f-acc" cx="180" cy="168" r="15"/>
+          <circle class="f-acc" cx="250" cy="168" r="15"/>
+          <circle class="f-acc" cx="320" cy="168" r="15"/>
+          <circle class="keep" cx="390" cy="168" r="15"/>
+          <circle class="keep" cx="460" cy="168" r="15"/>
+          <text class="b" x="180" y="173" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b" x="250" y="173" text-anchor="middle" style="fill: var(--surface)">2</text>
+          <text class="b" x="320" y="173" text-anchor="middle" style="fill: var(--surface)">3</text>
+          <text class="b" x="390" y="173" text-anchor="middle">4</text>
+          <text class="b" x="460" y="173" text-anchor="middle">5</text>
+          <text class="s" x="390" y="197" text-anchor="middle">사유</text>
+          <text class="s" x="460" y="197" text-anchor="middle">사유</text>
+          <text class="b t-keep" x="735" y="173">!</text>
+          <text x="754" y="173">사유 적으면 산정</text>
+
+          <text class="b" x="0" y="218">주가 바뀌면</text>
+          <text class="s" x="0" y="234">월요일에 다시 셈</text>
+          <circle class="soft" cx="180" cy="220" r="15"/>
+          <circle class="soft" cx="250" cy="220" r="15"/>
+          <circle class="soft" cx="320" cy="220" r="15"/>
+          <circle class="soft" cx="390" cy="220" r="15"/>
+          <circle class="f-acc" cx="460" cy="220" r="15"/>
+          <circle class="f-acc" cx="530" cy="220" r="15"/>
+          <circle class="f-acc" cx="600" cy="220" r="15"/>
+          <circle class="f-acc" cx="690" cy="220" r="15"/>
+          <text class="b" x="460" y="225" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b" x="530" y="225" text-anchor="middle" style="fill: var(--surface)">2</text>
+          <text class="b" x="600" y="225" text-anchor="middle" style="fill: var(--surface)">3</text>
+          <text class="b" x="690" y="225" text-anchor="middle" style="fill: var(--surface)">1</text>
+          <text class="b t-good" x="735" y="225">✓</text>
+          <text x="754" y="225">다시 1번부터</text>
+        </svg>
+        <div class="legend" style="margin-top:0">
+          <span><i style="background: var(--accent); border-color: var(--accent)"></i>산정되는 방문</span>
+          <span><i style="background: var(--bad-soft); border-color: var(--bad)"></i>산정 안 되는 방문</span>
+          <span><i style="background: var(--keep-soft); border-color: var(--keep)"></i>예외: 점검서식에 사유를 적고 산정</span>
+        </div>
+        <p class="note-sm">예외 사유는 점검서식의 "산정횟수 예외적용" 칸에 적습니다(보기에 맞는 사유가 없으면 "기타"를 고르고 직접 적음, 지침 36쪽). 케어노트 점검서식에 이 칸은 이미 있고, 한 주 횟수를 세어 알려 주는 기능은 아직 없습니다.</p>
+      </div>
+      <div class="fig fig-scroll span2">
+        <h3>재택의료기본료 · 매달 채울 요건</h3>
+        <svg class="dg" viewBox="0 0 880 100" role="img" aria-label="재택의료기본료는 의사 월 1회 이상, 간호사 월 2회 이상, 사회복지사 매월 상담이 있어야 수급자당 월 1회 산정합니다.">
+          <text class="b" x="0" y="26">의사</text>
+          <circle class="f-acc" cx="8" cy="52" r="8"/>
+          <text x="26" y="56">월 1회 이상 방문진료</text>
+          <text class="b" x="300" y="26">간호사</text>
+          <circle class="f-acc" cx="308" cy="52" r="8"/>
+          <circle class="f-acc" cx="328" cy="52" r="8"/>
+          <text x="346" y="56">월 2회 이상 방문간호</text>
+          <text class="b" x="600" y="26">사회복지사</text>
+          <circle class="f-acc" cx="608" cy="52" r="8"/>
+          <text x="626" y="56">매월 상담 (방문 또는 전화)</text>
+          <text class="s" x="0" y="90">+ 포괄평가 연 1회 이상 · 셋 다 채워야 수급자당 월 1회 산정 · 의사 1명당 140명까지</text>
+        </svg>
+      </div>
+    </div>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>같은 날 산정 제외 다섯 가지: 가정간호·장기요양 방문간호와 같은 날 재택 간호사 방문, 방문요양 사회복지사 급여관리 시간의 재택 사회복지사 방문, 시설급여·단기보호 이용일과 방문목욕·주야간보호 이용 시간의 방문, 만성질환관리사업·장애인 건강주치의 이용일의 의사·간호사 방문. <span class="src">재택 지침 14~15쪽</span></li>
+        <li>방문진료 대상: 보행이 곤란·불가하고 환자·보호자가 요청한 경우. 원칙은 내원 경험 1회 이상(초진도 의사 판단 시 가능). 사회복지시설·장기요양기관 입소자 제외. <span class="src">일차의료 지침 4쪽</span></li>
+        <li>동일 건물 연속 방문 75%, 동일 세대는 두 번째 환자부터 50%. 간호사·물리치료사·작업치료사 동반 시 가산. <span class="src">일차의료 지침 10쪽</span></li>
+        <li>급여 금액(2026.2.1): 재택의료기본료 140,000원, 지속관리료 60,000원(6개월 연속 시), 추가간호료 53,770원. 청구는 다음 달 1~10일. <span class="src">재택 지침 14·19·20쪽</span></li>
+        <li>서식 정의에는 "산정횟수 예외적용", "동일 건물·세대", "동반 인력", "방문·유선 상담" 칸이 이미 있습니다. 횟수를 세어 경고하는 기능은 아직 없습니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 여러 명 방문 -->
+  <section class="sec" id="group">
+    <div class="sec-label">여러 명 방문</div>
+    <h2>한 번 방문에 여러 사람이 얽히는 두 가지 경우</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 230" role="img" aria-label="의사, 간호사, 사회복지사가 같은 시간에 수급자 1명을 함께 방문할 수 있습니다. 포괄평가는 함께 방문이 원칙이고, 의사와 간호사는 각각 1회로 인정되지만 의사와 동행한 간호사 방문은 추가간호료가 아닙니다.">
+          <defs><marker id="m7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <text class="b" x="0" y="16">① 여러 담당자 → 수급자 1명</text>
+          <circle class="f-acc" cx="60" cy="60" r="14"/>
+          <circle class="f-acc" cx="60" cy="115" r="14"/>
+          <circle class="f-acc" cx="60" cy="170" r="14"/>
+          <text x="84" y="64">의사</text>
+          <text x="84" y="119">간호사</text>
+          <text x="84" y="174">사회복지사</text>
+          <line class="ln" x1="160" y1="60" x2="288" y2="105" marker-end="url(#m7)"/>
+          <line class="ln" x1="160" y1="115" x2="288" y2="115" marker-end="url(#m7)"/>
+          <line class="ln" x1="160" y1="170" x2="288" y2="125" marker-end="url(#m7)"/>
+          <rect class="nhis" x="290" y="85" width="160" height="60" rx="8"/>
+          <text class="b" x="370" y="111" text-anchor="middle">수급자 1명</text>
+          <text class="s" x="370" y="129" text-anchor="middle">같은 시간에 함께</text>
+          <rect class="good" x="500" y="30" width="460" height="34" rx="6"/>
+          <text class="b t-good" x="514" y="52">✓</text>
+          <text x="534" y="52">포괄평가는 함께 방문이 원칙, 신규 대상자는 반드시</text>
+          <rect class="good" x="500" y="76" width="460" height="34" rx="6"/>
+          <text class="b t-good" x="514" y="98">✓</text>
+          <text x="534" y="98">함께 가도 의사·간호사 각각 1회로 인정</text>
+          <rect class="bad" x="500" y="122" width="460" height="34" rx="6"/>
+          <text class="b t-bad" x="514" y="144">✕</text>
+          <text x="534" y="144">의사와 동행한 간호사 방문은 추가간호료로 청구 못 함</text>
+          <text class="s" x="500" y="188">케어노트: 담당자별로 방문을 따로 만들고 서로 묶지 않음</text>
+          <text class="s" x="500" y="208">개선 후보: "함께 방문"으로 묶어 동행 표시, 추가간호 횟수 경고</text>
+        </svg>
+      </div>
+      <figcaption>서식은 직종별이라 팀 방문이어도 각자 자기 서식을 씁니다. 방문을 담당자별로 두고 "함께 방문"으로 묶는 방식이 "작성·확정은 담당자 본인만" 규칙과 맞습니다.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 200" role="img" aria-label="한 담당자가 여러 수급자를 연달아 방문하면, 같은 건물은 모두 75%, 같은 세대는 첫 번째 100%와 두 번째부터 50%로 방문진료료를 산정합니다.">
+          <text class="b" x="0" y="16">② 담당자 1명 → 수급자 여러 명 (연속 방문진료)</text>
+          <text class="b" x="0" y="48">같은 건물</text>
+          <text class="s" x="0" y="64">산정코드 셋째 자리 3</text>
+          <text class="s" x="360" y="64">점검서식 ⑤</text>
+          <text x="0" y="97">환자 A</text>
+          <text x="0" y="137">환자 B</text>
+          <text x="0" y="177">환자 C</text>
+          <rect class="soft" x="70" y="80" width="240" height="24" rx="4"/>
+          <rect class="soft" x="70" y="120" width="240" height="24" rx="4"/>
+          <rect class="soft" x="70" y="160" width="240" height="24" rx="4"/>
+          <rect class="f-acc" x="70" y="80" width="180" height="24" rx="4"><title>환자 A · 소정점수의 75%</title></rect>
+          <rect class="f-acc" x="70" y="120" width="180" height="24" rx="4"><title>환자 B · 소정점수의 75%</title></rect>
+          <rect class="f-acc" x="70" y="160" width="180" height="24" rx="4"><title>환자 C · 소정점수의 75%</title></rect>
+          <text class="b" x="318" y="97">75%</text>
+          <text class="b" x="318" y="137">75%</text>
+          <text class="b" x="318" y="177">75%</text>
+          <text x="360" y="97">동일 건물</text>
+          <text x="360" y="137">동일 건물</text>
+          <text x="360" y="177">동일 건물</text>
+
+          <text class="b" x="510" y="48">같은 세대 (부부 등)</text>
+          <text class="s" x="510" y="64">두 번째부터 셋째 자리 4</text>
+          <text class="s" x="884" y="64">점검서식 ⑤</text>
+          <text x="510" y="97">환자 A</text>
+          <text x="510" y="137">환자 B</text>
+          <text x="510" y="177">환자 C</text>
+          <rect class="soft" x="580" y="80" width="240" height="24" rx="4"/>
+          <rect class="soft" x="580" y="120" width="240" height="24" rx="4"/>
+          <rect class="soft" x="580" y="160" width="240" height="24" rx="4"/>
+          <rect class="f-acc" x="580" y="80" width="240" height="24" rx="4"><title>환자 A · 소정점수의 100%</title></rect>
+          <rect class="f-acc" x="580" y="120" width="120" height="24" rx="4"><title>환자 B · 소정점수의 50%</title></rect>
+          <rect class="f-acc" x="580" y="160" width="120" height="24" rx="4"><title>환자 C · 소정점수의 50%</title></rect>
+          <text class="b" x="828" y="97">100%</text>
+          <text class="b" x="828" y="137">50%</text>
+          <text class="b" x="828" y="177">50%</text>
+          <text class="b" x="884" y="97">해당 없음</text>
+          <text x="884" y="137">동일 세대</text>
+          <text x="884" y="177">동일 세대</text>
+        </svg>
+      </div>
+      <figcaption>막대는 방문진료료 소정점수 대비 비율입니다. 같은 세대의 첫 번째 환자는 점검서식에 "해당 없음"을 체크해야 해서 틀리기 쉽습니다. 금액 예시(의원, 방문진료료 Ⅰ): 131,720원 → 75% 98,790원, 50% 65,860원.</figcaption>
+    </figure>
+
+    <div class="tiles t3">
+      <div class="tile"><b>재택의료센터 부부 수급자</b><span class="s">등록·포괄평가·기본료·매달 요건 모두 사람마다. 의사 방문진료료만 같은 세대 50%</span></div>
+      <div class="tile"><b>방문간호 가족 수급자</b><span class="s">같은 집 가족이면 동시·순차 제공 가능, 제공 시간을 수급자별로 나눠 산정 (고시 제15조②)</span></div>
+      <div class="tile"><b>실제 사례</b><span class="s">의정부 민락동 노부부(남편 통풍·고혈압, 아내 와상) 모두 방문진료 · 헬스경향 2026.6.6</span></div>
+    </div>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>팀 방문: 포괄평가는 재택의료팀이 같은 시간에 함께 방문(30분 이상), 신규 대상자는 반드시 함께 방문해 최초 포괄평가. 함께 방문해도 의사·간호사 각각 방문 횟수로 인정. 청구명세서에는 같은 방문일에 직종별 방문 내용을 각각 적음. <span class="src">재택 지침 13·15·24쪽, 질의응답 Q2-1·Q4-9</span></li>
+        <li>의사와 간호사가 동행해 방문진료료(간호사 가산)를 청구하면 추가간호료 대상이 아니고, 중복 청구는 환수. 한 수급자를 의사 2명 이상이 나눠 볼 수 있음(모두 재택의료센터 의사로 신고된 경우). <span class="src">재택 지침 14쪽, Q3-5·Q4-6</span></li>
+        <li>연속 방문진료: 같은 건물은 모두 75%(셋째 자리 3), 같은 세대는 첫 번째 100%·두 번째부터 50%(셋째 자리 4). 점검서식 ⑤는 같은 건물이면 모두 "동일 건물", 같은 세대면 첫 번째 "해당 없음"·두 번째부터 "동일 세대". 의사 월 한도는 청구 건 기준이라 두 사람이면 2회. <span class="src">일차의료 지침 2026.4 10·12·16·35쪽, Q22(59쪽)</span></li>
+        <li>방문간호: 가정방문급여는 방문 시간 동안 수급자 1명에게 전적으로 제공이 원칙. 가족이 아닌 동거 수급자에게 함께 제공하고 각각 청구하면 부당청구. 확인한 조문은 2018년판 사본이라 최신 고시 확인이 필요합니다.</li>
+        <li>한 건물 여러 환자, 방문간호 가족 동시 제공의 실제 사례는 공개 자료에서 찾지 못했습니다. 재택의료센터는 노인주거복지시설 입소자를 빼면서 노인복지주택은 예외로 두어, 한 건물에 여러 수급자가 있는 경우가 생길 수 있습니다(해석).</li>
+        <li>케어노트 개선 후보: 연속 방문 묶기(순서에 따라 "해당 없음"·"동일 세대" 자동 체크), 부부를 한 번에 구술했을 때 사람별 초안.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 포괄평가 -->
+  <section class="sec" id="assessment">
+    <div class="sec-label">포괄평가 팀 방문</div>
+    <h2>재택의료센터는 팀이 함께 평가하고 1년마다 다시 한다</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 220" role="img" aria-label="2026년 1월 11일 최초 포괄평가 뒤 사례회의를 거쳐 케어플랜을 안내하고, 매달 정기 방문과 사례회의를 하며, 2027년 1월 1일부터 2월 28일 사이에 재평가해야 합니다.">
+          <rect class="acc" x="0" y="10" width="270" height="50" rx="8"/>
+          <text class="b t-acc" x="14" y="31">① 최초 포괄평가 (1월 11일)</text>
+          <text class="s" x="14" y="49">팀 함께 30분 이상 → 사례회의 → 케어플랜 안내</text>
+          <line class="ln" x1="60" y1="60" x2="60" y2="144"/>
+          <circle class="f-acc" cx="60" cy="150" r="6"/>
+          <rect class="nhis" x="103" y="98" width="691" height="32" rx="6"/>
+          <text x="448" y="119" text-anchor="middle">매달: 의사 1회+ · 간호사 2회+ · 사회복지사 상담 · 팀 사례회의 2회+</text>
+          <rect class="dash-keep" x="794" y="60" width="126" height="84" rx="6"/>
+          <text class="b t-keep" x="857" y="86" text-anchor="middle">② 재평가 기간</text>
+          <text class="s" x="857" y="104" text-anchor="middle">2027.1.1</text>
+          <text class="s" x="857" y="120" text-anchor="middle">~ 2.28</text>
+          <line class="ln" x1="40" y1="150" x2="920" y2="150"/>
+          <line class="ln" x1="40" y1="146" x2="40" y2="154"/>
+          <line class="ln" x1="103" y1="146" x2="103" y2="154"/>
+          <line class="ln" x1="166" y1="146" x2="166" y2="154"/>
+          <line class="ln" x1="229" y1="146" x2="229" y2="154"/>
+          <line class="ln" x1="291" y1="146" x2="291" y2="154"/>
+          <line class="ln" x1="354" y1="146" x2="354" y2="154"/>
+          <line class="ln" x1="417" y1="146" x2="417" y2="154"/>
+          <line class="ln" x1="480" y1="146" x2="480" y2="154"/>
+          <line class="ln" x1="543" y1="146" x2="543" y2="154"/>
+          <line class="ln" x1="606" y1="146" x2="606" y2="154"/>
+          <line class="ln" x1="669" y1="146" x2="669" y2="154"/>
+          <line class="ln" x1="731" y1="146" x2="731" y2="154"/>
+          <line class="ln" x1="794" y1="146" x2="794" y2="154"/>
+          <line class="ln" x1="857" y1="146" x2="857" y2="154"/>
+          <line class="ln" x1="920" y1="146" x2="920" y2="154"/>
+          <text class="s" x="71" y="170" text-anchor="middle">1월</text>
+          <text class="s" x="134" y="170" text-anchor="middle">2월</text>
+          <text class="s" x="197" y="170" text-anchor="middle">3월</text>
+          <text class="s" x="260" y="170" text-anchor="middle">4월</text>
+          <text class="s" x="323" y="170" text-anchor="middle">5월</text>
+          <text class="s" x="386" y="170" text-anchor="middle">6월</text>
+          <text class="s" x="449" y="170" text-anchor="middle">7월</text>
+          <text class="s" x="511" y="170" text-anchor="middle">8월</text>
+          <text class="s" x="574" y="170" text-anchor="middle">9월</text>
+          <text class="s" x="637" y="170" text-anchor="middle">10월</text>
+          <text class="s" x="700" y="170" text-anchor="middle">11월</text>
+          <text class="s" x="763" y="170" text-anchor="middle">12월</text>
+          <text class="s" x="826" y="170" text-anchor="middle">1월</text>
+          <text class="s" x="889" y="170" text-anchor="middle">2월</text>
+          <text class="b" x="40" y="192">2026</text>
+          <text class="b" x="794" y="192">2027</text>
+          <text class="s" x="920" y="212" text-anchor="end">기한을 넘기면 급여비용을 산정하지 않음</text>
+        </svg>
+      </div>
+      <figcaption>재평가는 직전 평가일이 있는 달의 다음 달부터 12개월마다, 기한(도래한 달의 다음 달 말일)까지 해야 합니다. 상태가 바뀌면 그 전에 다시 평가할 수 있고, 그러면 주기가 새로 시작됩니다. (지침 예시1)</figcaption>
+    </figure>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 300" role="img" aria-label="별지 제5호 포괄평가 및 케어플랜 기록지는 방문 때 팀이 평가하는 1번부터 9번까지와, 사례회의 뒤 채우는 10번 케어플랜으로 나뉩니다.">
+          <defs><marker id="m8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="box" x="0" y="0" width="700" height="300" rx="10"/>
+          <text class="b" x="14" y="24">방문 때 · 팀이 같은 시간에 평가 (별지 제5호 1~9)</text>
+          <rect class="nhis" x="12" y="38" width="220" height="80" rx="6"/>
+          <text class="b" x="24" y="60">1 기본 사항</text>
+          <text class="s" x="24" y="80">수급자 · 보호자(주수발자)</text>
+          <text class="s" x="24" y="96">의뢰 경로</text>
+          <rect class="nhis" x="240" y="38" width="220" height="80" rx="6"/>
+          <text class="b" x="252" y="60">2 방문 기본정보</text>
+          <text class="s" x="252" y="80">평가 시작·종료(24시간제)</text>
+          <text class="s" x="252" y="96">최초 / n차 · 이동거리·시간</text>
+          <rect class="nhis" x="468" y="38" width="220" height="80" rx="6"/>
+          <text class="b" x="480" y="60">3 건강·질병 상태</text>
+          <text class="s" x="480" y="80">주요 문제 · 원인질환 · 투약</text>
+          <text class="s" x="480" y="96">최근 입원 · 노년증후군</text>
+          <rect class="nhis" x="12" y="126" width="220" height="80" rx="6"/>
+          <text class="b" x="24" y="148">4 신체 상태</text>
+          <text class="s" x="24" y="168">보행 · TUG · 5회 일어서기</text>
+          <text class="s" x="24" y="184">키·체중 · 연하 · 영양 방법</text>
+          <rect class="nhis" x="240" y="126" width="220" height="80" rx="6"/>
+          <text class="b" x="252" y="148">5 정신 상태</text>
+          <text class="s" x="252" y="168">치매 · MMSE/CDR · 우울 PHQ-9</text>
+          <text class="s" x="252" y="184">행동심리증상</text>
+          <rect class="nhis" x="468" y="126" width="220" height="80" rx="6"/>
+          <text class="b" x="480" y="148">6 자립생활 가능성</text>
+          <text class="s" x="480" y="168">의식 수준</text>
+          <text class="s" x="480" y="184">신체기능 · 인지기능 단계</text>
+          <rect class="nhis" x="12" y="214" width="220" height="80" rx="6"/>
+          <text class="b" x="24" y="236">7 의료처치 필요 항목</text>
+          <text class="s" x="24" y="256">욕창 · 도뇨관 · 경관영양</text>
+          <text class="s" x="24" y="272">인슐린 · 인공루 등</text>
+          <rect class="nhis" x="240" y="214" width="220" height="80" rx="6"/>
+          <text class="b" x="252" y="236">8 사회·환경</text>
+          <text class="s" x="252" y="256">일상 도움 · 경제 상황</text>
+          <text class="s" x="252" y="272">사회관계 · 주거환경</text>
+          <rect class="nhis" x="468" y="214" width="220" height="80" rx="6"/>
+          <text class="b" x="480" y="236">9 서비스 이용 현황</text>
+          <text class="s" x="480" y="256">의료 · 장기요양</text>
+          <text class="s" x="480" y="272">지역 서비스 · 이용 희망</text>
+          <line class="ln" x1="702" y1="150" x2="738" y2="150" marker-end="url(#m8)"/>
+          <rect class="box" x="740" y="0" width="220" height="300" rx="10"/>
+          <text class="b" x="752" y="24">팀 사례회의 뒤</text>
+          <rect class="acc" x="752" y="38" width="196" height="168" rx="6"/>
+          <text class="b t-acc" x="764" y="60">10 케어플랜</text>
+          <text class="s" x="764" y="84">문제 목록 8가지</text>
+          <text class="s" x="764" y="104">방문 계획</text>
+          <text class="s" x="764" y="120">의사·간호사 월 n회</text>
+          <text class="s" x="764" y="136">사회복지사 정기·수시</text>
+          <text class="s" x="764" y="160">종합 의견</text>
+          <text class="s" x="764" y="190">참고표로 대체 가능</text>
+          <text x="752" y="236">→ 수급자에게 안내</text>
+          <text x="752" y="260">→ 재평가 때 다시 작성</text>
+        </svg>
+      </div>
+      <figcaption>제5호는 수급자당 한 장을 팀이 함께 채우는 서식입니다. 1~9번은 방문 때 평가하고, 10번 케어플랜은 사례회의에서 문제 목록과 방문 주기를 정한 뒤 씁니다. 포괄평가 날은 제6~8호를 쓰지 않아도 됩니다.</figcaption>
+    </figure>
+
+    <h3 class="sub-h">케어노트에 넣는다면 (제안)</h3>
+    <div class="tiles">
+      <div class="tile"><b>"함께 방문"으로 묶기</b><span class="s">의사·간호사·사회복지사 방문 3건을 한 묶음으로. 같은 시각, 평가 30분 이상인지 확인</span><span class="pill plain">제안</span></div>
+      <div class="tile"><b>제5호는 수급자당 한 장</b><span class="s">팀이 나눠 채우고, 케어플랜 수립을 주관하는 의사가 확정 (지침: 의사 = 팀 리더)</span><span class="pill plain">제안</span></div>
+      <div class="tile"><b>구술은 각자</b><span class="s">담당자마다 자기 휴대폰으로 자기 관찰을 구술. 화자 분리 없이 항목별 초안</span><span class="pill plain">제안</span></div>
+      <div class="tile"><b>재평가 기한 알림</b><span class="s">평가한 달의 다음 달부터 12개월, 기한은 다음 달 말일. 넘기면 산정 안 됨</span><span class="pill plain">제안</span></div>
+    </div>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>누가·어떻게: 의사·간호사·사회복지사 각 1인 이상이 같은 시간에 함께 방문하는 것이 원칙. 평가 시간은 이동 시간을 빼고 30분 이상이고, 실제 평가 시작·종료를 24시간제로 적습니다. <span class="src">재택 지침 13·16쪽</span></li>
+        <li>신규 대상자는 반드시 팀이 함께 최초 포괄평가를 합니다. 그 전의 사전 방문은 산정하지 않고, 이후 정기 방문 순서는 팀 재량입니다. <span class="src">질의응답 Q4-9(72쪽)</span></li>
+        <li>주기: 직전(최초 포함) 평가일이 있는 달의 다음 달부터 12개월마다. 기한(1년이 된 달의 다음 달 말일)을 넘기면 급여비용을 산정하지 않습니다. 입원 등으로 못 했으면 다음 서비스 전에 먼저 합니다. 상태가 바뀌면 수시로 재평가할 수 있습니다. <span class="src">재택 지침 15~16쪽 예시1~3</span></li>
+        <li>급여: 포괄평가를 하지 않으면 재택의료기본료를 산정하지 않습니다(사망 시 50%도 불가). 달 중간에 최초 포괄평가를 하면 그 달은 평가일부터 말일까지로 요건을 봅니다. 포괄평가 날 의사·간호사는 각각 방문 1회로 인정되고, 청구명세서에 같은 날 직종별 방문 내용을 각각 적습니다. <span class="src">재택 지침 13·24쪽, Q2-1·Q2-2(65쪽)</span></li>
+        <li>케어플랜: 포괄평가 뒤 팀 사례회의(월 2회 이상)를 거쳐 세우고, 수급자에게 안내하며, 재평가하면 다시 작성합니다. 의사는 재택의료팀 리더로 케어플랜 수립을 주관합니다. <span class="src">재택 지침 6·16~17쪽</span></li>
+        <li>제5호 항목: 1 기본 사항, 2 방문 기본정보, 3 건강·질병 상태, 4 신체 상태, 5 정신 상태, 6 신체·정신적 자립생활 가능성, 7 의료처치 및 건강관리 필요 항목, 8 사회/환경 평가, 9 서비스 이용 현황, 10 케어플랜. 10번은 뒷면의 케어플랜 참고표로 대체할 수 있습니다. <span class="src">재택 지침 별지 제5호(51~54쪽)</span></li>
+        <li>케어노트 현황: 제5호 서식과 "함께 방문" 묶음이 아직 없습니다. 위 제안은 지침에 없는 설계 의견입니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- PDF -->
+  <section class="sec" id="pdf">
+    <div class="sec-label">제출과 PDF</div>
+    <h2>PDF는 언제 필요한가</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 274" role="img" aria-label="서식을 제출할 때는 화면에 입력하므로 PDF를 쓰지 않습니다. 기관 원본 보관, 수급자 제공, 자료 요청 대응에는 PDF나 종이가 필요합니다.">
+          <defs><marker id="m3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="acc" x="0" y="102" width="170" height="70" rx="10"/>
+          <text class="b t-acc" x="85" y="131" text-anchor="middle">이 서식을</text>
+          <text class="b t-acc" x="85" y="151" text-anchor="middle">어디에 쓰나?</text>
+          <line class="ln" x1="170" y1="137" x2="200" y2="137"/>
+          <line class="ln" x1="200" y1="40" x2="200" y2="238"/>
+          <line class="ln" x1="200" y1="40" x2="228" y2="40" marker-end="url(#m3)"/>
+          <line class="ln" x1="200" y1="106" x2="228" y2="106" marker-end="url(#m3)"/>
+          <line class="ln" x1="200" y1="172" x2="228" y2="172" marker-end="url(#m3)"/>
+          <line class="ln" x1="200" y1="238" x2="228" y2="238" marker-end="url(#m3)"/>
+
+          <rect class="box" x="230" y="16" width="230" height="48" rx="8"/>
+          <text class="b" x="245" y="45">심평원·공단에 제출</text>
+          <rect class="box" x="230" y="82" width="230" height="48" rx="8"/>
+          <text class="b" x="245" y="104">기관 원본 보관</text>
+          <text class="s" x="245" y="121">5년 · 종이 또는 전자문서</text>
+          <rect class="box" x="230" y="148" width="230" height="48" rx="8"/>
+          <text class="b" x="245" y="170">수급자에게 기록지 제공</text>
+          <text class="s" x="245" y="187">장기요양 방문간호</text>
+          <rect class="box" x="230" y="214" width="230" height="48" rx="8"/>
+          <text class="b" x="245" y="236">자료 요청에 대응</text>
+          <text class="s" x="245" y="253">모니터링·평가·민원</text>
+
+          <line class="ln" x1="460" y1="40" x2="508" y2="40" marker-end="url(#m3)"/>
+          <line class="ln" x1="460" y1="106" x2="508" y2="106" marker-end="url(#m3)"/>
+          <line class="ln" x1="460" y1="172" x2="508" y2="172" marker-end="url(#m3)"/>
+          <line class="ln" x1="460" y1="238" x2="508" y2="238" marker-end="url(#m3)"/>
+
+          <rect class="box" x="510" y="16" width="450" height="48" rx="8"/>
+          <text x="524" y="45">화면에 직접 입력 (자료제출 시스템 · 정보마당 · 앱)</text>
+          <rect class="good" x="868" y="28" width="80" height="24" rx="12"/>
+          <text class="b t-good" x="908" y="45" text-anchor="middle">PDF 안 씀</text>
+
+          <rect class="box" x="510" y="82" width="450" height="48" rx="8"/>
+          <text x="524" y="104">종이(인쇄·서명·편철) 또는 전자(전자서명)</text>
+          <text class="s" x="524" y="121">공단 시스템 출력본은 원본으로 인정되지 않음</text>
+          <rect class="keep" x="868" y="94" width="80" height="24" rx="12"/>
+          <text class="b t-keep" x="908" y="111" text-anchor="middle">PDF 필요</text>
+
+          <rect class="box" x="510" y="148" width="450" height="48" rx="8"/>
+          <text x="524" y="170">앱으로 확인하지 않는 가정에 기록지 제공</text>
+          <text class="s" x="524" y="187">보호자가 앱으로 확인하면 제공한 것으로 갈음</text>
+          <rect class="keep" x="868" y="160" width="80" height="24" rx="12"/>
+          <text class="b t-keep" x="908" y="177" text-anchor="middle">PDF 필요</text>
+
+          <rect class="box" x="510" y="214" width="450" height="48" rx="8"/>
+          <text x="524" y="236">PDF·JPG·엑셀 파일로 제출</text>
+          <text class="s" x="524" y="253">요청하면 지체 없이 제출</text>
+          <rect class="keep" x="868" y="226" width="80" height="24" rx="12"/>
+          <text class="b t-keep" x="908" y="243" text-anchor="middle">PDF 필요</text>
+        </svg>
+      </div>
+      <figcaption>세 사업 모두 서식은 전산 화면으로 받습니다. 케어노트에 출력 기능은 아직 없고, 원본을 종이로 할지 전자서명으로 할지 먼저 정해야 합니다.</figcaption>
+    </figure>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>일차의료: 요양기관업무포털(공동인증서) → 시범사업 자료제출 시스템 → 대상자 등록(주민등록번호 입력) → 점검서식 작성 → 최종 제출. 제출 후에는 수정·삭제가 안 됩니다. 동의서는 "별도 제출 없이 기관 자체 보관". <span class="src">일차의료 지침 2026.4 11·32쪽</span></li>
+        <li>재택의료센터: 청구 때 요양기관정보마당(medicare.nhis.or.kr)으로 제5~8호를 함께 제출. 우편은 시스템 장애로 공단이 안내할 때만. 원본은 편철해 사업 종료 후 5년, 전자문서는 의료법 제22·23조에 따라. 정보마당 출력본은 원본 아님. <span class="src">재택 지침 18~20쪽, 질의응답 Q5-3·Q5-4(74쪽)</span></li>
+        <li>방문간호: 앱 태그로 시작·종료·내용·특이사항 전송. 전송 내역을 쓰지 않거나 5분 넘게 고치면 기록지 작성 필수. 급여제공기록지·지시서는 문서 또는 전자문서로 5년 보존. <span class="src">재가급여전자관리시스템 가이드북 22·24~25쪽, 노인장기요양보험법 시행규칙 제27조④</span></li>
+        <li>자료 요청: 두 지침 모두 복지부·심평원·공단이 요청하면 지체 없이 제출. 심평원 진료비확인요청 자료는 업무포털에 PDF·JPG·엑셀로 올립니다. <span class="src">재택 지침 30쪽, 심평원 제출방법 안내</span></li>
+        <li>별지 제7호(한 달 5회 칸 월간 양식)를 월 단위로 모아 입력하는지는 확인 대기입니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 녹음 -->
+  <section class="sec" id="voice">
+    <div class="sec-label">녹음 방식</div>
+    <h2>왜 담당자 본인의 구술을 기본으로 하나</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 250" role="img" aria-label="대화 전체 녹음은 여러 사람 목소리와 소음이 섞이고, 관찰 내용이 빠지고, 가족 대화 녹음 위험이 있습니다. 담당자 구술은 한 사람이 조용한 곳에서 서식 순서대로 말합니다.">
+          <defs><marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="box" x="0" y="0" width="465" height="250" rx="10"/>
+          <text class="b" x="20" y="28">방문 중 대화 전체 녹음</text>
+          <circle class="f-acc" cx="60" cy="80" r="16"/>
+          <circle class="f-muted" cx="130" cy="80" r="16"/>
+          <circle class="f-muted" cx="200" cy="80" r="16"/>
+          <rect class="soft" x="246" y="66" width="46" height="30" rx="4"/>
+          <text class="s" x="269" y="86" text-anchor="middle">TV</text>
+          <text class="s" x="60" y="114" text-anchor="middle">담당자</text>
+          <text class="s" x="130" y="114" text-anchor="middle">수급자</text>
+          <text class="s" x="200" y="114" text-anchor="middle">보호자</text>
+          <text class="s" x="269" y="114" text-anchor="middle">소음</text>
+          <path class="snd" d="M76,80 Q200,40 368,78"/>
+          <path class="snd" d="M146,80 Q250,55 368,80"/>
+          <path class="snd" d="M216,80 Q290,70 368,82"/>
+          <path class="snd" d="M292,82 L368,84"/>
+          <circle class="box" cx="384" cy="82" r="15"/>
+          <text class="s" x="384" y="86" text-anchor="middle">녹음</text>
+          <rect class="soft" x="20" y="138" width="425" height="96" rx="8"/>
+          <text class="b t-bad" x="34" y="164">✕</text>
+          <text x="54" y="164">누가 한 말인지 섞이고 인식이 떨어짐</text>
+          <text class="b t-bad" x="34" y="192">✕</text>
+          <text x="54" y="192">욕창 크기·피부 상태 같은 관찰은 말로 안 나옴</text>
+          <text class="b t-bad" x="34" y="220">✕</text>
+          <text x="54" y="220">자리 비운 사이 가족 대화 녹음 → 통신비밀보호법</text>
+
+          <rect class="acc" x="495" y="0" width="465" height="250" rx="10" style="fill: var(--surface)"/>
+          <text class="b t-acc" x="515" y="28">방문 직후 담당자 구술 (케어노트)</text>
+          <circle class="f-acc" cx="555" cy="80" r="16"/>
+          <text class="s" x="555" y="114" text-anchor="middle">담당자 · 차 안</text>
+          <line class="ln" x1="571" y1="80" x2="628" y2="80"/>
+          <circle class="box" cx="643" cy="80" r="15"/>
+          <text class="s" x="643" y="84" text-anchor="middle">녹음</text>
+          <line class="ln" x1="658" y1="80" x2="698" y2="80" marker-end="url(#m4)"/>
+          <rect class="acc" x="700" y="46" width="240" height="20" rx="4"/>
+          <text class="s" x="710" y="60">S1 혈압 130/85, 체온 36.8</text>
+          <rect class="acc" x="700" y="70" width="240" height="20" rx="4"/>
+          <text class="s" x="710" y="84">S2 천골 욕창 3×2cm, 드레싱 교체</text>
+          <rect class="acc" x="700" y="94" width="240" height="20" rx="4"/>
+          <text class="s" x="710" y="108">S3 복약 교육, 다음 주 화요일 방문</text>
+          <rect class="soft" x="515" y="138" width="425" height="96" rx="8"/>
+          <text class="b t-good" x="529" y="164">✓</text>
+          <text x="549" y="164">한 사람 목소리, 조용한 곳이라 인식이 정확</text>
+          <text class="b t-good" x="529" y="192">✓</text>
+          <text x="549" y="192">관찰·판단을 서식 순서로 말하고, 빠진 칸은 앱이 물음</text>
+          <text class="b t-good" x="529" y="220">✓</text>
+          <text x="549" y="220">1~3분만 처리, 녹음 파일은 서버에 남기지 않음</text>
+        </svg>
+      </div>
+      <figcaption>방문 서식은 대부분 담당자가 관찰하고 판단한 내용이라, 대화를 녹음해도 채워지지 않습니다. 인지저하·치매 수급자처럼 대화가 없는 경우에도 구술은 영향을 받지 않습니다.</figcaption>
+    </figure>
+
+    <h3 class="sub-h" id="diarization">화자 분리가 필요한가</h3>
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 200" role="img" aria-label="케어노트 구술은 담당자 1명, 방문 중 대화는 담당자·수급자·보호자, 포괄평가 팀 방문도 다섯 명 안팎이라 10명을 나눌 상황이 방문 기록에는 없습니다.">
+          <text class="b" x="0" y="40">방문 직후 구술 (케어노트)</text>
+          <circle class="f-acc" cx="270" cy="36" r="9"/>
+          <text class="s" x="560" y="40">담당자 1명 → 화자 분리 필요 없음</text>
+          <text class="b" x="0" y="85">방문 중 대화</text>
+          <circle class="f-acc" cx="270" cy="81" r="9"/>
+          <circle class="f-muted" cx="296" cy="81" r="9"/>
+          <circle class="f-muted" cx="322" cy="81" r="9"/>
+          <text class="s" x="560" y="85">담당자 · 수급자 · 보호자</text>
+          <text class="b" x="0" y="130">포괄평가 팀 방문</text>
+          <circle class="f-acc" cx="270" cy="126" r="9"/>
+          <circle class="f-acc" cx="296" cy="126" r="9"/>
+          <circle class="f-acc" cx="322" cy="126" r="9"/>
+          <circle class="f-muted" cx="348" cy="126" r="9"/>
+          <circle class="f-muted" cx="374" cy="126" r="9"/>
+          <text class="s" x="560" y="130">의사·간호사·사회복지사가 각자 자기 서식을 구술</text>
+          <text class="b" x="0" y="175">10명 분리 가정</text>
+          <circle class="dash" cx="270" cy="171" r="9"/>
+          <circle class="dash" cx="296" cy="171" r="9"/>
+          <circle class="dash" cx="322" cy="171" r="9"/>
+          <circle class="dash" cx="348" cy="171" r="9"/>
+          <circle class="dash" cx="374" cy="171" r="9"/>
+          <circle class="dash" cx="400" cy="171" r="9"/>
+          <circle class="dash" cx="426" cy="171" r="9"/>
+          <circle class="dash" cx="452" cy="171" r="9"/>
+          <circle class="dash" cx="478" cy="171" r="9"/>
+          <circle class="dash" cx="504" cy="171" r="9"/>
+          <text class="s" x="560" y="175">방문 기록에서는 생기기 어려운 인원</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="l-acc" style="background: var(--accent)"></i>담당자</span>
+        <span><i style="background: var(--line-strong); border-color: var(--line-strong)"></i>수급자·보호자</span>
+        <span><i class="l-dash"></i>10명 분리 가정</span>
+      </div>
+      <figcaption>사람 수는 구성 예시입니다. 방문 기록에 필요한 것은 "누가 무슨 말을 했나"가 아니라 "담당자가 무엇을 관찰했나"이고, 보호자 말은 담당자가 "보호자 말로는…"이라고 구술하면 됩니다.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 170" role="img" aria-label="공개 화자 분리 모델 pyannote 3.1의 오류율은 방송·토론 영상 11.3%, 4인 회의 근접 마이크 18.8%, 여러 실제 환경 21.7%입니다.">
+          <text class="b" x="0" y="16">화자 분리 오류율(DER) · 낮을수록 좋음 · pyannote 3.1 공개 모델</text>
+          <line class="soft" x1="320" y1="30" x2="320" y2="138" style="stroke: var(--line)"/>
+          <line class="soft" x1="487" y1="30" x2="487" y2="138" style="stroke: var(--line)"/>
+          <line class="soft" x1="653" y1="30" x2="653" y2="138" style="stroke: var(--line)"/>
+          <line class="soft" x1="820" y1="30" x2="820" y2="138" style="stroke: var(--line)"/>
+          <text x="0" y="55">방송·토론 영상 (VoxConverse)</text>
+          <text x="0" y="93">4인 회의 · 근접 마이크 (AMI)</text>
+          <text x="0" y="131">여러 실제 환경 (DIHARD 3)</text>
+          <rect class="f-acc" x="320" y="40" width="188" height="22" rx="4"><title>VoxConverse · DER 11.3%</title></rect>
+          <rect class="f-acc" x="320" y="78" width="313" height="22" rx="4"><title>AMI headset · DER 18.8%</title></rect>
+          <rect class="f-acc" x="320" y="116" width="362" height="22" rx="4"><title>DIHARD 3 full · DER 21.7%</title></rect>
+          <text class="b" x="516" y="56">11.3%</text>
+          <text class="b" x="641" y="94">18.8%</text>
+          <text class="b" x="690" y="132">21.7%</text>
+          <text class="s" x="320" y="158" text-anchor="middle">0</text>
+          <text class="s" x="487" y="158" text-anchor="middle">10%</text>
+          <text class="s" x="653" y="158" text-anchor="middle">20%</text>
+          <text class="s" x="820" y="158" text-anchor="middle">30%</text>
+        </svg>
+      </div>
+      <figcaption>입에 가까운 마이크로 녹음한 4인 회의에서도 말한 시간의 약 5분의 1이 틀린 사람에게 붙습니다. TV 소리가 있는 가정, 어르신 목소리, 10명이라면 더 나빠질 수밖에 없고, 틀린 사람에게 붙은 말은 의료 기록에서 오히려 위험합니다.</figcaption>
+    </figure>
+
+    <div class="tiles t3">
+      <div class="tile"><b>풀려는 문제부터 정하기</b><span class="s">화자 분리로 무엇을 해결하려는지 먼저 정합니다. 방문 기록 자체에는 쓰이지 않습니다.</span></div>
+      <div class="tile"><b>다른 목소리가 섞일까 걱정된다면</b><span class="s">여러 명을 나누는 대신 "담당자 목소리인지"만 가리는 2분류(등록한 목소리 확인)가 훨씬 쉽고 정확합니다.</span></div>
+      <div class="tile"><b>회의록이 목적이라면</b><span class="s">재택의료센터 사례회의(월 2회 이상) 회의록은 별도 기능입니다. 참석자 명단과 초안을 주고 이름은 사람이 확정합니다.</span></div>
+    </div>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>통신비밀보호법은 공개되지 않은 타인 간의 대화를 녹음하지 못하게 합니다(제3조, 제14조). 담당자가 자리를 비운 사이 가족끼리 나눈 대화가 녹음되면 위반 소지가 있습니다.</li>
+        <li>음성과 건강정보는 개인정보이고 건강정보는 민감정보라 별도 동의가 필요합니다(개인정보 보호법 제23조). 대화 녹음은 수급자·가족의 음성까지 수집합니다.</li>
+        <li>재택의료센터가 관리하는 증상에 인지저하·섬망·치매 행동심리증상이 포함됩니다. <span class="src">재택 지침 5쪽</span></li>
+        <li>재택간호 앱도 방문 뒤 단계를 둡니다. WellSky는 방문 뒤 음성 비서가 빠진 문항을 묻고, Apricot은 방문 뒤 가이드 인터뷰로 문서를 만듭니다.</li>
+        <li>대화 구간 녹음을 나중에 넣는다면 문진·교육 구간만, 동의 기록, 자리를 비우면 자동 멈춤이 먼저입니다. 법률 검토가 필요합니다.</li>
+        <li>화자 분리 오류율: pyannote speaker-diarization-3.1 모델 카드의 공개 벤치마크(겹친 발화 포함, collar 없음). VoxConverse 11.3%, AMI headset 18.8%, DIHARD 3 full 21.7%. <span class="src">huggingface.co/pyannote/speaker-diarization-3.1</span></li>
+        <li>여러 사람 목소리를 나누려면 수급자·가족·방문자 모두의 음성을 모아야 해서 민감정보 수집 범위와 통신비밀보호법 부담이 함께 커집니다. 지금 케어노트의 음성인식에는 화자 분리가 없고, 방문 기록에는 필요하지 않습니다.</li>
+        <li>사례회의: 재택의료센터는 월 2회 이상 사례회의를 하고 회의자료를 보관합니다. 여러 명이 말하는 녹음이 실제로 생기는 곳은 방문이 아니라 이 회의입니다. <span class="src">재택 지침 3쪽, Q5-3</span></li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- AI -->
+  <section class="sec" id="ai">
+    <div class="sec-label">AI 초안</div>
+    <h2>AI가 숫자를 지어내지 못하게 코드로 다시 대조한다</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 210" role="img" aria-label="녹음, 음성인식, 문장, AI 초안을 거친 값은 코드 대조를 통과해야 칸에 채워집니다. 통과하지 못하면 비우고 되묻기 질문이 되며, 답은 문장에 이어 붙여 초안을 다시 만듭니다.">
+          <defs><marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker></defs>
+          <rect class="box" x="0" y="40" width="90" height="60" rx="8"/>
+          <text class="b" x="45" y="66" text-anchor="middle">녹음</text>
+          <text class="s" x="45" y="84" text-anchor="middle">1~3분</text>
+          <line class="ln" x1="90" y1="70" x2="113" y2="70" marker-end="url(#m5)"/>
+          <rect class="box" x="115" y="40" width="100" height="60" rx="8"/>
+          <text class="b" x="165" y="66" text-anchor="middle">음성인식</text>
+          <text class="s" x="165" y="84" text-anchor="middle">자체 서버</text>
+          <line class="ln" x1="215" y1="70" x2="238" y2="70" marker-end="url(#m5)"/>
+          <rect class="box" x="240" y="40" width="110" height="60" rx="8"/>
+          <text class="b" x="295" y="66" text-anchor="middle">문장</text>
+          <text class="s" x="295" y="84" text-anchor="middle">S1, S2 …</text>
+          <line class="ln" x1="350" y1="70" x2="373" y2="70" marker-end="url(#m5)"/>
+          <rect class="box" x="375" y="40" width="150" height="60" rx="8"/>
+          <text class="b" x="450" y="66" text-anchor="middle">AI 초안</text>
+          <text class="s" x="450" y="84" text-anchor="middle">값 + 근거 문장 + 원문</text>
+          <line class="ln" x1="525" y1="70" x2="563" y2="70" marker-end="url(#m5)"/>
+          <polygon class="acc" points="565,70 620,32 675,70 620,108"/>
+          <text class="b t-acc" x="620" y="74" text-anchor="middle">코드 대조</text>
+          <line class="ln" x1="675" y1="70" x2="713" y2="70" marker-end="url(#m5)"/>
+          <text class="s" x="694" y="62" text-anchor="middle">통과</text>
+          <rect class="good" x="715" y="40" width="100" height="60" rx="8"/>
+          <text class="b t-good" x="765" y="75" text-anchor="middle">칸 채움</text>
+          <line class="ln" x1="815" y1="70" x2="838" y2="70" marker-end="url(#m5)"/>
+          <rect class="acc" x="840" y="40" width="120" height="60" rx="8"/>
+          <text class="b t-acc" x="900" y="66" text-anchor="middle">담당자 확인</text>
+          <text class="s" x="900" y="84" text-anchor="middle">저장·확정</text>
+          <line class="ln" x1="620" y1="108" x2="620" y2="143" marker-end="url(#m5)"/>
+          <text class="s" x="628" y="130">불일치</text>
+          <rect class="bad" x="560" y="145" width="120" height="50" rx="8"/>
+          <text class="b t-bad" x="620" y="175" text-anchor="middle">비움 + 이유</text>
+          <line class="ln" x1="560" y1="170" x2="522" y2="170" marker-end="url(#m5)"/>
+          <rect class="box" x="370" y="145" width="150" height="50" rx="8"/>
+          <text class="b" x="445" y="166" text-anchor="middle">되묻기 질문</text>
+          <text class="s" x="445" y="183" text-anchor="middle">"맥박은 몇 회였나요?"</text>
+          <polyline class="ln-d" points="370,170 295,170 295,103" marker-end="url(#m5)"/>
+          <text class="s" x="287" y="150" text-anchor="end">답을 이어 붙여 다시</text>
+        </svg>
+      </div>
+      <figcaption>코드 대조: 숫자 원문이 그 근거 문장에 있는지, 원문을 읽은 값이 같은지, 칸 범위 안인지 모두 맞아야 남깁니다. 근거 없는 선택·글도 뺍니다. 초안은 폼에 채울 뿐이고 자동 제출은 없습니다.</figcaption>
+    </figure>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>음성을 글로 바꿔 기록을 정리하는 것은 의료기기가 아닙니다. 사진으로 욕창 단계를 판정하거나 위험을 예측하고 간호를 추천하면 의료기기 영역이라 하지 않습니다. <span class="src">식약처 생성형 AI 의료기기 가이드라인(2025.1)</span></li>
+        <li>실제 대상자 데이터 전: 입력·출력을 저장하거나 학습에 쓰지 않는 기업용 API 또는 자체 서버, 위탁 계약(DPA), 해외 서버면 국외이전 검토, 처리방침 고지. 지금은 가상 데이터로 Gemini와 개발용 음성인식 서버(인터넷 평문 연결)를 씁니다. <span class="src">개인정보위 생성형 AI 안내서(2025.8)</span></li>
+        <li>코드 위치: <code>dictation/lib/validate-draft.ts</code>(대조), <code>draft-prompt.ts</code>(서식 정의에서 만드는 프롬프트·응답 스키마). 단위 테스트가 있습니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 현장 앱 -->
+  <section class="sec" id="industry">
+    <div class="sec-label">현장 앱 개발</div>
+    <h2>현장 앱은 공식 전산 옆에서 돕는다</h2>
+
+    <figure>
+      <div class="fig fig-scroll">
+        <svg class="dg" viewBox="0 0 960 280" role="img" aria-label="청구 소프트웨어만 심평원에 청구 파일을 보내고 검사를 받습니다. 케어노트는 청구하지 않고, 담당자가 공식 화면에 옮겨 입력합니다. 민간 장기요양 프로그램은 공단 자료를 엑셀로 내려받아 가져옵니다.">
+          <defs>
+            <marker id="m6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0L10,5L0,10z"/></marker>
+          </defs>
+          <text class="s" x="150" y="12" text-anchor="middle">기관 쪽</text>
+          <text class="s" x="790" y="6" text-anchor="middle">공식 시스템</text>
+          <rect class="box" x="0" y="21" width="300" height="60" rx="8"/>
+          <text class="b" x="150" y="47" text-anchor="middle">청구 소프트웨어</text>
+          <text class="s" x="150" y="65" text-anchor="middle">심평원 검사를 받아야 함</text>
+          <rect class="acc" x="0" y="120" width="300" height="60" rx="8"/>
+          <text class="b t-acc" x="150" y="146" text-anchor="middle">케어노트</text>
+          <text class="s" x="150" y="164" text-anchor="middle">청구 안 함 · 기록 초안만</text>
+          <rect class="box" x="0" y="204" width="300" height="60" rx="8"/>
+          <text class="b" x="150" y="230" text-anchor="middle">민간 장기요양 프로그램</text>
+          <text class="s" x="150" y="248" text-anchor="middle">케어포 · 이지케어 등</text>
+
+          <rect class="box" x="620" y="14" width="340" height="96" rx="8"/>
+          <text class="b t-hira" x="636" y="32">심평원</text>
+          <rect class="hira" x="635" y="40" width="310" height="24" rx="4"/>
+          <text x="650" y="56">청구 접수 (EDI)</text>
+          <rect class="hira" x="635" y="72" width="310" height="24" rx="4"/>
+          <text x="650" y="88">시범사업 자료제출 시스템</text>
+          <rect class="box" x="620" y="124" width="340" height="146" rx="8"/>
+          <text class="b t-nhis" x="636" y="142">공단</text>
+          <rect class="nhis" x="635" y="152" width="310" height="24" rx="4"/>
+          <text x="650" y="168">요양기관정보마당 (재택의료센터)</text>
+          <rect class="nhis" x="635" y="186" width="310" height="24" rx="4"/>
+          <text x="650" y="202">스마트장기요양 앱 (방문간호)</text>
+          <rect class="nhis" x="635" y="220" width="310" height="24" rx="4"/>
+          <text x="650" y="236">장기요양 포털 (청구·일정)</text>
+
+          <line class="ln" x1="300" y1="51" x2="633" y2="52" marker-end="url(#m6)"/>
+          <text class="s" x="466" y="44" text-anchor="middle">청구 파일 · 검사받은 SW만</text>
+
+          <polyline class="ln-d" points="300,150 420,150"/>
+          <line class="ln-d" x1="420" y1="84" x2="420" y2="198"/>
+          <line class="ln-d" x1="420" y1="84" x2="633" y2="84" marker-end="url(#m6)"/>
+          <line class="ln-d" x1="420" y1="164" x2="633" y2="164" marker-end="url(#m6)"/>
+          <line class="ln-d" x1="420" y1="198" x2="633" y2="198" marker-end="url(#m6)"/>
+          <text class="s" x="430" y="120">담당자가 화면에 옮겨 입력</text>
+          <text class="s" x="430" y="136">공개 API 확인 못 함</text>
+
+          <line class="ln" x1="633" y1="234" x2="302" y2="234" marker-end="url(#m6)"/>
+          <text class="s" x="466" y="226" text-anchor="middle">공단 자료를 엑셀로 내려받아 프로그램에 올림</text>
+        </svg>
+      </div>
+      <figcaption>청구 소프트웨어만 심평원 검사 대상이고(고시 문언 기준), 케어노트처럼 청구하지 않는 기록 앱은 대상으로 규정돼 있지 않습니다. 민간 장기요양 프로그램의 "공단 연동"도 공단 사이트에서 엑셀을 내려받아 프로그램에 올리는 수준입니다.</figcaption>
+    </figure>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>재택·방문간호 앱</th><th class="c">방문 중 녹음</th><th class="c">방문 뒤 구술·인터뷰</th><th class="c">빠진 항목 되묻기</th><th class="c">담당자 확정</th><th class="c">기록 시스템 연동</th></tr></thead>
+        <tbody>
+          <tr><th>WellSky Scribe <span class="pill plain">미국</span></th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr><th>Apricot <span class="pill plain">미국</span></th><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr><th>カイポケ訪問看護 <span class="pill plain">일본</span></th><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr class="ours"><th>케어노트</th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부(선택 녹음, 애드온) · ○ 없음 · ? 공개 자료로 확인 못 함. 공통점은 "초안 → 담당자 검토·확정"이고, 해외 앱은 자사 기록 시스템에 바로 넣지만 케어노트는 공식 전산에 API가 없어 사람이 옮깁니다.</p>
+
+    <h3 style="margin-top:32px; font-size:17px">기관 기록이 되려면 필요한 것</h3>
+    <div class="tiles">
+      <div class="tile"><b>전자서명</b><span class="s">서명자·서명값·일시</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>수정 이력</b><span class="s">수정 전후·일시·사용자</span><span class="pill warn">일부</span></div>
+      <div class="tile"><b>접속기록 2년</b><span class="s">민감정보 처리 시스템</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>권한 기록 3년</b><span class="s">부여·변경·말소</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>추가 인증</b><span class="s">밖에서 접속: OTP 등 또는 VPN</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>백업·국내 위치</b><span class="s">클라우드면 인증·이중화</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>보존 기간</b><span class="s">장기요양·재택 5년, 진료기록 10년</span><span class="pill bad">아직</span></div>
+      <div class="tile"><b>위탁 계약·처리방침</b><span class="s">기관=처리자, 운영자=수탁자</span><span class="pill bad">아직</span></div>
+    </div>
+
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>전자의무기록은 전자서명이 있어야 하고, 추가 기재·수정 시 접속기록을 따로 보관합니다. 복지부는 전자서명이 없는 전자의무기록을 적법하지 않은 것으로 봅니다. <span class="src">의료법 제23조①④, 복지부 안내(2021.6)</span></li>
+        <li>의료기관 밖(클라우드) 보관은 인증 클라우드, 이중화 네트워크, 국내 위치가 필요합니다. <span class="src">전자의무기록 시설·장비 고시(2023.12.14) 제4·5·7조</span></li>
+        <li>접속기록 2년(민감정보), 권한 기록 3년, 외부 접속 안전한 인증수단 또는 VPN, 미사용 자동 차단, 전송 암호화. <span class="src">개인정보의 안전성 확보조치 기준(2025.10.31) 제5~8조</span></li>
+        <li>보존: 장기요양 급여제공기록지·방문간호지시서 5년, 재택의료센터 서식 사업 종료 후 5년, 진료기록부 10년·간호기록부 5년. <span class="src">노인장기요양보험법 시행규칙 제27조④, 재택 지침 18쪽, 의료법 시행규칙 제15조</span></li>
+        <li>EMR 시스템 인증은 자율(2026.5 통합, 지표 59개)이고 ISMS 의무 대상은 매출·이용자 규모 기준이라 지금은 해당하지 않습니다. 인증 기준은 설계 체크리스트로 씁니다.</li>
+        <li>민간 프로그램의 "공단 연동": 담당자가 공단 사이트 "기타 &gt; 엑셀다운로드"에서 급여계약통보서·일정계획·청구내역상세를 엑셀로 내려받아 프로그램에 올립니다. 프로그램은 이 자료로 수급자 등록, 일정 대조, 본인부담금 계산, 급여비용명세서 출력을 합니다. 프로그램에서 공단으로 올리는 절차는 이 매뉴얼에 없습니다. <span class="src">케어포 주야간보호 사용 매뉴얼 10·35·38쪽(방문간호용은 확인 못 함)</span></li>
+        <li>도입은 협력 기관 파일럿에서 시작합니다. Apricot도 재택간호 기관의 얼리어답터 임상가에게 먼저 줬습니다. 케어노트도 협력 기관 한두 곳, 개인정보 검토로 시작해 수개월 단위로 계획합니다.</li>
+        <li>공단 앱 방문간호 입력: 태그 → 건강관리 → 간호처치 → 특이사항 → 요양요원 서명 → 수급자 서명 → 종료 전송(태그 후 10분 안). 2025.6 개편으로 인증서 로그인, 전자서식 14종, Wi-Fi가 추가됐습니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 남은 일 -->
+  <section class="sec" id="todo">
+    <div class="sec-label">남은 일</div>
+    <h2>지침에서 나온 개발 과제</h2>
+    <div class="lanes">
+      <div class="lane">
+        <h3><span class="pill bad">높음</span></h3>
+        <ul style="display:grid; gap:8px">
+          <li>심평원·공단 사이트 입력 지원 (공식 경로 확인 → 크롬 확장)</li>
+          <li>원본 방식 결정과 인쇄 화면</li>
+          <li>파일럿 전 보안·보존 요건</li>
+        </ul>
+      </div>
+      <div class="lane">
+        <h3><span class="pill warn">중간</span></h3>
+        <ul style="display:grid; gap:8px">
+          <li>같은 날 겹침 확인 확대 (가정간호·주야간보호 등)</li>
+          <li>횟수 한도 경고 (60/140회, 주 3회, 추가 3회)</li>
+          <li>포괄평가(제5호)와 "함께 방문" 묶기</li>
+          <li>연속 방문 묶기 (동일 세대 자동 체크)</li>
+        </ul>
+      </div>
+      <div class="lane">
+        <h3><span class="pill plain">나중</span></h3>
+        <ul style="display:grid; gap:8px">
+          <li>방문간호지시서 만료 알림 (180일)</li>
+          <li>오프라인 기록 저장</li>
+          <li>직종 추가 (한의사 등)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 확인·결정 -->
+  <section class="sec" id="confirm">
+    <div class="sec-label">확인·결정</div>
+    <h2>협력 기관에 확인할 것, 정해야 할 것</h2>
+    <div class="qd">
+      <div class="fig">
+        <h3>협력 기관 확인</h3>
+        <ol>
+          <li><span>재택 의사 방문에 일차의료 제4호를 기본으로 쓰는지</span></li>
+          <li><span>방문간호 급여제공기록지 원본 양식</span></li>
+          <li><span>확정 전 반드시 채울 칸</span></li>
+          <li><span>제7호를 월 단위로 모아 입력하는지</span></li>
+          <li><span>재택 수급자를 일차의료에 따로 등록하지 않는지</span></li>
+          <li><span>진료기록부(EMR)를 어떻게 쓰는지</span></li>
+          <li><span>원본을 종이로 보관하는지 전자로 보관하는지</span></li>
+          <li><span>요양기관정보마당에서 제5~8호를 입력하는 메뉴 경로</span></li>
+        </ol>
+      </div>
+      <div class="fig">
+        <h3>정해야 할 것</h3>
+        <ol>
+          <li><span>다음 우선순위 <span class="pill">추천: 사이트 입력 확인부터</span></span></li>
+          <li><span>협력 기관·현장 사용자 확보</span></li>
+          <li><span>실제 데이터용 AI·음성 처리 위치</span></li>
+          <li><span>배포 환경 (HTTPS 도메인)</span></li>
+          <li><span>로그인 추가 인증 여부</span></li>
+          <li><span>제품명 <span class="pill warn">같은 이름 앱 있음</span></span></li>
+        </ol>
+      </div>
+    </div>
+    <details class="more">
+      <summary>근거와 자세히</summary>
+      <ul class="in">
+        <li>제품명: 케어마인더가 간호사 음성으로 간호기록·인수인계를 만드는 앱을 "케어노트(CareNote)"라는 이름으로 2026년 8월 공개했습니다. 상표·명칭 확인이 필요합니다.</li>
+        <li>협력 기관 답을 받으면 서식 규칙(<code>programs.ts</code>)과 서식 정의만 고칩니다.</li>
+        <li>배포는 음성인식 서버가 있는 클러스터에 함께 올리는 방안이 가장 간단합니다. 마이크는 HTTPS에서만 켜집니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 출처 -->
+  <section class="sec" id="sources">
+    <div class="sec-label">출처</div>
+    <h2>근거 자료</h2>
+    <div class="sources">
+      <details>
+        <summary>지침·법령</summary>
+        <ul>
+          <li>장기요양 재택의료센터 시범사업 지침 2026.2: <a href="https://koa.or.kr/bbs/download.php?code=insurance&amp;number=34934">koa.or.kr</a></li>
+          <li>일차의료 방문진료 수가 시범사업 지침 2026.4(심평원 공지): <a href="https://www.hira.or.kr/bbsDummy.do?pgmid=HIRAA020002000100&amp;brdScnBltNo=4&amp;brdBltNo=12025">hira.or.kr</a></li>
+          <li>재가급여전자관리시스템(RFID) 업무 가이드북 2023.12: <a href="https://www.carefor.co.kr/ct_att/contents_article/0/202402/44604/D0BLtemMIF.pdf">carefor.co.kr(공단 자료 사본)</a></li>
+          <li>방문간호지시서(시행규칙 별지 제29호): <a href="https://www.law.go.kr/flDownload.do?flSeq=36362293">law.go.kr</a></li>
+          <li>노인장기요양보험법 시행규칙 제27조: <a href="https://www.nhis.or.kr/lm/lmxsrv/law/lawFullContent.do?SEQ=32">nhis.or.kr</a></li>
+          <li>심평원 진료비확인요청 자료 제출방법: <a href="https://www.hira.or.kr/bbsDummy.do?pgmid=HIRAA020049000100%29&amp;brdScnBltNo=4&amp;brdBltNo=16">hira.or.kr</a></li>
+          <li>의료법: <a href="https://www.law.go.kr/법령/의료법">law.go.kr</a> · 통신비밀보호법: <a href="https://www.law.go.kr/법령/통신비밀보호법">law.go.kr</a> · 개인정보 보호법: <a href="https://www.law.go.kr/법령/개인정보보호법">law.go.kr</a></li>
+          <li>요양급여비용 심사청구소프트웨어 검사 기준: <a href="https://law.go.kr/LSW/admRulLsInfoP.do?admRulSeq=2100000261126">law.go.kr</a></li>
+          <li>전자의무기록 시설·장비 기준: <a href="https://law.go.kr/LSW/admRulLsInfoP.do?admRulSeq=2100000232676">law.go.kr</a> · 개인정보의 안전성 확보조치 기준: <a href="https://www.law.go.kr/LSW//admRulInfoP.do?admRulSeq=2100000265956">law.go.kr</a></li>
+          <li>EMR 시스템 인증기준: <a href="https://emrcert.mohw.go.kr/menu.es?mid=a10102020000">emrcert.mohw.go.kr</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>현장·앱·AI</summary>
+        <ul>
+          <li>WellSky Scribe: <a href="https://wellsky.com/wellsky-introduces-ai-powered-ambient-listening-and-transcription-capabilities-within-ehr-to-transform-the-home-health-visit/">wellsky.com</a> · Apricot: <a href="https://www.apricothealth.ai/">apricothealth.ai</a> · Apricot 파일럿: <a href="https://homehealthcarenews.com/2024/06/elara-caring-choice-health-at-home-praise-new-home-health-ai-tool-apricot/">homehealthcarenews.com</a></li>
+          <li>カイポケ訪問看護: <a href="https://houkan.kaipoke.biz/function/">houkan.kaipoke.biz</a> · 介護のマナ: <a href="https://lifeshift-inc.com/kaipoke-houmon-kiroku-app/">lifeshift-inc.com</a></li>
+          <li>케어포 공단연동 매뉴얼: <a href="https://www.carefor.co.kr/ct_att/contents_article/0/202206/12/Dov8rzFqBv.pdf">carefor.co.kr</a> · 스마트장기요양 앱 개편(2025.6): <a href="https://www.yoyangnews.co.kr/news/articleView.html?idxno=23414">yoyangnews.co.kr</a></li>
+          <li>식약처 생성형 AI 의료기기 가이드라인 해설: <a href="https://www.shinkim.com/kor/media/newsletter/2739">shinkim.com</a> · 개인정보위 생성형 AI 안내서(2025.8): <a href="https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&amp;bbscttNo=20836">privacy.go.kr</a></li>
+          <li>케어마인더 "케어노트" 공개(2026.8.21): <a href="https://digitalchosun.dizzo.com/site/data/html_dir/2026/08/21/2026082180187.html">digitalchosun.dizzo.com</a></li>
+          <li>pyannote speaker-diarization-3.1 모델 카드(화자 분리 벤치마크): <a href="https://huggingface.co/pyannote/speaker-diarization-3.1">huggingface.co</a></li>
+          <li>노부부 방문진료 사례(노동훈 원장 칼럼, 헬스경향 2026.6.6): <a href="https://www.k-health.com/news/articleView.html?idxno=92875">k-health.com</a></li>
+          <li>가정방문급여 일반원칙(고시 제15조, 2018년판 사본): <a href="https://www.ulex.co.kr/%EB%B2%95%EB%A5%A0/2100000174636-36934-%EC%9E%A5%EA%B8%B0%EC%9A%94%EC%96%91%EA%B8%89">ulex.co.kr</a> · 부당청구 사례: <a href="https://carefor.co.kr/cs/view_faq.php?calmgno=44477">carefor.co.kr</a></li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <p>작성 기준일 2026년 9월 24일 · 지침 쪽수는 지침 본문에 인쇄된 쪽 번호입니다.</p>
+    <p>법률·규제 해석은 전문가 검토 전 내용입니다. 케어노트 반영 상태는 커밋 7d7c1e4와 작업 중 변경 기준입니다.</p>
+  </footer>
+</main>
+
+<script>
+  (function () {
+    var HIRA_ADDR = ["주소", '<a href="https://biz.hira.or.kr/">https://biz.hira.or.kr</a> 요양기관업무포털에 공동인증서로 로그인 → [시범사업 자료제출 시스템] 선택 → <a href="https://aq.hira.or.kr/hira_mc/">https://aq.hira.or.kr/hira_mc/</a> 가 열림'];
+    var HIRA_MENU = ["시범사업 서식관리", "재택의료ㆍ주치의 시범사업", "일차의료 방문진료 수가 시범사업", "대상자 조회 및 점검서식 작성"];
+    var HIRA_WRITE = ["작성", "의사 성명·면허번호·방문진료실시일 입력 → 점검서식 → 임시저장 → 최종 제출(이후 수정 불가)"];
+    var NHIS_ADDR = ["주소", '<a href="https://medicare.nhis.or.kr/portal/common/login.do">https://medicare.nhis.or.kr</a> 요양기관정보마당에 로그인 → 재택의료센터 전산시스템'];
+    var NHIS_MENU = ["재택의료센터 전산시스템", "기록지 입력 메뉴 (확인 필요)"];
+    var NOT_ORIGINAL = ["주의", "여기서 출력한 기록지는 원본이 아닙니다. 원본은 기관이 5년 보관합니다"];
+    function hira(form, when) {
+      return { org: "hira", orgLabel: "심평원", device: "PC 웹", title: "시범사업 자료제출 시스템", form: form,
+        rows: [HIRA_ADDR], menuLabel: "메뉴", menu: HIRA_MENU, after: [["언제", when], HIRA_WRITE] };
+    }
+    function nhis(form, when, extra) {
+      return { org: "nhis", orgLabel: "공단", device: "PC 웹", title: "요양기관정보마당 (재택의료센터 전산)", form: form,
+        rows: [NHIS_ADDR], menuLabel: "메뉴", menu: NHIS_MENU, after: [["언제", when], NOT_ORIGINAL].concat(extra || []) };
+    }
+    var W = {
+      p4: hira("일차의료 별지 제4호 점검서식", "매 방문 뒤. 제출해야 방문진료료를 산정합니다"),
+      p4h: hira("일차의료 별지 제4호 (재택의료센터 의사)", "재택의료센터 의사가 방문진료료를 청구할 때만. 청구하지 않거나 의사 월 140회를 넘으면 제6호만 씁니다"),
+      h6: nhis("재택의료센터 별지 제6호 방문점검 기록지(의사)", "의사 방문마다 작성하고, 매달 청구 때 함께 제출합니다(다음 달 10일까지)"),
+      h7: nhis("재택의료센터 별지 제7호 방문점검 기록지(간호사)", "간호사 방문마다(월 2회 이상, 추가 3회까지). 매달 청구 때 함께 제출합니다"),
+      h8: nhis("재택의료센터 별지 제8호 업무 기록지(사회복지사)", "상담마다(방문 또는 전화, 단순 안부 확인 제외). 매달 청구 때 함께 제출합니다"),
+      h5: nhis("재택의료센터 별지 제5호 포괄평가 및 케어플랜 기록지", "최초와 1년마다, 팀이 함께 방문한 날. 이날은 제6~8호를 쓰지 않아도 됩니다", [["케어노트", "아직 없는 서식입니다"]]),
+      ltc: { org: "nhis", orgLabel: "공단", device: "휴대폰 앱", title: "스마트장기요양 앱", form: "장기요양 급여제공 기록 (방문간호)",
+        rows: [["설치", '<a href="https://play.google.com/store/apps/details?id=kr.or.nhis.longtermcare.android">Google Play</a> · App Store 공식 앱, 인증서 로그인']],
+        menuLabel: "흐름", menu: ["태그 인식", "건강관리", "간호처치", "특이사항(200자)", "요양요원 서명", "수급자 서명", "종료 전송"],
+        after: [["주의", "태그 인식 후 10분 안에 종료 전송. 전송 내역을 쓰지 않거나 5분 넘게 고치면 종이 기록지를 써야 합니다"], ["청구", '노인장기요양보험 포털 <a href="https://www.longtermcare.or.kr/">https://www.longtermcare.or.kr</a>']] },
+      order: { org: "paper", orgLabel: "종이", device: "기관 보관", title: "방문간호지시서", form: "방문간호지시서 (노인장기요양보험법 시행규칙 별지 제29호)",
+        rows: [], menuLabel: "흐름", menu: ["의사·한의사·치과의사 발급", "방문간호기관 보관"],
+        after: [["유효", "발급일부터 180일"], ["보존", "급여 종료일부터 5년 (문서 또는 전자문서)"], ["케어노트", "범위 밖입니다"]] }
+    };
+    var panel = document.getElementById("where");
+    var hits = Array.prototype.slice.call(document.querySelectorAll(".dg .hit"));
+    if (!panel || !hits.length) return;
+    function row(k, v) { return '<div class="w-row"><span class="k">' + k + "</span><span>" + v + "</span></div>"; }
+    function render(key) {
+      var d = W[key];
+      if (!d) return;
+      var html = '<div class="w-head"><span class="org ' + d.org + '">' + d.orgLabel + '</span><span class="pill plain">' + d.device + '</span><b class="w-title">' + d.title + "</b></div>";
+      html += '<div class="w-form">선택한 서식: <b>' + d.form + "</b></div>";
+      d.rows.forEach(function (r) { html += row(r[0], r[1]); });
+      html += '<div class="w-row"><span class="k">' + d.menuLabel + '</span><ol class="crumbs">' + d.menu.map(function (m) { return "<li><span>" + m + "</span></li>"; }).join("") + "</ol></div>";
+      d.after.forEach(function (r) { html += row(r[0], r[1]); });
+      panel.innerHTML = html;
+      hits.forEach(function (h) {
+        var on = h.getAttribute("data-k") === key;
+        h.classList.toggle("on", on);
+        h.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+    hits.forEach(function (h) {
+      h.addEventListener("click", function () { render(h.getAttribute("data-k")); });
+      h.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); render(h.getAttribute("data-k")); }
+      });
+    });
+    render("p4");
+  })();
+</script>
+</body>
+</html>
