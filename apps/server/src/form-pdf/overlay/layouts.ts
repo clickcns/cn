@@ -1,3 +1,6 @@
+import type { OriginalPdfFormId } from "@repo/shared-types";
+import type { Rect } from "../pdf-draw.js";
+import type { RecordTexts } from "../pdf-record.js";
 import {
   basicInfo,
   box,
@@ -6,50 +9,93 @@ import {
   HOME_CARE_FOOTER,
   rect,
   type OverlayLayout,
-  type TextItem,
+  type TextSlot,
 } from "./layout.js";
 
 /*
  * 원본 위에 채우는 서식 자리. 제7호(간호사, 한 장에 방문 5칸)는 home-care-nurse.ts 가 따로 그린다.
  */
 
+/** 방문일 년·월·일 칸(숫자를 칸 오른쪽, "년·월·일" 글자 앞에 붙인다). */
+function visitDate(year: Rect, month: Rect, day: Rect): TextSlot[] {
+  return [
+    { id: "date.year", box: year, align: "right", text: (t) => t.date.year },
+    { id: "date.month", box: month, align: "right", text: (t) => t.date.month },
+    { id: "date.day", box: day, align: "right", text: (t) => t.date.day },
+  ];
+}
+
+/** 시작·종료의 시(":" 앞, 오른쪽 붙임)·분 칸. */
+function visitTime(at: "start" | "end", hour: Rect, minute: Rect): TextSlot[] {
+  return [
+    { id: `${at}.hour`, box: hour, align: "right", text: (t) => t[at].hour },
+    { id: `${at}.minute`, box: minute, text: (t) => t[at].minute },
+  ];
+}
+
+/** 제4호 진료 시간 줄: 년·월·일·시·분 글자 앞에 숫자를 쓴다(시각이 없으면 비운다, 시작·종료 같은 날). */
+function primaryCareTimeRow(
+  at: "start" | "end",
+  y0: number,
+  y1: number,
+): TextSlot[] {
+  const cell = (
+    id: TextSlot["id"],
+    x0: number,
+    x1: number,
+    value: (t: RecordTexts) => string,
+  ): TextSlot => ({
+    id,
+    box: rect(x0, y0, x1, y1),
+    align: "right",
+    text: (t) => (t[at].text ? value(t) : ""),
+  });
+  return [
+    cell(`${at}.year`, 381, 413.5, (t) => t.date.year),
+    cell(`${at}.month`, 424, 442.5, (t) => t.date.month),
+    cell(`${at}.day`, 452, 467.5, (t) => t.date.day),
+    cell(`${at}.hour`, 480, 499.5, (t) => t[at].hour),
+    cell(`${at}.minute`, 509, 523.5, (t) => t[at].minute),
+  ];
+}
+
 /** [별지 제4호] 일차의료 방문진료 점검서식 — 글자가 윤곽선이라 좌표는 도형에서 뽑았다. */
-export const PRIMARY_CARE_CHECK_LAYOUT: OverlayLayout = {
+const PRIMARY_CARE_CHECK_LAYOUT: OverlayLayout = {
   cover: [
     rect(279, 786, 317, 801), // 쪽 번호 "- 50 -"
     rect(465, 831, 595, 842), // 내려받기 표시
   ],
   footer: rect(58, 828, 460, 838),
-  texts: (t) => {
-    const { date, start, end } = t;
-    // 진료 시간 칸: 년·월·일·시·분 글자 앞에 숫자를 쓴다(시작·종료 같은 날로 본다).
-    const timeRow = (y0: number, y1: number, time: typeof start): TextItem[] =>
-      time.text
-        ? [
-            { text: date.year, box: rect(381, y0, 413.5, y1), align: "right" },
-            { text: date.month, box: rect(424, y0, 442.5, y1), align: "right" },
-            { text: date.day, box: rect(452, y0, 467.5, y1), align: "right" },
-            { text: time.hour, box: rect(480, y0, 499.5, y1), align: "right" },
-            {
-              text: time.minute,
-              box: rect(509, y0, 523.5, y1),
-              align: "right",
-            },
-          ]
-        : [];
-    return [
-      { text: t.recipientName, box: rect(137, 109.8, 254, 124.2) },
-      // 2. 주민등록번호는 저장하지 않는다(심평원 재진 불러오기).
-      { text: t.address, box: rect(137, 175.3, 538, 189.1) },
-      { text: t.staffName, box: rect(143, 396.7, 259, 410.5) },
-      { text: t.licenseNumber, box: rect(372, 396.7, 538, 410.5) },
-      { text: date.year, box: rect(145, 417, 188.5, 431.5), align: "right" },
-      { text: date.month, box: rect(200, 417, 217, 431.5), align: "right" },
-      { text: date.day, box: rect(229, 417, 247, 431.5), align: "right" },
-      ...timeRow(410.5, 424.3, start),
-      ...timeRow(424.3, 438.1, end),
-    ];
-  },
+  texts: [
+    {
+      id: "recipientName",
+      box: rect(137, 109.8, 254, 124.2),
+      text: (t) => t.recipientName,
+    },
+    // 2. 주민등록번호는 저장하지 않는다(심평원 재진 불러오기).
+    {
+      id: "address",
+      box: rect(137, 175.3, 538, 189.1),
+      text: (t) => t.address,
+    },
+    {
+      id: "staffName",
+      box: rect(143, 396.7, 259, 410.5),
+      text: (t) => t.staffName,
+    },
+    {
+      id: "licenseNumber",
+      box: rect(372, 396.7, 538, 410.5),
+      text: (t) => t.licenseNumber,
+    },
+    ...visitDate(
+      rect(145, 417, 188.5, 431.5),
+      rect(200, 417, 217, 431.5),
+      rect(229, 417, 247, 431.5),
+    ),
+    ...primaryCareTimeRow("start", 410.5, 424.3),
+    ...primaryCareTimeRow("end", 424.3, 438.1),
+  ],
   fields: {
     ltcGrade: {
       kind: "options",
@@ -199,29 +245,45 @@ export const PRIMARY_CARE_CHECK_LAYOUT: OverlayLayout = {
 };
 
 /** [별지 제6호] 장기요양 재택의료센터 방문점검 기록지(의사) */
-export const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
+const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
   cover: HOME_CARE_COVER,
   footer: HOME_CARE_FOOTER,
-  texts: (t) => {
-    const { date, start, end } = t;
-    return [
-      { text: date.year, box: rect(230, 150.6, 282, 169.9), align: "right" },
-      { text: date.month, box: rect(290, 150.6, 321, 169.9), align: "right" },
-      { text: date.day, box: rect(330, 150.6, 359, 169.9), align: "right" },
-      ...basicInfo(
-        t,
-        { left: [222, 326], right: [431, 535] },
-        [169.9, 189.0, 210.6, 229.8, 249.1],
-      ),
-      { text: t.staffName, box: rect(169, 272.2, 229, 293.8) },
-      { text: t.profession, box: rect(298, 272.2, 371, 293.8) },
-      { text: t.licenseNumber, box: rect(461, 272.2, 535, 293.8) },
-      { text: start.hour, box: rect(292, 315.3, 330, 341.3), align: "right" },
-      { text: start.minute, box: rect(337, 315.3, 369, 341.3) },
-      { text: end.hour, box: rect(458, 315.3, 496, 341.3), align: "right" },
-      { text: end.minute, box: rect(503, 315.3, 535, 341.3) },
-    ];
-  },
+  texts: [
+    ...visitDate(
+      rect(230, 150.6, 282, 169.9),
+      rect(290, 150.6, 321, 169.9),
+      rect(330, 150.6, 359, 169.9),
+    ),
+    ...basicInfo(
+      { left: [222, 326], right: [431, 535] },
+      [169.9, 189.0, 210.6, 229.8, 249.1],
+    ),
+    {
+      id: "staffName",
+      box: rect(169, 272.2, 229, 293.8),
+      text: (t) => t.staffName,
+    },
+    {
+      id: "profession",
+      box: rect(298, 272.2, 371, 293.8),
+      text: (t) => t.profession,
+    },
+    {
+      id: "licenseNumber",
+      box: rect(461, 272.2, 535, 293.8),
+      text: (t) => t.licenseNumber,
+    },
+    ...visitTime(
+      "start",
+      rect(292, 315.3, 330, 341.3),
+      rect(337, 315.3, 369, 341.3),
+    ),
+    ...visitTime(
+      "end",
+      rect(458, 315.3, 496, 341.3),
+      rect(503, 315.3, 535, 341.3),
+    ),
+  ],
   fields: {
     companion: {
       kind: "options",
@@ -337,28 +399,32 @@ export const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
 };
 
 /** [별지 제8호] 장기요양 재택의료센터 업무 기록지(사회복지사) */
-export const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
+const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
   cover: HOME_CARE_COVER,
   footer: HOME_CARE_FOOTER,
-  texts: (t) => {
-    const { date, start, end } = t;
-    return [
-      ...basicInfo(
-        t,
-        { left: [195, 324], right: [418, 536] },
-        [134.6, 151.5, 168.5, 185.6, 202.5],
-      ),
-      { text: date.year, box: rect(194, 223, 228, 240), align: "right" },
-      { text: date.month, box: rect(236, 223, 256, 240), align: "right" },
-      { text: date.day, box: rect(262, 223, 283, 240), align: "right" },
-      { text: start.hour, box: rect(362, 223, 386, 240), align: "right" },
-      { text: start.minute, box: rect(392, 223, 418, 240) },
-      { text: end.hour, box: rect(481, 223, 504, 240), align: "right" },
-      { text: end.minute, box: rect(510, 223, 537, 240) },
-      { text: t.staffName, box: rect(195, 240, 324, 256.9) },
-      { text: t.licenseNumber, box: rect(418, 240, 536, 256.9) },
-    ];
-  },
+  texts: [
+    ...basicInfo(
+      { left: [195, 324], right: [418, 536] },
+      [134.6, 151.5, 168.5, 185.6, 202.5],
+    ),
+    ...visitDate(
+      rect(194, 223, 228, 240),
+      rect(236, 223, 256, 240),
+      rect(262, 223, 283, 240),
+    ),
+    ...visitTime("start", rect(362, 223, 386, 240), rect(392, 223, 418, 240)),
+    ...visitTime("end", rect(481, 223, 504, 240), rect(510, 223, 537, 240)),
+    {
+      id: "staffName",
+      box: rect(195, 240, 324, 256.9),
+      text: (t) => t.staffName,
+    },
+    {
+      id: "licenseNumber",
+      box: rect(418, 240, 536, 256.9),
+      text: (t) => t.licenseNumber,
+    },
+  ],
   fields: {
     counselee: {
       kind: "options",
@@ -442,3 +508,13 @@ export const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
     notes: { kind: "text", box: rect(197, 735, 535, 767), multiline: true },
   },
 };
+
+/** 원본 위에 칸 자리로 채우는 서식(제7호는 home-care-nurse.ts). */
+export const OVERLAY_LAYOUTS = {
+  PRIMARY_CARE_CHECK: PRIMARY_CARE_CHECK_LAYOUT,
+  HOME_CARE_DOCTOR: HOME_CARE_DOCTOR_LAYOUT,
+  HOME_CARE_SOCIAL: HOME_CARE_SOCIAL_LAYOUT,
+} satisfies Record<
+  Exclude<OriginalPdfFormId, "HOME_CARE_NURSE">,
+  OverlayLayout
+>;

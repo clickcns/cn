@@ -3,6 +3,7 @@ import {
   ClipboardListIcon,
   HeartHandshakeIcon,
   LayoutDashboardIcon,
+  SlidersHorizontalIcon,
   UsersRoundIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,12 @@ const NAV_ITEMS: NavItem[] = [
     to: ROUTES.organizations,
     label: "기관",
     icon: Building2Icon,
+    adminOnly: true,
+  },
+  {
+    to: ROUTES.formLayouts,
+    label: "원본 서식 조정",
+    icon: SlidersHorizontalIcon,
     adminOnly: true,
   },
 ];

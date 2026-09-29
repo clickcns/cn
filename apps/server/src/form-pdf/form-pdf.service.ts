@@ -16,6 +16,7 @@ import {
 } from "../visit/visit.mapper.js";
 import { visitScope } from "../visit/visit.service.js";
 import { buildNurseMonthPdf, buildVisitPdf } from "./build.js";
+import { FormLayoutService } from "./form-layout.service.js";
 import type { PdfVisitRecord } from "./pdf-record.js";
 
 export interface PdfFile {
@@ -50,7 +51,10 @@ function toPdfRecords(
 /** 서식 PDF. 확정본(보관한 값)으로만 만든다 — 작성 중인 기록은 출력하지 않는다. */
 @Injectable()
 export class FormPdfService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly formLayouts: FormLayoutService,
+  ) {}
 
   /** 확정본 한 벌의 서식 모두(서식 순서대로). 방문을 볼 수 있는 사람이면 뽑는다. */
   async visitVersionPdf(
@@ -59,13 +63,16 @@ export class FormPdfService {
     version: number,
     style: FormPdfStyle,
   ): Promise<PdfFile> {
-    const row = await this.prisma.visitRecordVersion.findFirst({
-      where: { visitId, version, visit: visitScope(actor) },
-      include: {
-        ...versionActorsArgs.include,
-        visit: { select: { scheduledAt: true } },
-      },
-    });
+    const [row, adjustments] = await Promise.all([
+      this.prisma.visitRecordVersion.findFirst({
+        where: { visitId, version, visit: visitScope(actor) },
+        include: {
+          ...versionActorsArgs.include,
+          visit: { select: { scheduledAt: true } },
+        },
+      }),
+      style === "original" ? this.formLayouts.allAdjustments() : {},
+    ]);
     if (!row) throw new NotFoundException("확정본을 찾을 수 없습니다");
     const records = toPdfRecords(
       toVisitRecordVersionDetail(row),
@@ -76,7 +83,7 @@ export class FormPdfService {
       ? `${first.header.recipient.name}_${first.visitDate}_${row.version}차`
       : `방문기록_${row.version}차`;
     return {
-      bytes: await buildVisitPdf(records, style, name),
+      bytes: await buildVisitPdf(records, style, name, adjustments),
       filename: `${name}.pdf`,
     };
   }
@@ -90,13 +97,16 @@ export class FormPdfService {
     recipientId: string,
     month: string,
   ): Promise<PdfFile> {
-    const recipient = await this.prisma.recipient.findFirst({
-      where: {
-        id: recipientId,
-        organizationId: resolveOrganizationFilter(actor),
-      },
-      select: { name: true },
-    });
+    const [recipient, adjustments] = await Promise.all([
+      this.prisma.recipient.findFirst({
+        where: {
+          id: recipientId,
+          organizationId: resolveOrganizationFilter(actor),
+        },
+        select: { name: true },
+      }),
+      this.formLayouts.allAdjustments(),
+    ]);
     if (!recipient) throw new NotFoundException("수급자를 찾을 수 없습니다");
 
     const visits = await this.prisma.visit.findMany({
@@ -135,7 +145,7 @@ export class FormPdfService {
     const altered = records.filter((record) => !record.hashMatches).length;
     const footer = `케어노트 출력 · ${formatMonthLabel(month)} 확정 방문 ${records.length}건(확정본 기준)${altered ? ` · 보관 값이 원본과 다른 방문 ${altered}건` : ""}`;
     return {
-      bytes: await buildNurseMonthPdf(records, name, footer),
+      bytes: await buildNurseMonthPdf(records, name, footer, adjustments),
       filename: `${name}.pdf`,
     };
   }

@@ -78,12 +78,14 @@ model User {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  organization      Organization?        @relation(fields: [organizationId], references: [id])
-  visits            Visit[]
-  sessions          RefreshSession[]
+  organization          Organization?          @relation(fields: [organizationId], references: [id])
+  visits                Visit[]
+  sessions              RefreshSession[]
   /// 확정한 확정본·[수정]으로 되돌린 확정본(이력에 이름을 적는다)
-  confirmedVersions VisitRecordVersion[] @relation("VersionConfirmedBy")
-  reopenedVersions  VisitRecordVersion[] @relation("VersionReopenedBy")
+  confirmedVersions     VisitRecordVersion[]   @relation("VersionConfirmedBy")
+  reopenedVersions      VisitRecordVersion[]   @relation("VersionReopenedBy")
+  /// 저장한 원본 서식 조정
+  formLayoutAdjustments FormLayoutAdjustment[]
 
   @@index([organizationId])
   @@map("users")
@@ -241,4 +243,18 @@ model VisitDictation {
   visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
 
   @@map("visit_dictations")
+}
+
+/// 원본 서식 PDF의 칸 미세조정(운영자가 서식마다 한 벌, 모든 기관에 적용). 코드의 기본 자리에 더하는 값이다.
+/// adjustments 는 shared-types FormLayoutAdjustments 형태다.
+model FormLayoutAdjustment {
+  /// shared-types FORMS_WITH_ORIGINAL_PDF 의 서식 ID
+  formId      String   @id
+  adjustments Json
+  updatedById String
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User @relation(fields: [updatedById], references: [id])
+
+  @@map("form_layout_adjustments")
 }

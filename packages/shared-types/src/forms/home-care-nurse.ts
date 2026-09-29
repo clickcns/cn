@@ -41,8 +41,11 @@ export const HOME_CARE_NURSE_FORM = {
           key: "visitType",
           label: "방문사유",
           type: "single",
+          // 원본 월간 서식은 정기(1~2번 칸)·추가(3~5번 칸)로 칸을 나눠 적으므로 확정 전에 정한다.
+          required: true,
           dictation: true,
-          hint: "추가 방문(추가간호)이라고 말하지 않았으면 비워 둔다",
+          question: "정기 방문이었나요, 추가 방문(추가간호)이었나요?",
+          hint: "정기·추가를 말하지 않았으면 비워 둔다",
           options: [
             { value: "REGULAR", label: "정기 방문" },
             { value: "ADDITIONAL", label: "추가 방문" },

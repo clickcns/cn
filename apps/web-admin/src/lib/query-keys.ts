@@ -11,6 +11,14 @@ import type {
  * `all`은 해당 리소스의 모든 목록·상세를 한 번에 무효화할 때 쓴다.
  */
 export const queryKeys = {
+  formLayouts: {
+    all: ["form-layouts"] as const,
+    list: () => ["form-layouts", "list"] as const,
+    detail: (formId: string) => ["form-layouts", "detail", formId] as const,
+    /** 미리보기 PDF. adjustments 는 정리한 조정의 JSON 글(같은 조정이면 같은 키). */
+    preview: (formId: string, adjustments: string) =>
+      ["form-layouts", "preview", formId, adjustments] as const,
+  },
   organizations: {
     all: ["organizations"] as const,
     list: () => ["organizations", "list"] as const,

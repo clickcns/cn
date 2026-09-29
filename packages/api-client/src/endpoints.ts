@@ -2,8 +2,12 @@ import type {
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
+  FormLayoutDetail,
+  FormLayoutSummary,
   FormPdfQuery,
   NurseMonthPdfQuery,
+  PreviewFormLayoutInput,
+  SaveFormLayoutInput,
   CreateOrganizationInput,
   CreateRecipientInput,
   CreateUserInput,
@@ -89,6 +93,28 @@ export function createCarenoteApi(http: KyInstance) {
         http.post("organizations", { json: input }).json<Organization>(),
       update: (id: string, input: UpdateOrganizationInput) =>
         http.patch(`organizations/${id}`, { json: input }).json<Organization>(),
+    },
+
+    /** 원본 서식 조정(운영자). */
+    formLayouts: {
+      list: () => http.get("form-layouts").json<FormLayoutSummary[]>(),
+      get: (formId: string) =>
+        http.get(`form-layouts/${formId}`).json<FormLayoutDetail>(),
+      save: (formId: string, input: SaveFormLayoutInput) =>
+        http
+          .put(`form-layouts/${formId}`, { json: input })
+          .json<FormLayoutDetail>(),
+      reset: (formId: string) =>
+        http.delete(`form-layouts/${formId}`).json<FormLayoutDetail>(),
+      /** 저장하지 않은 조정으로 그린 표본 PDF. signal 로 지난 요청을 멈춘다. */
+      preview: (
+        formId: string,
+        input: PreviewFormLayoutInput,
+        signal?: AbortSignal,
+      ) =>
+        http
+          .post(`form-layouts/${formId}/preview`, { json: input, signal })
+          .blob(),
     },
 
     users: {

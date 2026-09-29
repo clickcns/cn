@@ -1,3 +1,4 @@
+import { roundPt, type FormData } from "@repo/shared-types";
 import {
   popGraphicsState,
   pushGraphicsState,
@@ -5,13 +6,7 @@ import {
   type PDFDocument,
   type PDFPage,
 } from "pdf-lib";
-import {
-  cover,
-  drawFooter,
-  drawLine,
-  drawRing,
-  type Fonts,
-} from "../pdf-draw.js";
+import { cover, drawRing, type Fonts, type Point } from "../pdf-draw.js";
 import {
   footerText,
   numberValue,
@@ -28,20 +23,33 @@ import {
   HOME_CARE_FOOTER,
   rect,
   type FieldSlot,
-  type TextItem,
+  type ItemId,
+  type Placement,
+  type TextSlot,
 } from "./layout.js";
-import { addTemplatePage, drawField, drawTexts } from "./render.js";
+import {
+  addTemplatePage,
+  drawField,
+  drawPlacedFooter,
+  drawTexts,
+} from "./render.js";
 
 /*
- * [별지 제7호] 장기요양 재택의료센터 방문점검 기록지(간호사). 원본은 한 장에 한 달 방문 5칸이다.
- * 방문 한 건은 첫 칸에, 월간 기록지는 그 달 확정 방문을 날짜순으로 칸에 채운다(5건이 넘으면 다음 장).
- * 방문사유는 칸에 쓴 방문의 값을 모두 표시하고, 향후계획·총평은 그 달 마지막 방문 값을 쓴다.
+ * [별지 제7호] 장기요양 재택의료센터 방문점검 기록지(간호사). 원본은 한 장에 한 달 방문 5칸이고,
+ * 방문사유 줄이 칸을 나눈다: "정기 방문"은 1~2번 칸, "추가 방문"은 3~5번 칸(지침의 기본 2회 +
+ * 추가간호 3회). 방문은 방문사유에 따라 그 칸에 날짜순으로 채우고, 넘치면 다음 장에 적는다.
+ * 향후계획·총평은 그 달 마지막 방문 값을 쓴다.
  */
 
 /** 방문 칸 5개의 왼쪽 선(pt). 칸 너비는 약 72.6pt. 칸은 모두 첫 칸 좌표로 적고 옮겨 그린다. */
 const COLUMN_LEFTS = [175.2, 247.8, 320.5, 393.0, 465.7] as const;
 
-const VISITS_PER_PAGE = COLUMN_LEFTS.length;
+/** 방문사유별 칸(0부터). 원본 방문사유 줄의 세로선(175.2·320.5)이 이렇게 나눈다. */
+const VISIT_TYPE_COLUMNS = {
+  REGULAR: [0, 1],
+  ADDITIONAL: [2, 3, 4],
+} as const;
+type VisitType = keyof typeof VISIT_TYPE_COLUMNS;
 
 /** 첫 칸의 왼쪽 선 기준 좌표로 Rect. */
 const col = (x0: number, y0: number, x1: number, y1: number) =>
@@ -119,86 +127,123 @@ export const NURSE_PAGE_FIELDS: Record<string, FieldSlot> = {
   summary: { kind: "text", box: rect(178, 737, 535, 771), multiline: true },
 };
 
-/** 칸 자리가 아니라 drawColumnValues 가 그리는 칸(혈압 짝·체온/혈당·체중 변화). 칸 확인 테스트가 쓴다. */
-export const NURSE_DRAWN_FIELDS = [
-  "systolic",
-  "diastolic",
-  "temperature",
-  "glucose",
-  "weightChange",
-] as const;
+/** 칸마다 가로로 옮기는 거리(pt). 첫 칸은 0. 조정 화면이 방문 칸 자리를 다섯 칸에 함께 그린다. */
+export const NURSE_COLUMN_OFFSETS = COLUMN_LEFTS.map((left) =>
+  roundPt(left - COLUMN_LEFTS[0]),
+);
 
-function columnTexts(t: RecordTexts): TextItem[] {
-  return [
-    { text: t.date.day, box: col(2, 254.1, 56, 272), align: "right" },
-    {
-      text: t.staffName,
-      box: col(2, 272, 70.6, 289.5),
-      align: "center",
-      size: 8,
-    },
-    {
-      text: t.licenseNumber,
-      box: col(2, 289.5, 70.6, 307),
-      align: "center",
-      size: 7.5,
-    },
-    {
-      text: t.start.hour,
-      box: col(4, 307, 33.6, 324.1),
-      align: "right",
-      size: 8.5,
-    },
-    { text: t.start.minute, box: col(37, 307, 70, 324.1), size: 8.5 },
-    {
-      text: t.end.hour,
-      box: col(4, 324.1, 33.6, 341.3),
-      align: "right",
-      size: 8.5,
-    },
-    { text: t.end.minute, box: col(37, 324.1, 70, 341.3), size: 8.5 },
-  ];
-}
+/** 머리(기관·수급자)와 방문 연·월. */
+export const NURSE_HEADER_TEXTS: TextSlot[] = [
+  ...basicInfo(
+    { left: [231, 331], right: [436, 536] },
+    [147.3, 164.8, 182.2, 199.7, 217.2],
+  ),
+  {
+    id: "date.year",
+    box: rect(118, 254.1, 130, 272),
+    align: "center",
+    size: 8,
+    text: (t) => t.date.year.slice(2),
+  },
+  {
+    id: "date.month",
+    box: rect(144.5, 254.1, 153.5, 272),
+    align: "center",
+    size: 7,
+    text: (t) => t.date.month,
+  },
+];
 
-/** 혈압 짝·체온/혈당·체중 변화(칸 하나, 첫 칸 좌표). */
-function drawColumnValues(
-  page: PDFPage,
-  fonts: Fonts,
-  record: PdfVisitRecord,
-): void {
-  const { data } = record;
-  const small = { font: fonts.regular, size: 7.5, align: "right" } as const;
-  const systolic = numberValue(data, "systolic");
-  const diastolic = numberValue(data, "diastolic");
-  if (systolic !== null || diastolic !== null) {
-    drawLine(
-      page,
-      `${systolic ?? ""}/${diastolic ?? ""}`,
-      col(2, 552.5, 34, 566.5),
-      small,
-    );
-  }
-  // 원본은 "℃/ mg/㎗" 사이가 좁아 숫자를 넣을 수 없다. 값이 있으면 칸을 다시 쓴다.
-  const temperature = numberValue(data, "temperature");
-  const glucose = numberValue(data, "glucose");
-  if (temperature !== null || glucose !== null) {
-    cover(page, col(1.5, 583.2, 71.2, 598.6));
-    drawLine(
-      page,
-      `${temperature ?? ""}℃ / ${glucose ?? ""}mg/dL`,
-      col(2, 581.5, 70.6, 599.8),
-      { font: fonts.regular, size: 7, align: "center" },
-    );
-  }
-  // 체중 변화: "증/감" 중 하나에 동그라미, kg 앞에 크기.
-  const weight = numberValue(data, "weightChange");
-  if (weight !== null) {
-    const left = COLUMN_LEFTS[0];
-    if (weight > 0) drawRing(page, { x: left + 15.8, y: 609.5 });
-    if (weight < 0) drawRing(page, { x: left + 27, y: 609.5 });
-    drawLine(page, String(Math.abs(weight)), col(30, 600.5, 57, 617.5), small);
-  }
-}
+/** 두 숫자 칸 중 하나라도 있으면 format 으로, 둘 다 없으면 빈 글. */
+const eitherNumber =
+  (a: string, b: string, format: (a: string, b: string) => string) =>
+  (_t: RecordTexts, data: FormData) => {
+    const [x, y] = [numberValue(data, a), numberValue(data, b)];
+    return x === null && y === null ? "" : format(`${x ?? ""}`, `${y ?? ""}`);
+  };
+
+/** 방문 칸 하나에 글로 쓰는 값(첫 칸 좌표): 날짜·간호사·시각, 혈압 짝·체온/혈당·체중 변화. */
+export const NURSE_COLUMN_TEXTS: TextSlot[] = [
+  {
+    id: "col.day",
+    box: col(2, 254.1, 56, 272),
+    align: "right",
+    text: (t) => t.date.day,
+  },
+  {
+    id: "col.staffName",
+    box: col(2, 272, 70.6, 289.5),
+    align: "center",
+    size: 8,
+    text: (t) => t.staffName,
+  },
+  {
+    id: "col.licenseNumber",
+    box: col(2, 289.5, 70.6, 307),
+    align: "center",
+    size: 7.5,
+    text: (t) => t.licenseNumber,
+  },
+  {
+    id: "col.start.hour",
+    box: col(4, 307, 33.6, 324.1),
+    align: "right",
+    size: 8.5,
+    text: (t) => t.start.hour,
+  },
+  {
+    id: "col.start.minute",
+    box: col(37, 307, 70, 324.1),
+    size: 8.5,
+    text: (t) => t.start.minute,
+  },
+  {
+    id: "col.end.hour",
+    box: col(4, 324.1, 33.6, 341.3),
+    align: "right",
+    size: 8.5,
+    text: (t) => t.end.hour,
+  },
+  {
+    id: "col.end.minute",
+    box: col(37, 324.1, 70, 341.3),
+    size: 8.5,
+    text: (t) => t.end.minute,
+  },
+  {
+    id: "col.bloodPressure",
+    box: col(2, 552.5, 34, 566.5),
+    align: "right",
+    size: 7.5,
+    fields: ["systolic", "diastolic"],
+    text: eitherNumber("systolic", "diastolic", (a, b) => `${a}/${b}`),
+  },
+  {
+    id: "col.tempGlucose",
+    box: col(2, 581.5, 70.6, 599.8),
+    align: "center",
+    size: 7,
+    fields: ["temperature", "glucose"],
+    text: eitherNumber("temperature", "glucose", (a, b) => `${a}℃ / ${b}mg/dL`),
+  },
+  {
+    id: "col.weight",
+    box: col(30, 600.5, 57, 617.5),
+    align: "right",
+    size: 7.5,
+    fields: ["weightChange"],
+    text: (_t, data) => {
+      const weight = numberValue(data, "weightChange");
+      return weight === null ? "" : String(Math.abs(weight));
+    },
+  },
+];
+
+/** 체중 변화 "증/감" 글자에 두르는 동그라미 가운데(첫 칸 좌표). */
+export const WEIGHT_RINGS = {
+  "col.weight.up": { x: COLUMN_LEFTS[0] + 15.8, y: 609.5 },
+  "col.weight.down": { x: COLUMN_LEFTS[0] + 27, y: 609.5 },
+} as const satisfies Partial<Record<ItemId, Point>>;
 
 /** 방문 한 건을 index 번째 칸에 그린다(첫 칸 좌표를 칸 간격만큼 옮긴 좌표계에서). */
 function drawColumn(
@@ -206,98 +251,144 @@ function drawColumn(
   fonts: Fonts,
   record: PdfVisitRecord,
   index: number,
+  place: Placement,
 ): void {
   page.pushOperators(
     pushGraphicsState(),
-    translate(COLUMN_LEFTS[index] - COLUMN_LEFTS[0], 0),
+    translate(NURSE_COLUMN_OFFSETS[index], 0),
   );
-  drawTexts(page, fonts, columnTexts(recordTexts(record)));
-  for (const [key, slot] of Object.entries(NURSE_COLUMN_FIELDS)) {
-    drawField(page, fonts, key, slot, record.data);
+  const { data } = record;
+  // 원본은 "℃/ mg/㎗" 사이가 좁아 숫자를 넣을 수 없다. 값이 있으면 칸을 지우고 다시 쓴다.
+  if (
+    numberValue(data, "temperature") !== null ||
+    numberValue(data, "glucose") !== null
+  ) {
+    cover(page, col(1.5, 583.2, 71.2, 598.6));
   }
-  drawColumnValues(page, fonts, record);
+  drawTexts(page, fonts, NURSE_COLUMN_TEXTS, recordTexts(record), data, place);
+  for (const [key, slot] of Object.entries(NURSE_COLUMN_FIELDS)) {
+    drawField(page, fonts, key, slot, data, place);
+  }
+  const weight = numberValue(data, "weightChange");
+  if (weight !== null && weight !== 0) {
+    const id = weight > 0 ? "col.weight.up" : "col.weight.down";
+    drawRing(page, place.point(id, WEIGHT_RINGS[id]));
+  }
   page.pushOperators(popGraphicsState());
 }
 
+/** 방문사유. 필수가 되기 전에 확정해 비어 있는 방문은 정기로 본다. */
+function visitTypeOf(record: PdfVisitRecord): VisitType {
+  return selectedOptions(record.data, "visitType")[0]?.value === "ADDITIONAL"
+    ? "ADDITIONAL"
+    : "REGULAR";
+}
+
+export interface NurseColumn {
+  /** 칸(0~4) */
+  column: number;
+  record: PdfVisitRecord;
+}
+
 /**
- * 제7호 한 장(방문 최대 5건). records 는 같은 수급자·같은 달이고 날짜순이다.
+ * 방문(날짜순)을 장과 칸에 나눈다. 정기는 장마다 1~2번 칸, 추가는 3~5번 칸에 날짜순으로 채우고,
+ * 어느 한쪽이 넘치면 다음 장으로 이어 간다.
+ */
+export function planNursePages(
+  records: readonly PdfVisitRecord[],
+): NurseColumn[][] {
+  const groups = (Object.keys(VISIT_TYPE_COLUMNS) as VisitType[]).map(
+    (type) => ({
+      columns: VISIT_TYPE_COLUMNS[type],
+      records: records.filter((record) => visitTypeOf(record) === type),
+    }),
+  );
+  const pageCount = Math.max(
+    1,
+    ...groups.map((g) => Math.ceil(g.records.length / g.columns.length)),
+  );
+  return Array.from({ length: pageCount }, (_, page) =>
+    groups.flatMap(({ columns, records: group }) =>
+      group
+        .slice(page * columns.length, (page + 1) * columns.length)
+        .map((record, i) => ({ column: columns[i], record })),
+    ),
+  );
+}
+
+/**
+ * 제7호 한 장. columns 는 같은 수급자·같은 달의 방문이다.
  * last 는 향후계획·총평을 가져올 방문(그 달 마지막 방문).
  */
 async function addNursePage(
   doc: PDFDocument,
   fonts: Fonts,
-  records: readonly PdfVisitRecord[],
+  columns: readonly NurseColumn[],
   last: PdfVisitRecord,
   footer: string,
+  place: Placement,
 ): Promise<void> {
   const page = await addTemplatePage(doc, "HOME_CARE_NURSE");
   for (const box of HOME_CARE_COVER) cover(page, box);
 
-  const t = recordTexts(records[0]);
-  drawTexts(page, fonts, [
-    ...basicInfo(
-      t,
-      { left: [231, 331], right: [436, 536] },
-      [147.3, 164.8, 182.2, 199.7, 217.2],
-    ),
-    {
-      text: t.date.year.slice(2),
-      box: rect(118, 254.1, 130, 272),
-      align: "center",
-      size: 8,
-    },
-    {
-      text: t.date.month,
-      box: rect(144.5, 254.1, 153.5, 272),
-      align: "center",
-      size: 7,
-    },
-  ]);
-
-  // 방문사유: 칸에 쓴 방문의 값을 모두 표시한다(정기·추가가 섞인 달이면 둘 다).
-  const visitTypes = new Map(
-    records.flatMap((record) =>
-      selectedOptions(record.data, "visitType").map((option) => [
-        option.value,
-        option,
-      ]),
-    ),
+  const first = columns[0]?.record ?? last;
+  drawTexts(
+    page,
+    fonts,
+    NURSE_HEADER_TEXTS,
+    recordTexts(first),
+    first.data,
+    place,
   );
-  drawField(page, fonts, "visitType", NURSE_PAGE_FIELDS.visitType, {
-    visitType: [...visitTypes.values()],
-  });
 
-  records.forEach((record, index) => drawColumn(page, fonts, record, index));
+  // 방문사유: 이 장에 방문이 있는 쪽(정기·추가)에 표시한다.
+  const types = new Set(columns.map(({ record }) => visitTypeOf(record)));
+  drawField(
+    page,
+    fonts,
+    "visitType",
+    NURSE_PAGE_FIELDS.visitType,
+    { visitType: [...types].map((value) => ({ value })) },
+    place,
+  );
 
-  drawField(page, fonts, "plan", NURSE_PAGE_FIELDS.plan, last.data);
-  drawField(page, fonts, "summary", NURSE_PAGE_FIELDS.summary, last.data);
-  drawFooter(page, fonts, HOME_CARE_FOOTER, footer);
+  for (const { column, record } of columns) {
+    drawColumn(page, fonts, record, column, place);
+  }
+
+  drawField(page, fonts, "plan", NURSE_PAGE_FIELDS.plan, last.data, place);
+  drawField(
+    page,
+    fonts,
+    "summary",
+    NURSE_PAGE_FIELDS.summary,
+    last.data,
+    place,
+  );
+  drawPlacedFooter(page, fonts, HOME_CARE_FOOTER, footer, place);
 }
 
-/** 방문 한 건(첫 칸만). */
+/** 방문 한 건(정기면 1번 칸, 추가면 3번 칸). */
 export function addNurseVisitPage(
   doc: PDFDocument,
   fonts: Fonts,
   record: PdfVisitRecord,
+  place: Placement,
 ): Promise<void> {
-  return addNursePage(doc, fonts, [record], record, footerText(record));
+  const [columns] = planNursePages([record]);
+  return addNursePage(doc, fonts, columns, record, footerText(record), place);
 }
 
-/** 수급자 한 명의 한 달(확정 방문, 날짜순). 5건씩 한 장. */
+/** 수급자 한 명의 한 달(확정 방문, 날짜순). */
 export async function addNurseMonthPages(
   doc: PDFDocument,
   fonts: Fonts,
   records: readonly PdfVisitRecord[],
   footer: string,
+  place: Placement,
 ): Promise<void> {
   const last = records.at(-1)!;
-  for (let start = 0; start < records.length; start += VISITS_PER_PAGE) {
-    await addNursePage(
-      doc,
-      fonts,
-      records.slice(start, start + VISITS_PER_PAGE),
-      last,
-      footer,
-    );
+  for (const columns of planNursePages(records)) {
+    await addNursePage(doc, fonts, columns, last, footer, place);
   }
 }

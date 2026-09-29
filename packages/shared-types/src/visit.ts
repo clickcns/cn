@@ -14,7 +14,7 @@ import {
 } from "./programs.js";
 import type { CareGrade, Recipient } from "./recipient.js";
 import type { Profession } from "./roles.js";
-import { blankToNull } from "./schema.js";
+import { blankToNull, isoDateTime } from "./schema.js";
 
 export const VISIT_STATUSES = ["SCHEDULED", "DRAFT", "CONFIRMED"] as const;
 export type VisitStatus = (typeof VISIT_STATUSES)[number];
@@ -104,9 +104,6 @@ export function checkVisitTimes(
   }
   return null;
 }
-
-const isoDateTime = (message: string) =>
-  z.iso.datetime({ offset: true, message });
 
 /** 방문에서 쓸 서식 목록. 필수·선택 규칙은 서버가 사업·담당자 직종으로 확인한다(selectForms). */
 const visitFormIds = z

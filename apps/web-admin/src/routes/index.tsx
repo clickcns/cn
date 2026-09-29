@@ -63,6 +63,10 @@ export const router = createBrowserRouter(
                       path: ROUTES.organizations,
                       lazy: page(() => import("@/pages/organizations")),
                     },
+                    {
+                      path: ROUTES.formLayouts,
+                      lazy: page(() => import("@/pages/form-layouts")),
+                    },
                   ],
                 },
                 {

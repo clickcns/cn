@@ -18,3 +18,7 @@ export function optionalText(max: number, label: string) {
     z.string().trim().max(max, `${label}은(는) ${max}자 이하로 입력해 주세요`),
   );
 }
+
+/** 시간대가 붙은 ISO 일시(예: 2026-09-22T10:00:00+09:00). 형식이 틀리면 message 로 알린다. */
+export const isoDateTime = (message: string) =>
+  z.iso.datetime({ offset: true, message });

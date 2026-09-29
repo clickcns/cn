@@ -6,6 +6,7 @@ export const ROUTES = {
   recipients: "/recipients",
   users: "/users",
   organizations: "/organizations",
+  formLayouts: "/form-layouts",
 } as const;
 
 /** 로그인 뒤 기본으로 가는 화면. */

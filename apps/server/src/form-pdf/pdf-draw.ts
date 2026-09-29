@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
+import type { LayoutAlign, LayoutPoint, LayoutRect } from "@repo/shared-types";
 import {
   PDFDocument,
   PDFHexString,
@@ -18,18 +19,10 @@ import subsetFont from "subset-font";
 
 export const ASSETS_DIR = join(__dirname, "assets");
 
-export interface Point {
-  x: number;
-  y: number;
-}
+export type Point = LayoutPoint;
 
 /** 좌상단(x0, y0) ~ 우하단(x1, y1) */
-export interface Rect {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-}
+export type Rect = LayoutRect;
 
 export interface Fonts {
   regular: PDFFont;
@@ -121,6 +114,17 @@ function subsetFonts(
       collect(drawn[key], text);
       return encode(text);
     };
+    // 같은 글을 여러 번 잰다(칸 맞추기·줄 나누기, 제7호는 다섯 칸). 폭은 크기에 비례하므로 1pt 폭을 기억한다.
+    const measure = font.widthOfTextAtSize.bind(font);
+    const widths = new Map<string, number>();
+    font.widthOfTextAtSize = (text, size) => {
+      let width = widths.get(text);
+      if (width === undefined) {
+        width = measure(text, 1);
+        widths.set(text, width);
+      }
+      return width * size;
+    };
     return font;
   });
 }
@@ -164,7 +168,7 @@ export interface TextOptions {
   font: PDFFont;
   size: number;
   color?: ReturnType<typeof rgb>;
-  align?: "left" | "center" | "right";
+  align?: LayoutAlign;
 }
 
 /** 한 줄 글자를 칸 안에(세로 가운데) 쓴다. 넘치면 글자 크기를 줄이고(최소 5pt), 그래도 넘치면 자른다. */
@@ -213,6 +217,11 @@ export function drawFooter(
   text: string,
 ): void {
   drawLine(page, text, box, { font: fonts.regular, size: 6.5, color: GRAY });
+}
+
+/** 굵게면 SemiBold, 아니면 Regular. */
+export function fontOf(fonts: Fonts, bold: boolean): PDFFont {
+  return bold ? fonts.semibold : fonts.regular;
 }
 
 /** 너비 안에 들어가게 뒤를 잘라 "…"(ELLIPSIS)을 붙인다. */

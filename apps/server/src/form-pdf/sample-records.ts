@@ -7,11 +7,11 @@ import {
   type OptionDetail,
   type VisitRecordHeader,
 } from "@repo/shared-types";
-import type { PdfVisitRecord } from "../pdf-record.js";
+import type { PdfVisitRecord } from "./pdf-record.js";
 
 /*
- * 좌표 확인용 기록(테스트·미리보기 스크립트). "full"은 모든 선택지를 고르고 괄호·글 칸을 길게
- * 채워 원본 칸 자리가 맞는지 한눈에 보게 한다.
+ * 표본 기록(테스트·미리보기 스크립트·원본 서식 조정 화면). "full"은 여러 개 고르기의 모든 선택지를
+ * 고르고 괄호·글 칸을 길게 채워 원본 칸 자리가 맞는지 한눈에 보게 한다.
  */
 
 const SAMPLE_HEADER: VisitRecordHeader = {
@@ -91,4 +91,43 @@ export function sampleRecord(
     hashMatches: true,
     ...overrides,
   };
+}
+
+/** 하나 고르기 칸도 모든 선택지를 고른 값(조정 화면에서 모든 □·○ 자리에 표시가 나오게). */
+function allOptionsFormData(formId: FormId): FormData {
+  const data = fullFormData(formId);
+  for (const field of formFields(FORMS[formId])) {
+    if (field.type !== "single") continue;
+    data[field.key] = field.options.map((option) => ({
+      value: option.value,
+      detail: detailFor(option.detail),
+    }));
+  }
+  return data;
+}
+
+/**
+ * 원본 서식 조정 화면의 표본. 제7호는 다섯 칸을 모두 채운다(정기 2건·추가 3건, 체중 증·감 둘 다).
+ */
+export function layoutPreviewRecords(formId: FormId): PdfVisitRecord[] {
+  if (formId !== "HOME_CARE_NURSE") {
+    return [sampleRecord(formId, { data: allOptionsFormData(formId) })];
+  }
+  const types = [
+    "REGULAR",
+    "REGULAR",
+    "ADDITIONAL",
+    "ADDITIONAL",
+    "ADDITIONAL",
+  ];
+  return types.map((visitType, i) =>
+    sampleRecord(formId, {
+      data: {
+        ...allOptionsFormData(formId),
+        visitType: { value: visitType },
+        weightChange: i % 2 === 0 ? 1.2 : -1.5,
+      },
+      visitDate: `2026-09-${String(3 + i * 6).padStart(2, "0")}`,
+    }),
+  );
 }

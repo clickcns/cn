@@ -148,7 +148,10 @@ describe("확정 전 필수 칸", () => {
   it("필수 칸을 다 채웠으면 없다", () => {
     assert.deepEqual(
       findMissingRequired(["HOME_CARE_NURSE"], {
-        HOME_CARE_NURSE: { care: [{ value: "vital" }] },
+        HOME_CARE_NURSE: {
+          visitType: { value: "REGULAR" },
+          care: [{ value: "vital" }],
+        },
       }),
       [],
     );

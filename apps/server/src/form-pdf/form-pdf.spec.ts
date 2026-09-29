@@ -1,78 +1,103 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  cleanLayoutAdjustments,
   FORMS,
   FORMS_WITH_ORIGINAL_PDF,
   formFields,
-  type FormId,
   type OriginalPdfFormId,
 } from "@repo/shared-types";
 import { PDFDocument } from "pdf-lib";
-import { buildNurseMonthPdf, buildVisitPdf } from "./build.js";
 import {
-  NURSE_COLUMN_FIELDS,
-  NURSE_DRAWN_FIELDS,
-  NURSE_PAGE_FIELDS,
+  buildLayoutPreviewPdf,
+  buildNurseMonthPdf,
+  buildVisitPdf,
+} from "./build.js";
+import { renderPdf } from "./pdf-draw.js";
+import { describeLayout } from "./overlay/describe.js";
+import {
+  addNurseMonthPages,
+  planNursePages,
 } from "./overlay/home-care-nurse.js";
-import type { FieldSlot } from "./overlay/layout.js";
+import { placement, slotId, type Placement } from "./overlay/layout.js";
+import { OVERLAY_LAYOUTS } from "./overlay/layouts.js";
+import { addOverlayPage } from "./overlay/render.js";
 import {
-  HOME_CARE_DOCTOR_LAYOUT,
-  HOME_CARE_SOCIAL_LAYOUT,
-  PRIMARY_CARE_CHECK_LAYOUT,
-} from "./overlay/layouts.js";
-import { sampleRecord } from "./testing/sample-records.js";
-
-/** 서식 정의의 칸·선택지 중 원본 자리가 없는 것(비어 있어야 한다). */
-function missingSlots(
-  formId: FormId,
-  slots: Record<string, FieldSlot>,
-  drawnByCode: readonly string[] = [],
-): string[] {
-  const missing: string[] = [];
-  for (const field of formFields(FORMS[formId])) {
-    if (drawnByCode.includes(field.key)) continue;
-    const slot = slots[field.key];
-    if (!slot) {
-      missing.push(field.key);
-      continue;
-    }
-    if (field.type === "single" || field.type === "multi") {
-      if (slot.kind !== "options") {
-        missing.push(`${field.key}(선택지 칸이 아님)`);
-        continue;
-      }
-      for (const option of field.options) {
-        const place = slot.options[option.value];
-        if (!place) missing.push(`${field.key}.${option.value}`);
-        else if (option.detail && !place.detail && !place.detailChoices) {
-          missing.push(`${field.key}.${option.value}(괄호)`);
-        }
-      }
-    }
-  }
-  return missing;
-}
+  fullFormData,
+  layoutPreviewRecords,
+  sampleRecord,
+} from "./sample-records.js";
 
 async function pageCount(bytes: Uint8Array): Promise<number> {
   return (await PDFDocument.load(bytes)).getPageCount();
 }
 
-/** 원본 서식마다 칸 자리(제7호는 방문 칸 + 장마다 한 번 그리는 칸). */
-const ORIGINAL_SLOTS: Record<OriginalPdfFormId, Record<string, FieldSlot>> = {
-  PRIMARY_CARE_CHECK: PRIMARY_CARE_CHECK_LAYOUT.fields,
-  HOME_CARE_DOCTOR: HOME_CARE_DOCTOR_LAYOUT.fields,
-  HOME_CARE_NURSE: { ...NURSE_COLUMN_FIELDS, ...NURSE_PAGE_FIELDS },
-  HOME_CARE_SOCIAL: HOME_CARE_SOCIAL_LAYOUT.fields,
-};
+/** 조정 없는 Placement 가 받은 칸 ID를 모은다(그리는 코드가 쓰는 ID). */
+function recordingPlacement(seen: Set<string>): Placement {
+  const base = placement();
+  return {
+    rect: (id, value) => (seen.add(id), base.rect(id, value)),
+    point: (id, value) => (seen.add(id), base.point(id, value)),
+    style: (id, value) => (seen.add(id), base.style(id, value)),
+  };
+}
+
+/** 조정 화면 표본(모든 칸·선택지를 채움)을 그리며 쓴 칸 ID. */
+async function drawnIds(formId: OriginalPdfFormId): Promise<Set<string>> {
+  const seen = new Set<string>();
+  const place = recordingPlacement(seen);
+  const records = layoutPreviewRecords(formId);
+  await renderPdf("테스트", (doc, fonts) =>
+    formId === "HOME_CARE_NURSE"
+      ? addNurseMonthPages(doc, fonts, records, "출력", place)
+      : addOverlayPage(doc, fonts, OVERLAY_LAYOUTS[formId], records[0], place),
+  );
+  return seen;
+}
 
 describe("원본 서식 자리", () => {
-  it("원본 위에 채우는 서식은 서식 정의의 모든 칸·선택지에 자리가 있다", () => {
+  it("서식 정의의 모든 칸·선택지(괄호 포함)에 원본 자리가 있고 칸 ID는 겹치지 않는다", () => {
     for (const formId of FORMS_WITH_ORIGINAL_PDF) {
+      const { items, ids } = describeLayout(formId);
+      assert.equal(ids.size, items.length, `${formId} ID 겹침`);
+      const drawnFields = new Set(items.flatMap((item) => item.fields ?? []));
+      const missing: string[] = [];
+      for (const field of formFields(FORMS[formId])) {
+        if (field.type !== "single" && field.type !== "multi") {
+          if (!ids.has(field.key) && !drawnFields.has(field.key)) {
+            missing.push(field.key);
+          }
+          continue;
+        }
+        for (const option of field.options) {
+          const id = slotId.option(field.key, option.value);
+          if (!ids.has(id)) missing.push(id);
+          else if (
+            option.detail &&
+            !ids.has(slotId.detail(id)) &&
+            ![...ids].some((other) => other.startsWith(`${id}:`))
+          ) {
+            missing.push(`${id}(괄호)`);
+          }
+        }
+      }
+      assert.deepEqual(missing, [], formId);
+    }
+  });
+
+  it("그리는 코드가 쓰는 칸 ID는 모두 조정 화면 칸 목록에 있다(조정이 버려지지 않는다)", async () => {
+    for (const formId of FORMS_WITH_ORIGINAL_PDF) {
+      const { ids } = describeLayout(formId);
+      const drawn = await drawnIds(formId);
       assert.deepEqual(
-        missingSlots(
-          formId,
-          ORIGINAL_SLOTS[formId],
-          formId === "HOME_CARE_NURSE" ? NURSE_DRAWN_FIELDS : [],
+        [...drawn].filter((id) => !ids.has(id)),
+        [],
+        formId,
+      );
+      // 표본에서 고르지 않은 괄호 안 선택지(○ 하나만 고를 수 있다) 말고는 모두 그려 본다.
+      assert.deepEqual(
+        [...ids].filter(
+          (id) => !drawn.has(id) && !/\.[A-Z_0-9]+:[A-Z_0-9]+$/.test(id),
         ),
         [],
         formId,
@@ -106,15 +131,96 @@ describe("서식 PDF 만들기", () => {
     assert.ok(bytes.length < 100_000, `${bytes.length} bytes`);
   });
 
-  it("제7호 월간 기록지는 방문 5건씩 한 장이다", async () => {
-    const records = Array.from({ length: 7 }, (_, i) =>
-      sampleRecord("HOME_CARE_NURSE", {
-        visitDate: `2026-09-${String(i + 1).padStart(2, "0")}`,
-      }),
+  it("제7호 월간 기록지는 정기 방문이 2건을 넘으면 다음 장에 적는다", async () => {
+    const records = ["REGULAR", "ADDITIONAL", "REGULAR", "REGULAR"].map(
+      (visitType, i) =>
+        sampleRecord("HOME_CARE_NURSE", {
+          data: {
+            ...fullFormData("HOME_CARE_NURSE"),
+            visitType: { value: visitType },
+          },
+          visitDate: `2026-09-0${i + 1}`,
+        }),
     );
     assert.equal(
       await pageCount(await buildNurseMonthPdf(records, "테스트", "출력")),
       2,
     );
+  });
+});
+
+describe("제7호 칸 나누기", () => {
+  const visit = (visitType: string | null, day: number) =>
+    sampleRecord("HOME_CARE_NURSE", {
+      data: {
+        ...fullFormData("HOME_CARE_NURSE"),
+        visitType: visitType ? { value: visitType } : null,
+      },
+      visitDate: `2026-09-${String(day).padStart(2, "0")}`,
+    });
+  const layout = (records: ReturnType<typeof visit>[]) =>
+    planNursePages(records).map((page) =>
+      page.map(
+        ({ column, record }) => `${column}:${record.visitDate.slice(8)}`,
+      ),
+    );
+
+  it("정기는 1~2번 칸, 추가는 3~5번 칸에 날짜순으로 채우고 넘치면 다음 장으로 이어 간다", () => {
+    const records = [
+      visit("REGULAR", 1),
+      visit("ADDITIONAL", 3),
+      visit("REGULAR", 8),
+      visit("ADDITIONAL", 10),
+      visit("ADDITIONAL", 15),
+      visit("REGULAR", 22),
+      visit("ADDITIONAL", 29),
+    ];
+    assert.deepEqual(layout(records), [
+      ["0:01", "1:08", "2:03", "3:10", "4:15"],
+      ["0:22", "2:29"],
+    ]);
+  });
+
+  it("방문 한 건은 정기면 1번 칸, 추가면 3번 칸이고, 방문사유가 비어 있으면 정기로 본다", () => {
+    assert.deepEqual(layout([visit("REGULAR", 5)]), [["0:05"]]);
+    assert.deepEqual(layout([visit("ADDITIONAL", 5)]), [["2:05"]]);
+    assert.deepEqual(layout([visit(null, 5)]), [["0:05"]]);
+  });
+});
+
+describe("원본 서식 조정", () => {
+  it("조정은 칸을 옮기고 넓히며(최소 2pt), 페이지 전체 옮기기를 더한다", () => {
+    const place = placement({
+      page: { dx: 1, dy: -1 },
+      items: { a: { dx: 2, dy: 3, dw: -100 }, b: { size: 11, bold: true } },
+    });
+    assert.deepEqual(place.rect("a", { x0: 10, y0: 10, x1: 20, y1: 20 }), {
+      x0: 13,
+      y0: 12,
+      x1: 15,
+      y1: 22,
+    });
+    assert.deepEqual(place.point("c", { x: 5, y: 5 }), { x: 6, y: 4 });
+    assert.deepEqual(
+      place.style("b", { size: 9, bold: false, align: "right" }),
+      { size: 11, bold: true, align: "right" },
+    );
+  });
+
+  it("저장할 때 0.1pt로 반올림하고, 바뀐 것이 없는 값·칸은 빼고, 칸 ID 순으로 늘어놓는다", () => {
+    const clean = cleanLayoutAdjustments({
+      page: { dx: 0, dy: 0.04 },
+      items: { z: { dy: 2 }, a: { dx: 1.26, dy: 0 }, b: { dx: 0.01 } },
+    });
+    assert.deepEqual(clean, { items: { a: { dx: 1.3 }, z: { dy: 2 } } });
+    assert.deepEqual(Object.keys(clean.items), ["a", "z"]);
+  });
+
+  it("조정한 자리로 표본 PDF를 그린다(제7호는 다섯 칸을 한 장에)", async () => {
+    const bytes = await buildLayoutPreviewPdf("HOME_CARE_NURSE", {
+      page: { dx: 1, dy: 1 },
+      items: { "col.day": { dx: 3, size: 10, bold: true } },
+    });
+    assert.equal(await pageCount(bytes), 1);
   });
 });

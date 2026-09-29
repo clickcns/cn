@@ -18,7 +18,7 @@ import { buildNurseMonthPdf, buildVisitPdf } from "../src/form-pdf/build.js";
 import {
   fullFormData,
   sampleRecord,
-} from "../src/form-pdf/testing/sample-records.js";
+} from "../src/form-pdf/sample-records.js";
 
 /** 하나 고르기 칸마다 i번째 선택지(개수보다 크면 마지막)를 고른 값. */
 function sweep(formId: FormId, i: number): FormData {
