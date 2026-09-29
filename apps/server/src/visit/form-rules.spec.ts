@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   checkRecipientPrograms,
+  conflictsOnSameDay,
   CreateRecipientSchema,
   keepDraftForms,
   resolveFormIds,
@@ -187,5 +188,36 @@ describe("keepDraftForms", () => {
     assert.deepEqual(kept.questions, [
       { fields: ["HOME_CARE_DOCTOR.plan"], question: "향후 계획은?" },
     ]);
+  });
+});
+
+describe("conflictsOnSameDay", () => {
+  it("재택의료센터 간호사 방문과 장기요양 방문간호는 같은 날 겹친다", () => {
+    const homeCareNurse = {
+      program: "HOME_CARE_CENTER",
+      profession: "NURSE",
+    } as const;
+    const ltc = { program: "LTC_NURSING", profession: "NURSE" } as const;
+    assert.equal(conflictsOnSameDay(homeCareNurse, ltc), true);
+    assert.equal(conflictsOnSameDay(ltc, homeCareNurse), true);
+  });
+
+  it("재택의료센터 의사·사회복지사 방문이나 같은 사업끼리는 겹치지 않는다", () => {
+    const ltc = { program: "LTC_NURSING", profession: "NURSE" } as const;
+    assert.equal(
+      conflictsOnSameDay(
+        { program: "HOME_CARE_CENTER", profession: "DOCTOR" },
+        ltc,
+      ),
+      false,
+    );
+    assert.equal(
+      conflictsOnSameDay(
+        { program: "HOME_CARE_CENTER", profession: "SOCIAL_WORKER" },
+        ltc,
+      ),
+      false,
+    );
+    assert.equal(conflictsOnSameDay(ltc, ltc), false);
   });
 });

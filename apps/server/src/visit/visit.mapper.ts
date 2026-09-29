@@ -1,12 +1,14 @@
 import type {
   FormData,
   FormId,
+  VisitCalendarItem,
   VisitDetail,
   VisitForms,
   VisitSummary,
 } from "@repo/shared-types";
 import type { Prisma } from "../generated/prisma/client.js";
 import {
+  toCareGrade,
   toVisitRecipient,
   toVisitRecipientSummary,
   visitRecipientSelect,
@@ -33,6 +35,39 @@ export const visitDetailArgs = {
     forms: { select: { formId: true, data: true } },
   },
 } as const satisfies Prisma.VisitDefaultArgs;
+
+/** 달력 칩: 수급자 이름·등급과 담당자만. 주소·연락처·서식 값은 싣지 않는다. */
+export const calendarItemArgs = {
+  select: {
+    id: true,
+    organizationId: true,
+    program: true,
+    status: true,
+    scheduledAt: true,
+    formIds: true,
+    recipient: { select: { id: true, name: true, careGrade: true } },
+    staff: { select: { ...staffSelect.select, isActive: true } },
+  },
+} as const satisfies Prisma.VisitDefaultArgs;
+
+type CalendarItemRow = Prisma.VisitGetPayload<typeof calendarItemArgs>;
+
+export function toVisitCalendarItem(row: CalendarItemRow): VisitCalendarItem {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    program: row.program,
+    status: row.status,
+    scheduledAt: row.scheduledAt.toISOString(),
+    formIds: toFormIds(row.formIds),
+    recipient: {
+      id: row.recipient.id,
+      name: row.recipient.name,
+      careGrade: toCareGrade(row.recipient.careGrade),
+    },
+    staff: row.staff,
+  };
+}
 
 type VisitSummaryRow = Prisma.VisitGetPayload<typeof visitSummaryArgs>;
 export type VisitDetailRow = Prisma.VisitGetPayload<typeof visitDetailArgs>;

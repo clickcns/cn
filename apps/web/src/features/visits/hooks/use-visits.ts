@@ -1,8 +1,10 @@
 import {
   VISIT_LIST_MAX_PAGE_SIZE,
+  type SameDayWarningQuery,
+  type VisitCalendarQuery,
   type VisitListQuery,
 } from "@repo/shared-types";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/features/auth/hooks/use-session";
 import { api } from "@/lib/api";
 import { visitKeys } from "@/lib/query-keys";
@@ -28,6 +30,22 @@ export function useDailyVisits(date: string) {
     queryKey: visitKeys.list(query),
     queryFn: () => api.visits.list(query),
     enabled: Boolean(staffId),
+  });
+}
+
+/**
+ * 내 방문 달력(날짜별 상태 건수). 하루 일정처럼 staffId를 본인으로 넘긴다.
+ * 달을 넘기는 동안에는 이전 달 숫자를 두어 칸이 깜박이지 않게 한다.
+ */
+export function useVisitCalendar(from: string, to: string) {
+  const staffId = useCurrentUser()?.id;
+  const query: VisitCalendarQuery = { from, to, staffId };
+
+  return useQuery({
+    queryKey: visitKeys.calendar(query),
+    queryFn: () => api.visits.calendar(query),
+    enabled: Boolean(staffId),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -59,5 +77,15 @@ export function useVisit(id: string) {
     queryKey: visitKeys.detail(id),
     queryFn: () => api.visits.get(id),
     enabled: Boolean(id),
+  });
+}
+
+/** 만들려는 방문의 같은 날 경고. 조건을 다 고르기 전(null)에는 묻지 않는다. */
+export function useSameDayWarnings(query: SameDayWarningQuery | null) {
+  return useQuery({
+    queryKey: visitKeys.sameDayWarnings(query!),
+    queryFn: () => api.visits.sameDayWarnings(query!),
+    enabled: query !== null,
+    select: (response) => response.warnings,
   });
 }

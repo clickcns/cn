@@ -17,13 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { OrganizationGroupedRows } from "@/components/ui/table-groups";
+import { OrganizationGroupedRows } from "@/features/organizations/components/organization-grouped-rows";
 import {
   sortRows,
   useTableSort,
   type SortValues,
 } from "@/hooks/use-table-sort";
 import {
+  formatActiveCount,
   formatBirthDate,
   formatCareGrade,
   formatGender,
@@ -95,6 +96,7 @@ export function RecipientTable({
             })}
             colSpan={COLUMN_COUNT}
             renderRow={renderRow}
+            detail={formatActiveCount}
           />
         ) : (
           sorted.map(renderRow)

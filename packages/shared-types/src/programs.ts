@@ -98,12 +98,110 @@ export function resolveFormIds(
     .map((rule) => rule.formId);
 }
 
+/** 서식 목록을 그 규칙들의 켜고 끈 상태로 바꾼다(resolveFormIds의 반대): 목록에 있으면 켬, 없으면 끔. */
+export function formChoicesFor(
+  rules: readonly FormRule[],
+  formIds: readonly FormId[],
+): FormChoices {
+  return Object.fromEntries(
+    rules.map((rule) => [rule.formId, formIds.includes(rule.formId)]),
+  );
+}
+
+/**
+ * 담당자를 바꿀 때 새 직종 규칙에서 이어받는 선택: 두 직종의 규칙에 모두 있는 선택 서식만
+ * 지금 켜고 끈 상태를 잇는다(나머지는 비워 두어 새 규칙의 기본값을 따른다).
+ */
+export function choicesForNewStaff(
+  program: Program,
+  currentFormIds: readonly FormId[],
+  currentProfession: Profession | null,
+  newProfession: Profession | null,
+): FormChoices {
+  const currentOptional = formRulesFor(program, currentProfession).filter(
+    (rule) => !rule.required,
+  );
+  const shared = formRulesFor(program, newProfession).filter(
+    (rule) =>
+      !rule.required && currentOptional.some((r) => r.formId === rule.formId),
+  );
+  return formChoicesFor(shared, currentFormIds);
+}
+
+/**
+ * 담당자를 바꿀 때 새 직종의 서식: 이어받은 선택(choicesForNewStaff) + 새 직종 규칙의 기본값.
+ * 새 직종이 이 사업을 맡을 수 없으면 빈 목록이다(selectForms가 거절한다).
+ */
+export function formIdsForNewStaff(
+  program: Program,
+  currentFormIds: readonly FormId[],
+  currentProfession: Profession | null,
+  newProfession: Profession | null,
+): FormId[] {
+  return resolveFormIds(
+    program,
+    newProfession,
+    choicesForNewStaff(
+      program,
+      currentFormIds,
+      currentProfession,
+      newProfession,
+    ),
+  );
+}
+
+/**
+ * 방문한 직종. 방문을 만들 때 고정한 서식(formIds)의 필수 서식으로 판정한다.
+ * 담당자의 지금 직종은 확정 뒤 바뀔 수 있어 쓰지 않는다. 판정할 수 없으면 null.
+ */
+export function visitProfession(
+  program: Program,
+  formIds: readonly FormId[],
+): Profession | null {
+  const entries = Object.entries(PROGRAM_FORMS[program]) as [
+    Profession,
+    readonly FormRule[],
+  ][];
+  for (const [profession, rules] of entries) {
+    if (rules.some((rule) => rule.required && formIds.includes(rule.formId))) {
+      return profession;
+    }
+  }
+  return null;
+}
+
+/**
+ * 재택의료기본료의 매달 방문 요건: 의사 1회·간호사 2회 이상, 사회복지사 매월 상담(재택의료센터 지침 13쪽).
+ * 달 중간에 최초 포괄평가를 한 달은 평가일부터 말일까지로 본다(여기서는 달 전체로 센다).
+ */
+export const HOME_CARE_MONTHLY_VISITS = {
+  DOCTOR: 1,
+  NURSE: 2,
+  SOCIAL_WORKER: 1,
+} as const satisfies Record<Profession, number>;
+
 /** 이 직종이 이 사업의 방문을 맡을 수 있는지(쓸 서식이 있는지). */
 export function canHandleProgram(
   program: Program,
   profession: Profession | null,
 ): boolean {
   return formRulesFor(program, profession).length > 0;
+}
+
+/**
+ * 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문 짝(재택의료센터 지침):
+ * 재택의료센터 간호사 방문 ↔ 장기요양 방문간호. 방문을 등록할 때 경고만 하고 막지는 않는다.
+ */
+export function conflictsOnSameDay(
+  a: { program: Program; profession: Profession | null },
+  b: { program: Program; profession: Profession | null },
+): boolean {
+  const homeCareNurse = (visit: typeof a) =>
+    visit.program === "HOME_CARE_CENTER" && visit.profession === "NURSE";
+  const ltcNursing = (visit: typeof a) => visit.program === "LTC_NURSING";
+  return (
+    (homeCareNurse(a) && ltcNursing(b)) || (ltcNursing(a) && homeCareNurse(b))
+  );
 }
 
 /** 켜고 끌 수 있는 선택 서식이 있는지. */

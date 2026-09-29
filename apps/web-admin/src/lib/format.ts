@@ -100,3 +100,9 @@ export function orDash(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return EMPTY;
   return String(value);
 }
+
+/** 사람 목록의 건수와 활성 수: "3명 · 활성 3명" (기관별 묶음 머리 줄) */
+export function formatActiveCount(rows: readonly { isActive: boolean }[]) {
+  const active = rows.filter((row) => row.isActive).length;
+  return `${rows.length}명 · 활성 ${active}명`;
+}

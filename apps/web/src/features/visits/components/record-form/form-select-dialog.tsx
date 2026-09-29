@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  formChoicesFor,
   formLabel,
   formRulesFor,
   resolveFormIds,
@@ -57,9 +58,7 @@ function FormSelectBody({
   const rules = formRulesFor(visit.program, visit.staff.profession);
   // 지금 방문의 서식에서 시작한다(선택 서식마다 켬·끔).
   const [choices, setChoices] = useState<FormChoices>(() =>
-    Object.fromEntries(
-      rules.map((rule) => [rule.formId, visit.formIds.includes(rule.formId)]),
-    ),
+    formChoicesFor(rules, visit.formIds),
   );
   const selected = resolveFormIds(
     visit.program,

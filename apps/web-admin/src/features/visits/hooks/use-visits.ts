@@ -1,10 +1,16 @@
 import { getErrorMessage } from "@repo/api-client";
-import type {
-  CreateVisitInput,
-  VisitListQuery,
-  VisitListResponse,
-  VisitStatus,
-  VisitSummary,
+import {
+  emptyStatusCounts,
+  type CreateVisitInput,
+  type SameDayWarningQuery,
+  type UpdateVisitInput,
+  type VisitCalendarQuery,
+  type VisitCalendarResponse,
+  type VisitListQuery,
+  type VisitListResponse,
+  type VisitOrganizationCount,
+  type VisitStatus,
+  type VisitSummary,
 } from "@repo/shared-types";
 import {
   keepPreviousData,
@@ -15,6 +21,7 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { moveCalendarVisit } from "@/features/visits/lib/calendar-items";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -31,6 +38,8 @@ export interface VisitList {
   total: number;
   /** 조건에 맞는 방문의 상태별 건수(첫 페이지 응답 기준) */
   statusCounts: Record<VisitStatus, number>;
+  /** 기관 id → 건수. groupBy=organization으로 받았을 때만 있다(첫 페이지 응답 기준). */
+  organizationCounts: ReadonlyMap<string, VisitOrganizationCount> | undefined;
 }
 
 function toVisitList({
@@ -50,11 +59,15 @@ function toVisitList({
   return {
     items,
     total: first?.total ?? 0,
-    statusCounts: first?.statusCounts ?? {
-      SCHEDULED: 0,
-      DRAFT: 0,
-      CONFIRMED: 0,
-    },
+    statusCounts: first?.statusCounts ?? emptyStatusCounts(),
+    organizationCounts: first?.organizationCounts
+      ? new Map(
+          first.organizationCounts.map((count) => [
+            count.organizationId,
+            count,
+          ]),
+        )
+      : undefined,
   };
 }
 
@@ -88,10 +101,32 @@ export function useInfiniteVisits(
   });
 }
 
+/**
+ * 방문 달력(날짜별 상태 건수). 필터는 목록과 같다.
+ * 달을 넘기는 동안에는 이전 달 숫자를 두어 칸이 깜박이지 않게 한다.
+ */
+export function useVisitCalendar(query: VisitCalendarQuery) {
+  return useQuery({
+    queryKey: queryKeys.visits.calendar(query),
+    queryFn: () => api.visits.calendar(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useVisit(id: string) {
   return useQuery({
     queryKey: queryKeys.visits.detail(id),
     queryFn: () => api.visits.get(id),
+  });
+}
+
+/** 만들려는 방문의 같은 날 경고. 조건을 다 고르기 전(null)에는 묻지 않는다. */
+export function useSameDayWarnings(query: SameDayWarningQuery | null) {
+  return useQuery({
+    queryKey: queryKeys.visits.sameDayWarnings(query!),
+    queryFn: () => api.visits.sameDayWarnings(query!),
+    enabled: query !== null,
+    select: (response) => response.warnings,
   });
 }
 
@@ -104,6 +139,50 @@ export function useCreateVisit() {
       toast.success("방문을 등록했습니다");
     },
     onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+/**
+ * 방문 일정·담당자 바꾸기. 일정을 옮기면 달력 캐시를 먼저 바꿔(낙관적 업데이트)
+ * 끌어다 놓은 칩이 바로 옮겨 보이게 하고, 실패하면 되돌린다.
+ * 성공·실패 문구는 부르는 쪽이 정한다(끌어다 놓기는 되돌리기 버튼을 붙인다).
+ */
+export function useUpdateVisit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateVisitInput }) =>
+      api.visits.update(id, input),
+    onMutate: async ({ id, input }) => {
+      const { scheduledAt } = input;
+      if (!scheduledAt) return { previous: [] };
+      await queryClient.cancelQueries({ queryKey: queryKeys.visits.calendars });
+      const previous = queryClient.getQueriesData<VisitCalendarResponse>({
+        queryKey: queryKeys.visits.calendars,
+      });
+      for (const [key, data] of previous) {
+        const query = queryKeys.visits.calendarQueryOf(key);
+        queryClient.setQueryData(
+          key,
+          moveCalendarVisit(data, query, id, scheduledAt),
+        );
+      }
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      for (const [key, data] of context?.previous ?? []) {
+        queryClient.setQueryData(key, data);
+      }
+    },
+    onSuccess: (visit) => {
+      queryClient.setQueryData(queryKeys.visits.detail(visit.id), visit);
+    },
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.visits.lists }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.visits.sameDayWarningsAll,
+        }),
+      ]),
   });
 }
 

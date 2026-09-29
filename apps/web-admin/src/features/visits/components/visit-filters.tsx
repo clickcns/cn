@@ -23,6 +23,8 @@ interface VisitFiltersProps {
   onChange: (key: keyof VisitFilterValues, value: string | undefined) => void;
   onReset: () => void;
   canReset: boolean;
+  /** 달력 보기는 달로 기간을 정하므로 기간 칸을 숨긴다. */
+  showDateRange?: boolean;
 }
 
 export function VisitFilters({
@@ -30,6 +32,7 @@ export function VisitFilters({
   onChange,
   onReset,
   canReset,
+  showDateRange = true,
 }: VisitFiltersProps) {
   const scopeOrganizationId = useScopeOrganizationId();
   const showsAllOrganizations = useShowsAllOrganizations();
@@ -41,34 +44,36 @@ export function VisitFilters({
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="grid gap-1.5">
-        <Label htmlFor="visit-filter-from">기간</Label>
-        <div className="flex items-center gap-1.5">
-          <DateInput
-            id="visit-filter-from"
-            aria-label="시작일"
-            containerClassName="w-38"
-            value={filters.from}
-            max={filters.to}
-            // 목록 조건은 온전한 날짜일 때만 바꾼다(치는 중인 글자는 칸이 들고 있다).
-            onChange={(value) => {
-              if (isIsoDate(value)) onChange("from", value);
-            }}
-          />
-          <span className="text-muted-foreground" aria-hidden>
-            ~
-          </span>
-          <DateInput
-            aria-label="종료일"
-            containerClassName="w-38"
-            value={filters.to}
-            min={filters.from}
-            onChange={(value) => {
-              if (isIsoDate(value)) onChange("to", value);
-            }}
-          />
+      {showDateRange && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="visit-filter-from">기간</Label>
+          <div className="flex items-center gap-1.5">
+            <DateInput
+              id="visit-filter-from"
+              aria-label="시작일"
+              containerClassName="w-38"
+              value={filters.from}
+              max={filters.to}
+              // 목록 조건은 온전한 날짜일 때만 바꾼다(치는 중인 글자는 칸이 들고 있다).
+              onChange={(value) => {
+                if (isIsoDate(value)) onChange("from", value);
+              }}
+            />
+            <span className="text-muted-foreground" aria-hidden>
+              ~
+            </span>
+            <DateInput
+              aria-label="종료일"
+              containerClassName="w-38"
+              value={filters.to}
+              min={filters.from}
+              onChange={(value) => {
+                if (isIsoDate(value)) onChange("to", value);
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="visit-filter-status">상태</Label>
         <Select

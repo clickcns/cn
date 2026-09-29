@@ -7,8 +7,12 @@ import {
 } from "@nestjs/common";
 import {
   addKstDays,
-  canBeAssignedVisits,
   checkVisitTimes,
+  conflictsOnSameDay,
+  countVisitsByDay,
+  emptyStatusCounts,
+  totalCount,
+  formatKstTime,
   formFields,
   FORMS,
   isRecordEditable,
@@ -16,18 +20,25 @@ import {
   kstStartOfDay,
   PROGRAM_LABELS,
   selectForms,
-  VISIT_STATUSES,
+  VISIT_CALENDAR_MAX_ITEMS,
   VisitFormsSchema,
   withParticle,
   type CreateVisitSchema,
   type FormData,
   type FormId,
+  type Program,
+  type SameDayWarningQuerySchema,
+  type SameDayWarningResponse,
   type SaveVisitRecordSchema,
   type UpdateVisitFormsSchema,
+  type UpdateVisitSchema,
+  type VisitCalendarQuerySchema,
+  type VisitCalendarResponse,
   type VisitDetail,
   type VisitForms,
   type VisitListQuerySchema,
   type VisitListResponse,
+  type VisitOrganizationCount,
   type VisitStatus,
 } from "@repo/shared-types";
 import type { z } from "zod";
@@ -39,8 +50,11 @@ import {
 import { toVisitDictation } from "../dictation/dictation.mapper.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/index.js";
+import { isAssignableStaff, planVisitUpdate } from "./visit-update.js";
 import {
+  calendarItemArgs,
   toFormIds,
+  toVisitCalendarItem,
   toVisitDetail,
   toVisitSummary,
   visitDetailArgs,
@@ -49,7 +63,8 @@ import {
 } from "./visit.mapper.js";
 
 const VISIT_NOT_FOUND = "방문을 찾을 수 없습니다";
-const RECORD_LOCKED = "확정된 방문 기록은 수정할 수 없습니다";
+const RECORD_LOCKED =
+  "확정된 방문 기록입니다. 고치려면 [수정]을 눌러 작성 중으로 되돌려 주세요";
 
 /**
  * 사용자가 볼 수 있는 방문의 범위. 목록과 단건 조회가 같은 조건을 쓴다.
@@ -59,6 +74,33 @@ function visitScope(actor: AuthenticatedUser): Prisma.VisitWhereInput {
   return {
     organizationId: resolveOrganizationFilter(actor),
     staffId: actor.role === "STAFF" ? actor.id : undefined,
+  };
+}
+
+/**
+ * 목록과 달력이 함께 쓰는 조회 조건: 보이는 범위(visitScope) + 필터.
+ * 현장 직원은 staffId 필터와 상관없이 본인 방문만 본다.
+ */
+function filterWhere(
+  actor: AuthenticatedUser,
+  filter: {
+    organizationId?: string;
+    staffId?: string;
+    recipientId?: string;
+    program?: Program;
+    status?: VisitStatus;
+  },
+  scheduledAt: Prisma.DateTimeFilter | undefined,
+): Prisma.VisitWhereInput {
+  const scope = visitScope(actor);
+  return {
+    ...scope,
+    organizationId: resolveOrganizationFilter(actor, filter.organizationId),
+    staffId: scope.staffId ?? filter.staffId,
+    recipientId: filter.recipientId,
+    program: filter.program,
+    status: filter.status,
+    scheduledAt,
   };
 }
 
@@ -125,48 +167,95 @@ export class VisitService {
     actor: AuthenticatedUser,
     query: z.output<typeof VisitListQuerySchema>,
   ): Promise<VisitListResponse> {
-    const scope = visitScope(actor);
-    const where: Prisma.VisitWhereInput = {
-      ...scope,
-      organizationId: resolveOrganizationFilter(actor, query.organizationId),
-      staffId: scope.staffId ?? query.staffId,
-      recipientId: query.recipientId,
-      program: query.program,
-      status: query.status,
-      scheduledAt: scheduledRange(query),
-    };
+    const where = filterWhere(actor, query, scheduledRange(query));
     const { page, pageSize } = query;
+    const byOrganization = query.groupBy === "organization";
 
     const [rows, grouped] = await Promise.all([
       this.prisma.visit.findMany({
         ...visitSummaryArgs,
         where,
-        orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+        // 기관별로 묶어 볼 때는 한 기관의 방문이 페이지를 건너 이어지게 기관부터 정렬한다.
+        orderBy: byOrganization
+          ? [
+              { organization: { name: "asc" } },
+              { organizationId: "asc" },
+              { scheduledAt: "asc" },
+              { id: "asc" },
+            ]
+          : [{ scheduledAt: "asc" }, { id: "asc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      // 기관·상태별로 한 번에 세서 전체 건수와 기관별 건수를 함께 만든다.
       this.prisma.visit.groupBy({
-        by: ["status"],
+        by: ["organizationId", "status"],
         where,
         _count: { _all: true },
       }),
     ]);
 
-    const statusCounts = Object.fromEntries(
-      VISIT_STATUSES.map((status) => [status, 0]),
-    ) as Record<VisitStatus, number>;
+    const statusCounts = emptyStatusCounts();
+    const byOrganizationCounts = new Map<string, VisitOrganizationCount>();
     for (const group of grouped) {
-      statusCounts[group.status] = group._count._all;
+      const count = group._count._all;
+      statusCounts[group.status] += count;
+      let organization = byOrganizationCounts.get(group.organizationId);
+      if (!organization) {
+        organization = {
+          organizationId: group.organizationId,
+          total: 0,
+          statusCounts: emptyStatusCounts(),
+        };
+        byOrganizationCounts.set(group.organizationId, organization);
+      }
+      organization.total += count;
+      organization.statusCounts[group.status] += count;
     }
-    const total = Object.values(statusCounts).reduce((sum, n) => sum + n, 0);
+    const total = totalCount(statusCounts);
 
     return {
       items: rows.map(toVisitSummary),
       total,
       statusCounts,
+      ...(byOrganization && {
+        organizationCounts: [...byOrganizationCounts.values()],
+      }),
       page,
       pageSize,
     };
+  }
+
+  /**
+   * 기간 안의 날짜별 상태 건수(달력). 권한 범위와 필터는 목록과 같다.
+   * withVisits면 칩에 쓸 가벼운 방문 목록도 싣는다. 상한을 넘으면 목록 없이(null) 건수만 준다.
+   */
+  async calendar(
+    actor: AuthenticatedUser,
+    query: z.output<typeof VisitCalendarQuerySchema>,
+  ): Promise<VisitCalendarResponse> {
+    const where = filterWhere(actor, query, scheduledRange(query));
+    if (query.withVisits === "true") {
+      const rows = await this.prisma.visit.findMany({
+        ...calendarItemArgs,
+        where,
+        orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+        take: VISIT_CALENDAR_MAX_ITEMS + 1,
+      });
+      if (rows.length <= VISIT_CALENDAR_MAX_ITEMS) {
+        return {
+          days: countVisitsByDay(rows),
+          visits: rows.map(toVisitCalendarItem),
+        };
+      }
+    }
+    const rows = await this.prisma.visit.findMany({
+      where,
+      select: { scheduledAt: true, status: true },
+    });
+    return query.withVisits === "true"
+      ? { days: countVisitsByDay(rows), visits: null }
+      : { days: countVisitsByDay(rows) };
   }
 
   async get(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
@@ -182,9 +271,7 @@ export class VisitService {
     actor: AuthenticatedUser,
     dto: z.output<typeof CreateVisitSchema>,
   ): Promise<VisitDetail> {
-    // 현장 직원은 항상 본인 방문으로, 관리자는 지정한 담당자(없으면 본인)로 만든다.
-    const staffId =
-      actor.role === "STAFF" ? actor.id : (dto.staffId ?? actor.id);
+    const staffId = visitStaffId(actor, dto.staffId);
     const [recipient, staff] = await Promise.all([
       this.prisma.recipient.findUnique({
         where: { id: dto.recipientId },
@@ -225,11 +312,7 @@ export class VisitService {
         `이 수급자는 ${PROGRAM_LABELS[dto.program]} 사업에 등록되어 있지 않습니다. 수급자 정보에서 등록 사업을 확인해 주세요`,
       );
     }
-    if (
-      !staff?.isActive ||
-      !canBeAssignedVisits(staff) ||
-      staff.organizationId !== recipient.organizationId
-    ) {
+    if (!isAssignableStaff(staff, recipient.organizationId)) {
       throw new BadRequestException(
         "담당자를 선택해 주세요(수급자와 같은 기관의, 직종이 있는 사용자만 배정할 수 있습니다)",
       );
@@ -250,6 +333,68 @@ export class VisitService {
       },
     });
     return this.toDetail(actor, row);
+  }
+
+  /**
+   * 만들려는 방문과 같은 날, 함께 있으면 재택의료 급여를 산정하지 않는 방문(conflictsOnSameDay)이
+   * 있는지 알려 준다. 현장 직원은 다른 직원의 방문을 볼 수 없으므로 방문 내용 대신 시각·사업만 문구로 준다.
+   */
+  async sameDayWarnings(
+    actor: AuthenticatedUser,
+    query: z.output<typeof SameDayWarningQuerySchema>,
+  ): Promise<SameDayWarningResponse> {
+    const staffId = visitStaffId(actor, query.staffId);
+    const [recipient, staff] = await Promise.all([
+      this.prisma.recipient.findUnique({
+        where: { id: query.recipientId },
+        select: { organizationId: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: staffId },
+        select: { profession: true },
+      }),
+    ]);
+    if (!recipient) throw new NotFoundException("수급자를 찾을 수 없습니다");
+    assertOrganizationAccess(
+      actor,
+      recipient.organizationId,
+      "수급자를 찾을 수 없습니다",
+    );
+
+    const planned = {
+      program: query.program,
+      profession: staff?.profession ?? null,
+    };
+    const sameDay = await this.prisma.visit.findMany({
+      where: {
+        recipientId: query.recipientId,
+        scheduledAt: scheduledRange({ date: query.date }),
+      },
+      select: {
+        scheduledAt: true,
+        program: true,
+        staff: { select: { profession: true } },
+      },
+      orderBy: { scheduledAt: "asc" },
+    });
+    const conflicts = sameDay.filter((visit) =>
+      conflictsOnSameDay(planned, {
+        program: visit.program,
+        profession: visit.staff.profession,
+      }),
+    );
+    if (conflicts.length === 0) return { warnings: [] };
+    const visits = conflicts
+      .map(
+        (visit) =>
+          `${formatKstTime(visit.scheduledAt)} ${PROGRAM_LABELS[visit.program]}`,
+      )
+      .join(", ");
+    return {
+      warnings: [
+        `이날 ${visits} 방문이 있습니다. 재택의료센터 간호사 방문과 장기요양 방문간호가 같은 날 있으면 재택의료 급여를 산정하지 않습니다`,
+      ],
+    };
   }
 
   async saveRecord(
@@ -379,6 +524,105 @@ export class VisitService {
     return this.toDetail(actor, row);
   }
 
+  /**
+   * 확정한 기록을 다시 고칠 수 있게 작성 중(DRAFT)으로 되돌린다. 담당자 본인만 한다.
+   * 고친 뒤 다시 확정해야 하므로 "확정 = 모든 서식이 저장·검사를 통과한 상태"는 그대로다.
+   */
+  async reopen(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      await lockVisitRow(tx, id);
+      const visit = await tx.visit.findFirst({
+        where: { id, ...visitScope(actor) },
+        select: { staffId: true, status: true },
+      });
+      if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
+      if (visit.staffId !== actor.id) {
+        throw new ForbiddenException("담당자만 기록을 고칠 수 있습니다");
+      }
+      if (visit.status !== "CONFIRMED") {
+        throw new ConflictException("확정된 방문이 아닙니다");
+      }
+      return tx.visit.update({
+        ...visitDetailArgs,
+        where: { id },
+        data: { status: "DRAFT", confirmedAt: null },
+      });
+    });
+    return this.toDetail(actor, row);
+  }
+
+  /**
+   * 방문 일정·담당자 바꾸기(기관 관리자·운영자, 역할은 컨트롤러가 막는다). 규칙은 planVisitUpdate.
+   * 방문 행을 잠그고 다시 읽으므로 기록 저장·구술 저장·확정과 차례로 처리된다.
+   */
+  async update(
+    actor: AuthenticatedUser,
+    id: string,
+    dto: z.output<typeof UpdateVisitSchema>,
+  ): Promise<VisitDetail> {
+    const row = await this.prisma.$transaction(async (tx) => {
+      await lockVisitRow(tx, id);
+      const visit = await tx.visit.findFirst({
+        where: { id, ...visitScope(actor) },
+        select: {
+          status: true,
+          program: true,
+          organizationId: true,
+          staffId: true,
+          scheduledAt: true,
+          formIds: true,
+          staff: { select: { profession: true } },
+          dictation: { select: { id: true } },
+        },
+      });
+      if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
+
+      const newStaff =
+        dto.staffId && dto.staffId !== visit.staffId
+          ? await tx.user.findUnique({
+              where: { id: dto.staffId },
+              select: {
+                role: true,
+                profession: true,
+                isActive: true,
+                organizationId: true,
+              },
+            })
+          : null;
+      const plan = planVisitUpdate(
+        {
+          status: visit.status,
+          program: visit.program,
+          organizationId: visit.organizationId,
+          staffId: visit.staffId,
+          scheduledAt: visit.scheduledAt,
+          formIds: toFormIds(visit.formIds),
+          hasDictation: visit.dictation !== null,
+          currentProfession: visit.staff.profession,
+        },
+        dto,
+        newStaff,
+      );
+      if (!plan.ok) {
+        throw plan.kind === "conflict"
+          ? new ConflictException(plan.message)
+          : new BadRequestException(plan.message);
+      }
+      if (Object.keys(plan.data).length === 0) {
+        return tx.visit.findUniqueOrThrow({
+          ...visitDetailArgs,
+          where: { id },
+        });
+      }
+      return tx.visit.update({
+        ...visitDetailArgs,
+        where: { id },
+        data: plan.data,
+      });
+    });
+    return this.toDetail(actor, row);
+  }
+
   async remove(actor: AuthenticatedUser, id: string): Promise<{ ok: true }> {
     const visit = await this.prisma.visit.findFirst({
       where: { id, ...visitScope(actor) },
@@ -432,7 +676,7 @@ export class VisitService {
     id: string,
     lockedMessage?: string,
   ) {
-    await tx.$queryRaw`SELECT id FROM visits WHERE id = ${id} FOR UPDATE`;
+    await lockVisitRow(tx, id);
     return findWritable(tx, actor, id, lockedMessage);
   }
 
@@ -478,12 +722,14 @@ export class VisitService {
 }
 
 /**
- * 날짜 조건(한국 날짜)을 scheduledAt 범위로 바꾼다. `to`는 그날을 포함한다.
- * from ≤ to 검사는 VisitListQuerySchema가 한다.
+ * 날짜 조건(한국 날짜: 하루 date, 또는 기간 from~to)을 scheduledAt 범위로 바꾼다. `to`는 그날을 포함한다.
+ * 목록·달력·같은 날 경고가 함께 쓴다. from ≤ to 검사는 각 스키마가 한다.
  */
-function scheduledRange(
-  query: z.output<typeof VisitListQuerySchema>,
-): Prisma.DateTimeFilter | undefined {
+function scheduledRange(query: {
+  date?: string;
+  from?: string;
+  to?: string;
+}): Prisma.DateTimeFilter | undefined {
   if (query.date) {
     return {
       gte: kstStartOfDay(query.date),
@@ -495,6 +741,19 @@ function scheduledRange(
     gte: query.from ? kstStartOfDay(query.from) : undefined,
     lt: query.to ? kstStartOfDay(addKstDays(query.to, 1)) : undefined,
   };
+}
+
+/** 방문 행을 잠근다(SELECT … FOR UPDATE). 같은 방문을 바꾸는 요청을 차례로 처리한다. 트랜잭션 안에서만. */
+function lockVisitRow(tx: Prisma.TransactionClient, id: string) {
+  return tx.$queryRaw`SELECT id FROM visits WHERE id = ${id} FOR UPDATE`;
+}
+
+/** 방문 담당자: 현장 직원은 늘 본인, 관리자는 고른 담당자(없으면 본인). */
+function visitStaffId(
+  actor: AuthenticatedUser,
+  requested: string | null | undefined,
+): string {
+  return actor.role === "STAFF" ? actor.id : (requested ?? actor.id);
 }
 
 /** undefined는 "변경 없음", null은 "지움". */

@@ -1,9 +1,15 @@
-import { canWriteRecord } from "@repo/shared-types";
-import { useParams } from "react-router";
+import { useState } from "react";
+import {
+  canDeleteVisit,
+  canReopenVisit,
+  canWriteRecord,
+} from "@repo/shared-types";
+import { Navigate, useParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageError, PageLoading } from "@/components/ui/page-state";
 import { useCurrentUser } from "@/features/auth/hooks/use-session";
 import { RecipientInfoCard } from "@/features/recipients/components/recipient-info-card";
+import { DeleteVisitButton } from "@/features/visits/components/delete-visit-button";
 import { VisitRecordForm } from "@/features/visits/components/record-form/visit-record-form";
 import { VisitRecordView } from "@/features/visits/components/visit-record-view";
 import { VisitSummaryCard } from "@/features/visits/components/visit-summary-card";
@@ -15,6 +21,7 @@ export default function VisitDetailPage() {
   const { visitId = "" } = useParams();
   const visitQuery = useVisit(visitId);
   const currentUserId = useCurrentUser()?.id;
+  const [deleted, setDeleted] = useState(false);
 
   if (visitQuery.isPending || visitQuery.isError) {
     return (
@@ -35,6 +42,12 @@ export default function VisitDetailPage() {
 
   const visit = visitQuery.data;
 
+  // 삭제했으면 그날 일정으로 돌아간다. 기록 폼을 먼저 내린 뒤 이동하므로
+  // 입력 중이던 내용이 있어도 "저장하지 않은 변경" 확인 창이 뜨지 않는다.
+  if (deleted) {
+    return <Navigate to={visitsPath(getVisitDate(visit))} replace />;
+  }
+
   return (
     <>
       <PageHeader title="방문 기록" backTo={visitsPath(getVisitDate(visit))} />
@@ -44,6 +57,12 @@ export default function VisitDetailPage() {
         <aside className="flex flex-col gap-4 md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
           <VisitSummaryCard visit={visit} />
           <RecipientInfoCard recipient={visit.recipient} />
+          {canDeleteVisit(visit.status) && (
+            <DeleteVisitButton
+              visit={visit}
+              onDeleted={() => setDeleted(true)}
+            />
+          )}
         </aside>
 
         <div className="min-w-0">
@@ -51,7 +70,13 @@ export default function VisitDetailPage() {
           {currentUserId && canWriteRecord(visit, currentUserId) ? (
             <VisitRecordForm key={visit.id} visit={visit} />
           ) : (
-            <VisitRecordView visit={visit} />
+            <VisitRecordView
+              visit={visit}
+              canReopen={
+                currentUserId !== undefined &&
+                canReopenVisit(visit, currentUserId)
+              }
+            />
           )}
         </div>
       </div>

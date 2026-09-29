@@ -38,3 +38,13 @@ export function useOrganizationColumnNames(): Map<string, string> | undefined {
   const organizationNames = useOrganizationNameMap();
   return showsAllOrganizations ? organizationNames : undefined;
 }
+
+/**
+ * 운영자의 기관 선택을 바꾼다(null이면 전체 기관). 헤더·필터 줄의 콤보박스와
+ * 목록의 기관 묶음 머리 줄 [이 기관만 보기]가 쓴다(모든 목록이 그 기관으로 좁혀진다).
+ */
+export function useSetScopeOrganization(): (
+  organizationId: string | null,
+) => void {
+  return useOrganizationScopeStore((s) => s.setOrganizationId);
+}

@@ -5,9 +5,9 @@ import {
   CARE_GRADE_LABELS,
   CreateVisitSchema,
   formatKstDate,
-  formLabel,
   formRulesFor,
   HHMM_REGEX,
+  isIsoDate,
   PROGRAM_LABELS,
   PROGRAMS,
   resolveFormIds,
@@ -17,9 +17,9 @@ import {
   type Recipient,
   type UserSummary,
 } from "@repo/shared-types";
+import { CopyIcon } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { CheckboxGroup } from "@/components/ui/checkbox-group";
 import {
   Dialog,
   DialogBody,
@@ -40,7 +40,12 @@ import {
 import { useRecipients } from "@/features/recipients/hooks/use-recipients";
 import { useVisitStaff } from "@/features/users/hooks/use-users";
 import { staffLabel } from "@/features/users/lib/staff-label";
-import { useCreateVisit } from "@/features/visits/hooks/use-visits";
+import { FormRuleCheckboxes } from "@/features/visits/components/form-rule-checkboxes";
+import { SameDayWarnings } from "@/features/visits/components/same-day-warnings";
+import {
+  useCreateVisit,
+  useSameDayWarnings,
+} from "@/features/visits/hooks/use-visits";
 
 /** 날짜·시각을 따로 받아 제출할 때 한국 시간 ISO 문자열로 합친다. */
 const CreateVisitFormSchema = z.object({
@@ -53,19 +58,42 @@ const CreateVisitFormSchema = z.object({
   time: z.string().regex(HHMM_REGEX, "방문 시각을 입력해 주세요"),
 });
 
+/**
+ * 등록 창 기본값. 달력에서 고른 날·수급자로 열거나(우클릭 메뉴 포함) 기존 방문을 복사할 때 쓴다.
+ * 비운 항목은 평소 기본값(오늘, 09:00, 선택 전)이다.
+ */
+export interface CreateVisitDefaults {
+  /** YYYY-MM-DD */
+  date?: string;
+  /** HH:mm */
+  time?: string;
+  recipientId?: string;
+  program?: Program;
+  staffId?: string;
+  /** 켜고 끈 선택 서식(복사할 때 원래 방문의 선택을 잇는다) */
+  formChoices?: FormChoices;
+  /** 복사한 방문 설명. 창 위에 안내로 보여 준다. */
+  copiedFrom?: string;
+}
+
 interface CreateVisitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaults?: CreateVisitDefaults;
 }
 
 export function CreateVisitDialog({
   open,
   onOpenChange,
+  defaults,
 }: CreateVisitDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <CreateVisitForm onDone={() => onOpenChange(false)} />
+        <CreateVisitForm
+          defaults={defaults}
+          onDone={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -101,7 +129,13 @@ const toProgram = (value: string) => PROGRAMS.find((p) => p === value);
 const programsFor = (recipient: Recipient | undefined) =>
   recipient?.programs ?? [];
 
-function CreateVisitForm({ onDone }: { onDone: () => void }) {
+function CreateVisitForm({
+  onDone,
+  defaults,
+}: {
+  onDone: () => void;
+  defaults?: CreateVisitDefaults;
+}) {
   const scopeOrganizationId = useScopeOrganizationId();
   // 운영자가 "전체 기관"을 볼 때만 있다. 선택 항목에 기관 이름을 붙인다.
   const organizationNames = useOrganizationColumnNames();
@@ -124,28 +158,37 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
   } = useForm({
     resolver: zodResolver(CreateVisitFormSchema),
     defaultValues: {
-      recipientId: "",
-      program: "",
-      staffId: "",
-      date: formatKstDate(),
-      time: "09:00",
+      recipientId: defaults?.recipientId ?? "",
+      program: defaults?.program ?? "",
+      staffId: defaults?.staffId ?? "",
+      date: defaults?.date ?? formatKstDate(),
+      time: defaults?.time ?? "09:00",
     },
   });
 
   const recipientId = useWatch({ control, name: "recipientId" });
   const program = toProgram(useWatch({ control, name: "program" }));
   const staffId = useWatch({ control, name: "staffId" });
+  const date = useWatch({ control, name: "date" });
   const selectedRecipient = recipients.find((r) => r.id === recipientId);
   const programOptions = programsFor(selectedRecipient);
   const selectedStaff = staff.find((user) => user.id === staffId);
 
   // 작성 서식: 켜고 끈 선택 서식. 손대지 않은 서식은 규칙의 기본값을 따른다.
-  const [formChoices, setFormChoices] = useState<FormChoices>({});
+  const [formChoices, setFormChoices] = useState<FormChoices>(
+    defaults?.formChoices ?? {},
+  );
   const profession = selectedStaff?.profession ?? null;
   const formRules = program ? formRulesFor(program, profession) : [];
   const formIds = program
     ? resolveFormIds(program, profession, formChoices)
     : [];
+  // 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지(등록을 막지는 않는다).
+  const { data: sameDayWarnings = [] } = useSameDayWarnings(
+    recipientId && program && staffId && isIsoDate(date)
+      ? { recipientId, program, staffId, date }
+      : null,
+  );
   // 담당자는 수급자와 같은 기관이고, 고른 사업을 맡을 수 있는 직종이어야 한다.
   const staffOptions = staff.filter((user) =>
     fits(user, selectedRecipient, program),
@@ -201,6 +244,13 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="grid gap-4">
+        {defaults?.copiedFrom && (
+          <p className="bg-primary-soft text-primary flex items-start gap-2 rounded-md px-3 py-2 text-sm">
+            <CopyIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {defaults.copiedFrom} 방문을 복사했습니다. 날짜·시각을 확인해
+            주세요.
+          </p>
+        )}
         <FormField
           label="수급자"
           htmlFor="create-visit-recipient"
@@ -340,25 +390,11 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
             label="작성 서식"
             hint="필수 서식은 뺄 수 없습니다. 현장 웹 기록 화면에서도 확정 전까지 바꿀 수 있습니다."
           >
-            <CheckboxGroup
-              label="작성 서식"
-              options={formRules.map((rule) => ({
-                value: rule.formId,
-                label: formLabel(rule.formId),
-                note: rule.required ? "필수" : rule.when,
-                disabled: rule.required,
-              }))}
+            <FormRuleCheckboxes
+              rules={formRules}
               value={formIds}
-              onChange={(next) =>
-                setFormChoices((current) => ({
-                  ...current,
-                  ...Object.fromEntries(
-                    formRules.map((rule) => [
-                      rule.formId,
-                      next.includes(rule.formId),
-                    ]),
-                  ),
-                }))
+              onChange={(choices) =>
+                setFormChoices((current) => ({ ...current, ...choices }))
               }
             />
           </FormField>
@@ -396,6 +432,7 @@ function CreateVisitForm({ onDone }: { onDone: () => void }) {
             />
           </FormField>
         </div>
+        <SameDayWarnings warnings={sameDayWarnings} />
       </DialogBody>
       <FormDialogFooter
         submitText="등록"

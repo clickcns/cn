@@ -6,6 +6,7 @@ import {
   formRulesFor,
   hasOptionalForms,
   HHMM_REGEX,
+  isIsoDate,
   PROGRAM_LABELS,
   resolveFormIds,
   toKstIsoDateTime,
@@ -18,6 +19,7 @@ import {
   useController,
   useForm,
   useFormState,
+  useWatch,
 } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import { FormChoiceList } from "@/features/forms/components/form-choice-list";
 import { RecipientPicker } from "@/features/recipients/components/recipient-picker";
 import { useRecipients } from "@/features/recipients/hooks/use-recipients";
 import { useCreateVisit } from "@/features/visits/hooks/use-visit-mutations";
+import { useSameDayWarnings } from "@/features/visits/hooks/use-visits";
 import { visitPath } from "@/lib/routes";
 
 const NewVisitFormSchema = z.object({
@@ -97,6 +100,14 @@ export function NewVisitForm({
   const formIds = program
     ? resolveFormIds(program, profession, formChoices)
     : [];
+
+  // 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지(추가를 막지는 않는다).
+  const date = useWatch({ control, name: "date" });
+  const { data: sameDayWarnings = [] } = useSameDayWarnings(
+    recipient && program && isIsoDate(date)
+      ? { recipientId: recipient.id, program, date }
+      : null,
+  );
 
   const onSubmit = handleSubmit((values) => {
     if (!program) {
@@ -228,6 +239,16 @@ export function NewVisitForm({
             />
           </div>
         </div>
+        {sameDayWarnings.map((warning) => (
+          <p
+            key={warning}
+            role="status"
+            className="border-warning/20 bg-warning-soft text-warning flex items-start gap-2 rounded-xl border p-3 font-semibold"
+          >
+            <TriangleAlert className="mt-0.5 size-5 shrink-0" />
+            {warning}
+          </p>
+        ))}
         {(errors.date || errors.time) && (
           <p className="text-destructive">
             {errors.date?.message ?? errors.time?.message}

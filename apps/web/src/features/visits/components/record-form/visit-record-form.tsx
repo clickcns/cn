@@ -239,8 +239,8 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
         title="방문 기록을 확정할까요?"
         description={
           visit.formIds.length > 1
-            ? `서식 ${visit.formIds.length}개를 함께 확정합니다. 확정하면 더 이상 수정할 수 없습니다.`
-            : "확정하면 더 이상 수정할 수 없습니다."
+            ? `서식 ${visit.formIds.length}개를 함께 확정합니다. 확정하면 읽기 전용이 되고, 고칠 때는 [수정]을 누릅니다.`
+            : "확정하면 읽기 전용이 되고, 고칠 때는 [수정]을 누릅니다."
         }
         confirmText="확정"
       />

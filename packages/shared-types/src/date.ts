@@ -40,7 +40,99 @@ export function isIsoDate(value: unknown): value is string {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
+const ISO_MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** YYYY-MM 형식의 달인지. */
+export function isIsoMonth(value: unknown): value is string {
+  return typeof value === "string" && ISO_MONTH_REGEX.test(value);
+}
+
+/** YYYY-MM-DD(한국 날짜)가 속한 달. 예: "2026-09-24" → "2026-09" */
+export function monthOf(date: string): string {
+  return date.slice(0, 7);
+}
+
+/** YYYY-MM에 달 수를 더한다. 예: addMonths("2026-12", 1) → "2027-01" */
+export function addMonths(month: string, months: number): string {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const index = year! * 12 + (monthNumber! - 1) + months;
+  const nextYear = Math.floor(index / 12);
+  return `${String(nextYear).padStart(4, "0")}-${String(index - nextYear * 12 + 1).padStart(2, "0")}`;
+}
+
+/** 두 한국 날짜 사이의 일수(to - from). 같은 날이면 0. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+      (24 * 60 * 60 * 1000),
+  );
+}
+
+/**
+ * 달력 한 장에 보이는 날짜(YYYY-MM-DD, 오름차순). 일요일에 시작해 토요일에 끝나는
+ * 주 단위라 앞뒤 달 날짜가 섞이고, 4~6주(28~42일)다.
+ */
+export function monthGridDates(month: string): string[] {
+  const first = `${month}-01`;
+  const last = addKstDays(`${addMonths(month, 1)}-01`, -1);
+  const start = addKstDays(first, -weekdayIndex(first));
+  const end = addKstDays(last, 6 - weekdayIndex(last));
+  const dates: string[] = [];
+  for (let date = start; date <= end; date = addKstDays(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
+}
+
+/** YYYY-MM-DD에 달 수를 더한다. 그 달에 같은 날이 없으면 말일(3월 31일 → 2월 28일). */
+export function addMonthsToDate(date: string, months: number): string {
+  const month = addMonths(monthOf(date), months);
+  const lastDay = daysBetween(`${month}-01`, `${addMonths(month, 1)}-01`);
+  const day = Math.min(Number(date.slice(8)), lastDay);
+  return `${month}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * 달력 키보드 이동. 방향키 ±1일·±7일, Home/End는 그 주의 일·토요일,
+ * PageUp/PageDown은 전·다음 달 같은 날(없으면 말일). 모르는 키는 null.
+ */
+export function shiftCalendarDate(date: string, key: string): string | null {
+  switch (key) {
+    case "ArrowLeft":
+      return addKstDays(date, -1);
+    case "ArrowRight":
+      return addKstDays(date, 1);
+    case "ArrowUp":
+      return addKstDays(date, -7);
+    case "ArrowDown":
+      return addKstDays(date, 7);
+    case "Home":
+      return addKstDays(date, -weekdayIndex(date));
+    case "End":
+      return addKstDays(date, 6 - weekdayIndex(date));
+    case "PageUp":
+      return addMonthsToDate(date, -1);
+    case "PageDown":
+      return addMonthsToDate(date, 1);
+    default:
+      return null;
+  }
+}
+
+/** ISO 시각의 한국 시각(HH:mm)은 그대로 두고 한국 날짜만 바꾼다(끌어다 놓기로 날짜 옮기기). */
+export function withKstDate(iso: string, date: string): string {
+  return toKstIsoDateTime(date, formatKstTime(new Date(iso)));
+}
+
+/** 요일 번호(일요일 0 ~ 토요일 6). 달력 날짜 자체의 요일이라 UTC 자정으로 계산한다. */
+function weekdayIndex(date: string): number {
+  return new Date(`${date}T00:00:00Z`).getUTCDay();
+}
+
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
+/** 달력 머리에 쓰는 요일 이름(일요일부터). */
+export const WEEKDAY_LABELS: readonly string[] = WEEKDAYS;
 
 /** YYYY-MM-DD(한국 날짜)의 요일 한 글자. 예: "화" */
 export function kstWeekday(date: string): string {
@@ -106,4 +198,16 @@ export function normalizeDateTyping(text: string): string {
   return match
     ? `${match[1]}-${match[2]!.padStart(2, "0")}-${match[3]!.padStart(2, "0")}`
     : text;
+}
+
+/** "2026-09-22" → "9월 22일 (화)" */
+export function formatDateLabel(date: string): string {
+  const [, month, day] = date.split("-").map(Number);
+  return `${month}월 ${day}일 (${kstWeekday(date)})`;
+}
+
+/** "2026-09" → "2026년 9월" */
+export function formatMonthLabel(month: string): string {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return `${year}년 ${monthNumber}월`;
 }

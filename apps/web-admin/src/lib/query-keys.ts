@@ -1,6 +1,8 @@
 import type {
   RecipientListQuery,
+  SameDayWarningQuery,
   UserListQuery,
+  VisitCalendarQuery,
   VisitListQuery,
 } from "@repo/shared-types";
 
@@ -30,6 +32,17 @@ export const queryKeys = {
      */
     infiniteList: (query: Omit<VisitListQuery, "page" | "pageSize">) =>
       ["visits", "list", "infinite", query] as const,
+    /** 달력 캐시 전부(조건별로 여러 개). */
+    calendars: ["visits", "list", "calendar"] as const,
+    /** 달력(날짜별 건수). `lists` 접두어 아래라 등록·삭제 뒤 목록과 함께 다시 받는다. */
+    calendar: (query: VisitCalendarQuery) =>
+      ["visits", "list", "calendar", query] as const,
+    /** calendar()로 만든 키에서 조건을 꺼낸다(캐시를 고칠 때). */
+    calendarQueryOf: (key: readonly unknown[]) =>
+      key[3] as VisitCalendarQuery | undefined,
     detail: (id: string) => ["visits", "detail", id] as const,
+    sameDayWarningsAll: ["visits", "same-day-warnings"] as const,
+    sameDayWarnings: (query: SameDayWarningQuery) =>
+      ["visits", "same-day-warnings", query] as const,
   },
 };

@@ -1,5 +1,6 @@
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
+import { useRef } from "react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -31,10 +32,21 @@ export function DialogContent({
   className,
   children,
   size = "md",
+  returnFocus,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   size?: keyof typeof SIZE_CLASSES;
+  /**
+   * 닫은 뒤 창을 연 요소가 사라졌으면(우클릭 메뉴 항목, 다시 그려진 칩 등) 포커스를 둘 곳.
+   * 없으면 Radix 기본 동작(Dialog.Trigger로)을 따른다.
+   */
+  returnFocus?: () => HTMLElement | null;
 }) {
+  // 창을 연 요소. Dialog.Trigger 없이 연 창도(Radix는 Trigger로만 돌려준다) 닫으면 이리로 돌아간다.
+  const opener = useRef<Element | null>(null);
+
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
@@ -48,6 +60,25 @@ export function DialogContent({
           SIZE_CLASSES[size],
           className,
         )}
+        onOpenAutoFocus={(event) => {
+          // 이때는 아직 포커스가 창을 연 요소에 있다.
+          opener.current = document.activeElement;
+          onOpenAutoFocus?.(event);
+        }}
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event);
+          if (event.defaultPrevented) return;
+          const element = opener.current;
+          opener.current = null;
+          const target =
+            element instanceof HTMLElement && element.isConnected
+              ? element
+              : returnFocus?.();
+          if (target) {
+            event.preventDefault();
+            target.focus();
+          }
+        }}
         {...props}
       >
         {children}

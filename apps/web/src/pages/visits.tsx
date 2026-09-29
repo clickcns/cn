@@ -1,31 +1,50 @@
 import { formatKstDate, isIsoDate } from "@repo/shared-types";
-import { CalendarX2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { EmptyState, PageError, PageLoading } from "@/components/ui/page-state";
-import { DateNavigator } from "@/features/visits/components/date-navigator";
-import { VisitCard } from "@/features/visits/components/visit-card";
-import { useDailyVisits } from "@/features/visits/hooks/use-visits";
+import { DayVisits } from "@/features/visits/components/day-visits";
+import { ScheduleCalendar } from "@/features/visits/components/schedule-calendar";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { newVisitPath } from "@/lib/routes";
 
+const EXPANDED_STORAGE_KEY = "carenote:visits-calendar-expanded";
+
+/** 좁은 화면에서 한 달 달력을 펼쳐 둘지(마지막 선택). */
+function storedExpanded(): boolean {
+  try {
+    return localStorage.getItem(EXPANDED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function storeExpanded(expanded: boolean) {
+  try {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, String(expanded));
+  } catch {
+    // 저장소를 못 쓰면(사생활 보호 모드 등) 기억하지 않는다.
+  }
+}
+
+/**
+ * 방문 일정: 달력과 고른 날의 방문을 한 화면에 둔다.
+ * 좁은 화면은 한 주 줄(펼치면 한 달) 아래에 그날 방문, 넓은 화면은 한 달 달력 옆에 그날 방문.
+ */
 export default function VisitsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const today = formatKstDate();
+  // 날짜는 주소에 두어 방문을 열었다가 뒤로 가도 그날로 돌아온다.
   const dateParam = searchParams.get("date");
   const date = isIsoDate(dateParam) ? dateParam : today;
+  const isWide = useMediaQuery("(min-width: 64rem)");
+  const [expandedChoice, setExpandedChoice] = useState(storedExpanded);
+  const expanded = isWide || expandedChoice;
 
-  const visitsQuery = useDailyVisits(date);
-  const visits = visitsQuery.data?.items ?? [];
-  // 건수는 서버가 조건 전체 기준으로 센 값을 쓴다.
-  const total = visitsQuery.data?.total ?? 0;
-  const confirmedCount = visitsQuery.data?.statusCounts.CONFIRMED ?? 0;
-
-  const changeDate = (next: string) => {
+  const selectDate = (next: string) => {
     setSearchParams(next === today ? {} : { date: next }, { replace: true });
   };
-
-  const addVisitLink = newVisitPath({ date });
 
   return (
     <>
@@ -33,7 +52,7 @@ export default function VisitsPage() {
         title="방문 일정"
         action={
           <Button asChild size="sm">
-            <Link to={addVisitLink}>
+            <Link to={newVisitPath({ date })}>
               <Plus />
               방문 추가
             </Link>
@@ -41,46 +60,21 @@ export default function VisitsPage() {
         }
       />
 
-      <div className="flex flex-col gap-4">
-        <DateNavigator date={date} today={today} onChange={changeDate} />
-
-        {visitsQuery.isPending ? (
-          <PageLoading />
-        ) : visitsQuery.isError ? (
-          <PageError
-            error={visitsQuery.error}
-            fallback="방문 일정을 불러오지 못했습니다"
-            onRetry={() => void visitsQuery.refetch()}
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <div className="lg:sticky lg:top-24">
+          <ScheduleCalendar
+            date={date}
+            today={today}
+            expanded={expanded}
+            collapsible={!isWide}
+            onToggleExpanded={() => {
+              setExpandedChoice(!expandedChoice);
+              storeExpanded(!expandedChoice);
+            }}
+            onSelect={selectDate}
           />
-        ) : visits.length === 0 ? (
-          <EmptyState
-            icon={<CalendarX2 />}
-            title="이 날짜에 예정된 방문이 없습니다"
-            description="방문을 추가하면 여기에 표시됩니다."
-            action={
-              <Button asChild>
-                <Link to={addVisitLink}>
-                  <Plus />
-                  방문 추가
-                </Link>
-              </Button>
-            }
-          />
-        ) : (
-          <>
-            <p className="text-muted-foreground" aria-live="polite">
-              방문 <strong className="text-foreground">{total}건</strong>
-              {" · "}확정 {confirmedCount}건
-            </p>
-            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {visits.map((visit) => (
-                <li key={visit.id}>
-                  <VisitCard visit={visit} />
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+        </div>
+        <DayVisits date={date} today={today} />
       </div>
     </>
   );

@@ -20,6 +20,8 @@ interface ConfirmDialogProps {
   confirmText?: string;
   destructive?: boolean;
   isPending?: boolean;
+  /** 창을 연 요소가 사라졌을 때 닫은 뒤 포커스를 둘 곳(DialogContent의 returnFocus). */
+  returnFocus?: () => HTMLElement | null;
 }
 
 export function ConfirmDialog({
@@ -32,13 +34,14 @@ export function ConfirmDialog({
   confirmText = "확인",
   destructive = false,
   isPending = false,
+  returnFocus,
 }: ConfirmDialogProps) {
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => !isPending && onOpenChange(next)}
     >
-      <DialogContent size="sm">
+      <DialogContent size="sm" returnFocus={returnFocus}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

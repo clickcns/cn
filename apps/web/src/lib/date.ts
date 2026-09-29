@@ -1,15 +1,12 @@
 import {
   addKstDays,
+  formatDateLabel,
   formatKstDate,
   formatKstTime,
-  kstWeekday,
 } from "@repo/shared-types";
 
-/** "2026-09-22" → "9월 22일 (화)" */
-export function formatDateLabel(date: string): string {
-  const [, month, day] = date.split("-").map(Number);
-  return `${month}월 ${day}일 (${kstWeekday(date)})`;
-}
+/** "2026-09-22" → "9월 22일 (화)" (관리 웹과 함께 쓴다) */
+export { formatDateLabel };
 
 /** 기준일과 비교한 "오늘"·"내일"·"어제". 그 밖의 날은 null. */
 export function relativeDayLabel(date: string, today: string): string | null {

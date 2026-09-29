@@ -21,6 +21,7 @@ import {
   useCurrentUser,
   useIsAdmin,
 } from "@/features/auth/hooks/use-current-user";
+import { OrganizationScopeFilter } from "@/features/organizations/components/organization-scope-select";
 import {
   useScopeOrganizationId,
   useShowsAllOrganizations,
@@ -75,23 +76,26 @@ export default function UsersPage() {
 
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4 border-b px-5 py-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="user-filter-role">역할</Label>
-            <Select
-              id="user-filter-role"
-              containerClassName="w-40"
-              value={role ?? ""}
-              onChange={(event) =>
-                setRole(roleOptions.find((r) => r === event.target.value))
-              }
-            >
-              <option value="">전체 역할</option>
-              {roleOptions.map((option) => (
-                <option key={option} value={option}>
-                  {ROLE_LABELS[option]}
-                </option>
-              ))}
-            </Select>
+          <div className="flex flex-wrap items-end gap-3">
+            <OrganizationScopeFilter id="user-filter-organization" />
+            <div className="grid gap-1.5">
+              <Label htmlFor="user-filter-role">역할</Label>
+              <Select
+                id="user-filter-role"
+                containerClassName="w-40"
+                value={role ?? ""}
+                onChange={(event) =>
+                  setRole(roleOptions.find((r) => r === event.target.value))
+                }
+              >
+                <option value="">전체 역할</option>
+                {roleOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {ROLE_LABELS[option]}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
           {usersQuery.isSuccess && (
             <ListCount

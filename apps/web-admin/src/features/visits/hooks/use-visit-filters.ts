@@ -19,6 +19,24 @@ export interface VisitFilters {
   staffId: string | undefined;
 }
 
+/** 기간을 뺀 조회 조건. 달력은 기간을 달로 정하므로 이것만 받는다. */
+export type VisitConditions = Pick<
+  VisitFilters,
+  "status" | "program" | "staffId"
+>;
+
+/**
+ * 필터에서 기간을 뺀 조건만 새 객체로 고른다. 필터를 통째로 넘기면
+ * 목록용 from/to가 달력 범위를 덮어쓰므로(펼침 순서) 반드시 이걸 거친다.
+ */
+export function visitConditions(filters: VisitFilters): VisitConditions {
+  return {
+    status: filters.status,
+    program: filters.program,
+    staffId: filters.staffId,
+  };
+}
+
 type FilterKey = keyof VisitFilters;
 const FILTER_KEYS: FilterKey[] = ["from", "to", "status", "program", "staffId"];
 

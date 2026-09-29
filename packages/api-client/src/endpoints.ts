@@ -9,13 +9,18 @@ import type {
   Organization,
   Recipient,
   RecipientListQuery,
+  SameDayWarningQuery,
+  SameDayWarningResponse,
   SaveVisitRecordInput,
   UpdateOrganizationInput,
   UpdateRecipientInput,
   UpdateUserInput,
   UpdateVisitFormsInput,
+  UpdateVisitInput,
   UserListQuery,
   UserSummary,
+  VisitCalendarQuery,
+  VisitCalendarResponse,
   VisitDetail,
   VisitDictation,
   VisitDictationResponse,
@@ -86,8 +91,26 @@ export function createCarenoteApi(http: KyInstance) {
           .get("visits", { searchParams: toSearchParams(query) })
           .json<VisitListResponse>(),
       get: (id: string) => http.get(`visits/${id}`).json<VisitDetail>(),
+      /** 기간 안의 날짜별 상태 건수(달력 한 장, 최대 42일). 필터는 목록과 같다. */
+      calendar: (query: VisitCalendarQuery) =>
+        http
+          .get("visits/calendar", { searchParams: toSearchParams(query) })
+          .json<VisitCalendarResponse>(),
+      /** 만들려는 방문과 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지. */
+      sameDayWarnings: (query: SameDayWarningQuery) =>
+        http
+          .get("visits/same-day-warnings", {
+            searchParams: toSearchParams(query),
+          })
+          .json<SameDayWarningResponse>(),
       create: (input: CreateVisitInput) =>
         http.post("visits", { json: input }).json<VisitDetail>(),
+      /**
+       * 방문 일정·담당자 바꾸기(기관 관리자·운영자). 확정 방문은 일정을,
+       * 기록을 쓰기 시작한 방문은 담당자를 바꿀 수 없다(409).
+       */
+      update: (id: string, input: UpdateVisitInput) =>
+        http.patch(`visits/${id}`, { json: input }).json<VisitDetail>(),
       /** 기록 초안 저장. 확정된 방문은 409를 돌려준다. */
       saveRecord: (id: string, input: SaveVisitRecordInput) =>
         http.put(`visits/${id}/record`, { json: input }).json<VisitDetail>(),
@@ -96,6 +119,9 @@ export function createCarenoteApi(http: KyInstance) {
         http.put(`visits/${id}/forms`, { json: input }).json<VisitDetail>(),
       confirm: (id: string) =>
         http.post(`visits/${id}/confirm`).json<VisitDetail>(),
+      /** 확정한 기록을 작성 중으로 되돌린다(담당자 본인). 고친 뒤 다시 확정한다. */
+      reopen: (id: string) =>
+        http.post(`visits/${id}/reopen`).json<VisitDetail>(),
       /** 예정 상태의 방문만 지울 수 있다. */
       remove: (id: string) => http.delete(`visits/${id}`).json<{ ok: true }>(),
     },

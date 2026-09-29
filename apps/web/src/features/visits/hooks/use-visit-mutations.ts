@@ -56,12 +56,34 @@ export function useUpdateVisitForms(visitId: string) {
   });
 }
 
-/** 기록 확정. 확정 후에는 수정할 수 없다. */
+/** 기록 확정. 확정한 기록은 [수정](useReopenVisit)으로 작성 중으로 되돌려야 고칠 수 있다. */
 export function useConfirmVisit(visitId: string) {
   const syncVisitCache = useSyncVisitCache();
 
   return useMutation({
     mutationFn: () => api.visits.confirm(visitId),
+    onSuccess: syncVisitCache,
+  });
+}
+
+/** 예정 방문 삭제. 기록이 생긴 방문은 서버가 막는다(409). 목록은 다시 받는다. */
+export function useDeleteVisit(visitId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.visits.remove(visitId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: visitKeys.lists() });
+    },
+  });
+}
+
+/** 확정한 기록을 작성 중으로 되돌린다(담당자 본인). 되돌리면 기록 폼으로 바뀐다. */
+export function useReopenVisit(visitId: string) {
+  const syncVisitCache = useSyncVisitCache();
+
+  return useMutation({
+    mutationFn: () => api.visits.reopen(visitId),
     onSuccess: syncVisitCache,
   });
 }
