@@ -85,7 +85,7 @@ const PRIMARY_CARE_CHECK_LAYOUT: OverlayLayout = {
     },
     {
       id: "licenseNumber",
-      box: rect(372, 396.7, 538, 410.5),
+      box: rect(381, 396.7, 538, 410.5),
       text: (t) => t.licenseNumber,
     },
     ...visitDate(
@@ -196,7 +196,7 @@ const PRIMARY_CARE_CHECK_LAYOUT: OverlayLayout = {
       options: {
         SURGERY_CARE: box(149.3, 543.3),
         ACUTE: box(149.3, 557.3),
-        DEVICE: box(149.3, 571.3, rect(201, 579, 281, 592)),
+        DEVICE: box(149.3, 571.3, rect(202.5, 579, 281, 592)),
         OTHER: box(149.3, 598.1, rect(197.5, 592, 379.5, 604)),
         PRESSURE_ULCER: box(300.1, 543.3),
         NEURO_PSYCH: box(300.1, 557.3),
@@ -251,8 +251,8 @@ const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
   texts: [
     ...visitDate(
       rect(230, 150.6, 282, 169.9),
-      rect(290, 150.6, 321, 169.9),
-      rect(330, 150.6, 359, 169.9),
+      rect(297, 150.6, 321, 169.9),
+      rect(335.5, 150.6, 359, 169.9),
     ),
     ...basicInfo(
       { left: [222, 326], right: [431, 535] },
@@ -299,7 +299,7 @@ const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
         REGULAR: circle(212.9, 353.2),
         ADHOC: circle(254.8, 353.2),
         EMERGENCY: circle(302.3, 353.2),
-        OTHER: circle(349.7, 353.2, rect(390, 341.3, 460, 362.8)),
+        OTHER: circle(349.7, 353.2, rect(391.7, 341.3, 460, 362.8)),
       },
     },
     physicalTrend: {
@@ -352,7 +352,7 @@ const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
         CHECKUP: box(419.8, 484.6),
         PRESSURE_ULCER: box(212.9, 499.9),
         EMERGENCY: box(276.4, 499.9),
-        OTHER: box(339.8, 499.9, rect(375, 492, 455, 507)),
+        OTHER: box(339.8, 499.9, rect(376, 492, 455, 507)),
       },
     },
     invasive: {
@@ -391,7 +391,7 @@ const HOME_CARE_DOCTOR_LAYOUT: OverlayLayout = {
         CASE_MEETING: circle(329.8, 693.6),
         PLAN_CHANGE: circle(410.1, 693.6),
         CLOSE: circle(479.6, 693.6),
-        OTHER: circle(212.9, 709.1, rect(248, 702, 328, 716)),
+        OTHER: circle(212.9, 709.1, rect(249.5, 702, 328, 716)),
       },
     },
     summary: { kind: "text", box: rect(209, 728, 535, 773), multiline: true },
@@ -409,8 +409,8 @@ const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
     ),
     ...visitDate(
       rect(194, 223, 228, 240),
-      rect(236, 223, 256, 240),
-      rect(262, 223, 283, 240),
+      rect(242.5, 223, 256, 240),
+      rect(269.5, 223, 283, 240),
     ),
     ...visitTime("start", rect(362, 223, 386, 240), rect(392, 223, 418, 240)),
     ...visitTime("end", rect(481, 223, 504, 240), rect(510, 223, 537, 240)),
@@ -430,7 +430,7 @@ const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
       kind: "options",
       options: {
         RECIPIENT: circle(201.7, 266.5),
-        FAMILY: circle(334.1, 266.5, rect(390, 258, 416.5, 274)),
+        FAMILY: circle(334.1, 266.5, rect(395, 258, 417, 274)),
       },
     },
     method: {
@@ -478,16 +478,16 @@ const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
         DISABILITY_CENTER: box(432.8, 516.1),
         DEMENTIA_CENTER: box(201.7, 533.1),
         PRIVATE_COMPANY: box(317.3, 533.1),
-        OTHER: box(432.8, 533.1, rect(467, 526, 528.5, 539)),
+        OTHER: box(432.8, 533.1, rect(467, 526, 527.7, 539)),
       },
     },
     linkServices: {
       kind: "options",
       options: {
         FAMILY_COUNSEL: box(201.7, 550.0),
-        CARE_EDUCATION: box(317.3, 550.0, rect(373, 543, 413.5, 556)),
-        DEMENTIA_EDUCATION: box(432.8, 550.0, rect(489, 543, 529.5, 556)),
-        FINANCIAL: box(201.7, 567.0, rect(273, 560, 298.5, 573)),
+        CARE_EDUCATION: box(317.3, 550.0, rect(373.5, 543, 413.2, 556)),
+        DEMENTIA_EDUCATION: box(432.8, 550.0, rect(489, 543, 528.7, 556)),
+        FINANCIAL: box(201.7, 567.0, rect(273.7, 560, 297.6, 573)),
         ORAL_CARE: box(317.3, 567.0),
         REHAB: box(432.8, 567.0),
         HOUSING: box(201.7, 584.1),
@@ -497,7 +497,7 @@ const HOME_CARE_SOCIAL_LAYOUT: OverlayLayout = {
         BEFRIENDING: box(432.8, 601.0),
         SOCIAL_ACTIVITY: box(201.7, 618.0),
         ABUSE_REPORT: box(432.8, 618.0),
-        OTHER: box(201.7, 635.0, rect(236, 628, 525.5, 641)),
+        OTHER: box(201.7, 635.0, rect(236.7, 628, 524.5, 641)),
       },
     },
     linkDetail: {

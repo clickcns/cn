@@ -68,6 +68,7 @@ export function fullFormData(formId: FormId): FormData {
   );
 }
 
+/** 표본 방문. 날짜·시각은 글자가 가장 긴 값(12월, 두 자리 날·시)이라 조정 화면에서 좁은 칸이 드러난다. */
 export function sampleRecord(
   formId: FormId,
   overrides: Partial<PdfVisitRecord> = {},
@@ -82,11 +83,11 @@ export function sampleRecord(
         : formId === "HOME_CARE_SOCIAL"
           ? "SOCIAL_WORKER"
           : "DOCTOR",
-    visitDate: "2026-09-22",
-    startedAt: "2026-09-22T01:10:00.000Z",
-    endedAt: "2026-09-22T01:40:00.000Z",
+    visitDate: "2026-12-22",
+    startedAt: "2026-12-22T01:10:00.000Z",
+    endedAt: "2026-12-22T01:40:00.000Z",
     version: 1,
-    confirmedAt: "2026-09-22T02:00:00.000Z",
+    confirmedAt: "2026-12-22T02:00:00.000Z",
     confirmedByName: "정의사",
     hashMatches: true,
     ...overrides,
@@ -127,7 +128,7 @@ export function layoutPreviewRecords(formId: FormId): PdfVisitRecord[] {
         visitType: { value: visitType },
         weightChange: i % 2 === 0 ? 1.2 : -1.5,
       },
-      visitDate: `2026-09-${String(3 + i * 6).padStart(2, "0")}`,
+      visitDate: `2026-12-${String(3 + i * 6).padStart(2, "0")}`,
     }),
   );
 }

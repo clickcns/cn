@@ -2,6 +2,7 @@ import {
   FORMS,
   type FormDef,
   type FormLayoutItem,
+  type LayoutPoint,
   type LayoutRect,
   type OriginalPdfFormId,
 } from "@repo/shared-types";
@@ -15,13 +16,14 @@ import {
 } from "./home-care-nurse.js";
 import {
   DETAIL_STYLE,
-  fieldSlotStyle,
   FOOTER_STYLE,
   HOME_CARE_FOOTER,
   ITEM_LABELS,
+  MARK_SIZE,
   slotId,
-  textSlotStyle,
+  slotStyle,
   type FieldSlot,
+  type MarkShape,
   type TextSlot,
 } from "./layout.js";
 import { OVERLAY_LAYOUTS } from "./layouts.js";
@@ -35,6 +37,29 @@ const HEADER_GROUP = "머리·방문일·시각";
 const COLUMN_GROUP = "방문 칸";
 const FOOTER_GROUP = "출력 표시";
 
+interface ItemPlace {
+  group: string;
+  repeated?: boolean;
+}
+
+/** 표시 칸. 기본 크기는 그리는 코드(drawPlacedMark)와 같은 MARK_SIZE[shape]. */
+function markItem(
+  place: ItemPlace,
+  id: string,
+  label: string,
+  point: LayoutPoint,
+  shape: MarkShape,
+): FormLayoutItem {
+  return {
+    ...place,
+    id,
+    label,
+    kind: "mark",
+    point,
+    markSize: MARK_SIZE[shape],
+  };
+}
+
 function textItems(
   slots: readonly TextSlot[],
   group: string,
@@ -46,7 +71,7 @@ function textItems(
     group,
     kind: "text",
     rect: slot.box,
-    style: textSlotStyle(slot),
+    style: slotStyle(slot),
     repeated,
     fields: slot.fields,
   }));
@@ -62,16 +87,21 @@ function fieldItems(
     for (const field of section.fields) {
       const slot = slots[field.key];
       if (!slot) continue;
-      const base = { group: repeated ? COLUMN_GROUP : section.title, repeated };
+      const base: ItemPlace = {
+        group: repeated ? COLUMN_GROUP : section.title,
+        repeated,
+      };
       if (slot.kind !== "options") {
         if (slot.kind === "text" && slot.mark) {
-          items.push({
-            ...base,
-            id: slotId.mark(field.key),
-            label: `${field.label} · □`,
-            kind: "mark",
-            point: slot.mark,
-          });
+          items.push(
+            markItem(
+              base,
+              slotId.mark(field.key),
+              `${field.label} · □`,
+              slot.mark,
+              "box",
+            ),
+          );
         }
         items.push({
           ...base,
@@ -79,7 +109,7 @@ function fieldItems(
           label: field.label,
           kind: slot.kind === "text" && slot.multiline ? "paragraph" : "text",
           rect: slot.box,
-          style: fieldSlotStyle(slot),
+          style: slotStyle(slot),
         });
         continue;
       }
@@ -89,7 +119,7 @@ function fieldItems(
         if (!place) continue;
         const id = slotId.option(field.key, option.value);
         const label = `${field.label} · ${option.label}`;
-        items.push({ ...base, id, label, kind: "mark", point: place.at });
+        items.push(markItem(base, id, label, place.at, place.shape));
         if (place.detail) {
           items.push({
             ...base,
@@ -106,13 +136,15 @@ function fieldItems(
           place.detailChoices ?? {},
         )) {
           const choice = choices.find((c) => c.value === value);
-          items.push({
-            ...base,
-            id: slotId.choice(id, value),
-            label: `${label} · ${choice?.label ?? value}`,
-            kind: "mark",
-            point,
-          });
+          items.push(
+            markItem(
+              base,
+              slotId.choice(id, value),
+              `${label} · ${choice?.label ?? value}`,
+              point,
+              "circle",
+            ),
+          );
         }
       }
     }
@@ -149,14 +181,15 @@ function buildDescription(formId: OriginalPdfFormId): LayoutDescription {
       ...fieldItems(form, NURSE_PAGE_FIELDS),
       ...textItems(NURSE_COLUMN_TEXTS, COLUMN_GROUP, true),
       ...fieldItems(form, NURSE_COLUMN_FIELDS, true),
-      ...Object.entries(WEIGHT_RINGS).map(([id, point]): FormLayoutItem => ({
-        id,
-        label: ITEM_LABELS[id as keyof typeof WEIGHT_RINGS],
-        group: COLUMN_GROUP,
-        kind: "mark",
-        point,
-        repeated: true,
-      })),
+      ...Object.entries(WEIGHT_RINGS).map(([id, point]) =>
+        markItem(
+          { group: COLUMN_GROUP, repeated: true },
+          id,
+          ITEM_LABELS[id as keyof typeof WEIGHT_RINGS],
+          point,
+          "ring",
+        ),
+      ),
       footerItem(HOME_CARE_FOOTER),
     ];
   } else {

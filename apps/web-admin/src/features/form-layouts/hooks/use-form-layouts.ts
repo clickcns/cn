@@ -23,10 +23,17 @@ export function useFormLayouts() {
   });
 }
 
+/**
+ * 서식 한 장의 칸과 저장본. 편집하는 동안 다시 받지 않는다(저장·되돌리기 결과만 캐시에 넣는다):
+ * 편집 초안은 불러온 저장본 위에 있으므로, 그사이 다른 운영자의 저장본을 받아 저장 시각을 바꾸면
+ * 저장이 409 없이 그 조정을 덮어쓴다. 다른 운영자의 저장은 저장할 때 409 로 알린다.
+ */
 export function useFormLayout(formId: OriginalPdfFormId) {
   return useQuery({
     queryKey: queryKeys.formLayouts.detail(formId),
     queryFn: () => api.formLayouts.get(formId),
+    staleTime: Infinity,
+    refetchOnReconnect: false,
   });
 }
 

@@ -6,7 +6,7 @@ import {
   type PDFDocument,
   type PDFPage,
 } from "pdf-lib";
-import { cover, drawRing, type Fonts, type Point } from "../pdf-draw.js";
+import { cover, type Fonts, type Point } from "../pdf-draw.js";
 import {
   footerText,
   numberValue,
@@ -31,6 +31,7 @@ import {
   addTemplatePage,
   drawField,
   drawPlacedFooter,
+  drawPlacedMark,
   drawTexts,
 } from "./render.js";
 
@@ -50,6 +51,9 @@ const VISIT_TYPE_COLUMNS = {
   ADDITIONAL: [2, 3, 4],
 } as const;
 type VisitType = keyof typeof VISIT_TYPE_COLUMNS;
+
+/** 방문 칸 값의 글자 크기. 칸 폭이 약 69pt로 좁아 다른 칸(10pt)보다 작게 쓴다. */
+const COLUMN_SIZE = 9;
 
 /** 첫 칸의 왼쪽 선 기준 좌표로 Rect. */
 const col = (x0: number, y0: number, x1: number, y1: number) =>
@@ -75,7 +79,7 @@ export const NURSE_COLUMN_FIELDS: Record<string, FieldSlot> = {
       PSYCH: box(211.5, 478.9),
       PAIN: box(211.5, 500.0),
       TUBE: box(211.5, 520.3),
-      PRESSURE_ULCER: box(187.9, 541.6, rect(198.5, 535, 236, 548)),
+      PRESSURE_ULCER: box(187.9, 541.6, rect(199.8, 535, 235.5, 548)),
     },
   },
   delirium: {
@@ -92,15 +96,15 @@ export const NURSE_COLUMN_FIELDS: Record<string, FieldSlot> = {
   },
   pulse: {
     kind: "number",
-    box: col(2, 568, 41, 581),
+    box: col(2, 568, 40, 581),
     align: "right",
-    size: 7.5,
+    size: COLUMN_SIZE,
   },
   notes: {
     kind: "text",
     box: col(2.5, 677.5, 70, 696.5),
     multiline: true,
-    size: 6.5,
+    size: COLUMN_SIZE,
   },
 };
 
@@ -147,7 +151,7 @@ export const NURSE_HEADER_TEXTS: TextSlot[] = [
   },
   {
     id: "date.month",
-    box: rect(144.5, 254.1, 153.5, 272),
+    box: rect(147.3, 254.1, 153.8, 272),
     align: "center",
     size: 7,
     text: (t) => t.date.month,
@@ -162,87 +166,87 @@ const eitherNumber =
     return x === null && y === null ? "" : format(`${x ?? ""}`, `${y ?? ""}`);
   };
 
-/** 방문 칸 하나에 글로 쓰는 값(첫 칸 좌표): 날짜·간호사·시각, 혈압 짝·체온/혈당·체중 변화. */
-export const NURSE_COLUMN_TEXTS: TextSlot[] = [
-  {
-    id: "col.day",
-    box: col(2, 254.1, 56, 272),
-    align: "right",
-    text: (t) => t.date.day,
-  },
-  {
-    id: "col.staffName",
-    box: col(2, 272, 70.6, 289.5),
-    align: "center",
-    size: 8,
-    text: (t) => t.staffName,
-  },
-  {
-    id: "col.licenseNumber",
-    box: col(2, 289.5, 70.6, 307),
-    align: "center",
-    size: 7.5,
-    text: (t) => t.licenseNumber,
-  },
-  {
-    id: "col.start.hour",
-    box: col(4, 307, 33.6, 324.1),
-    align: "right",
-    size: 8.5,
-    text: (t) => t.start.hour,
-  },
-  {
-    id: "col.start.minute",
-    box: col(37, 307, 70, 324.1),
-    size: 8.5,
-    text: (t) => t.start.minute,
-  },
-  {
-    id: "col.end.hour",
-    box: col(4, 324.1, 33.6, 341.3),
-    align: "right",
-    size: 8.5,
-    text: (t) => t.end.hour,
-  },
-  {
-    id: "col.end.minute",
-    box: col(37, 324.1, 70, 341.3),
-    size: 8.5,
-    text: (t) => t.end.minute,
-  },
-  {
-    id: "col.bloodPressure",
-    box: col(2, 552.5, 34, 566.5),
-    align: "right",
-    size: 7.5,
-    fields: ["systolic", "diastolic"],
-    text: eitherNumber("systolic", "diastolic", (a, b) => `${a}/${b}`),
-  },
-  {
-    id: "col.tempGlucose",
-    box: col(2, 581.5, 70.6, 599.8),
-    align: "center",
-    size: 7,
-    fields: ["temperature", "glucose"],
-    text: eitherNumber("temperature", "glucose", (a, b) => `${a}℃ / ${b}mg/dL`),
-  },
-  {
-    id: "col.weight",
-    box: col(30, 600.5, 57, 617.5),
-    align: "right",
-    size: 7.5,
-    fields: ["weightChange"],
-    text: (_t, data) => {
-      const weight = numberValue(data, "weightChange");
-      return weight === null ? "" : String(Math.abs(weight));
+/**
+ * 방문 칸 하나에 글로 쓰는 값(첫 칸 좌표): 날짜·간호사·시각, 혈압 짝·체온/혈당·체중 변화.
+ * 글자 크기는 모두 COLUMN_SIZE.
+ */
+export const NURSE_COLUMN_TEXTS: TextSlot[] = (
+  [
+    {
+      id: "col.day",
+      box: col(2, 254.1, 56, 272),
+      align: "right",
+      text: (t) => t.date.day,
     },
-  },
-];
+    {
+      id: "col.staffName",
+      box: col(2, 272, 70.6, 289.5),
+      align: "center",
+      text: (t) => t.staffName,
+    },
+    {
+      id: "col.licenseNumber",
+      box: col(2, 289.5, 70.6, 307),
+      align: "center",
+      text: (t) => t.licenseNumber,
+    },
+    {
+      id: "col.start.hour",
+      box: col(4, 307, 34.5, 324.1),
+      align: "right",
+      text: (t) => t.start.hour,
+    },
+    {
+      id: "col.start.minute",
+      box: col(38.5, 307, 70, 324.1),
+      text: (t) => t.start.minute,
+    },
+    {
+      id: "col.end.hour",
+      box: col(4, 324.1, 34.5, 341.3),
+      align: "right",
+      text: (t) => t.end.hour,
+    },
+    {
+      id: "col.end.minute",
+      box: col(38.5, 324.1, 70, 341.3),
+      text: (t) => t.end.minute,
+    },
+    {
+      id: "col.bloodPressure",
+      box: col(2, 552.5, 32.5, 566.5),
+      align: "right",
+      fields: ["systolic", "diastolic"],
+      text: eitherNumber("systolic", "diastolic", (a, b) => `${a}/${b}`),
+    },
+    {
+      id: "col.tempGlucose",
+      box: col(2, 581.5, 70.6, 599.8),
+      align: "center",
+      fields: ["temperature", "glucose"],
+      text: eitherNumber(
+        "temperature",
+        "glucose",
+        (a, b) => `${a}℃ / ${b}mg/dL`,
+      ),
+    },
+    {
+      id: "col.weight",
+      box: col(30, 600.5, 57, 617.5),
+      align: "right",
+      fields: ["weightChange"],
+      text: (_t, data) => {
+        const weight = numberValue(data, "weightChange");
+        return weight === null ? "" : String(Math.abs(weight));
+      },
+    },
+  ] satisfies Omit<TextSlot, "size">[]
+).map((slot) => ({ ...slot, size: COLUMN_SIZE }));
 
 /** 체중 변화 "증/감" 글자에 두르는 동그라미 가운데(첫 칸 좌표). */
 export const WEIGHT_RINGS = {
-  "col.weight.up": { x: COLUMN_LEFTS[0] + 15.8, y: 609.5 },
-  "col.weight.down": { x: COLUMN_LEFTS[0] + 27, y: 609.5 },
+  "col.weight.up": { x: COLUMN_LEFTS[0] + 16.4, y: 608.9 },
+  "col.weight.down": { x: COLUMN_LEFTS[0] + 28.3, y: 608.9 },
 } as const satisfies Partial<Record<ItemId, Point>>;
 
 /** 방문 한 건을 index 번째 칸에 그린다(첫 칸 좌표를 칸 간격만큼 옮긴 좌표계에서). */
@@ -272,7 +276,7 @@ function drawColumn(
   const weight = numberValue(data, "weightChange");
   if (weight !== null && weight !== 0) {
     const id = weight > 0 ? "col.weight.up" : "col.weight.down";
-    drawRing(page, place.point(id, WEIGHT_RINGS[id]));
+    drawPlacedMark(page, place, id, WEIGHT_RINGS[id], "ring");
   }
   page.pushOperators(popGraphicsState());
 }

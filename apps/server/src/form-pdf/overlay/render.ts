@@ -9,9 +9,11 @@ import {
   drawDot,
   drawLine,
   drawParagraph,
+  drawRing,
   fontOf,
   GRAY,
   type Fonts,
+  type Point,
   type Rect,
   type TextOptions,
 } from "../pdf-draw.js";
@@ -26,11 +28,12 @@ import {
 } from "../pdf-record.js";
 import {
   DETAIL_STYLE,
-  fieldSlotStyle,
   FOOTER_STYLE,
+  MARK_SIZE,
   slotId,
-  textSlotStyle,
+  slotStyle,
   type FieldSlot,
+  type MarkShape,
   type OptionSlot,
   type OverlayLayout,
   type Placement,
@@ -90,6 +93,24 @@ function drawPlaced(
   });
 }
 
+/**
+ * id 자리에 표시를 그린다(크기는 운영자 조정 또는 MARK_SIZE[shape]). □ 체크는 표시 크기가 체크
+ * 너비, ○ 점은 지름이 표시 크기의 0.7배, 동그라미는 표시 크기가 지름이다.
+ */
+export function drawPlacedMark(
+  page: PDFPage,
+  place: Placement,
+  id: string,
+  at: Point,
+  shape: MarkShape,
+): void {
+  const point = place.point(id, at);
+  const size = place.markSize(id, MARK_SIZE[shape]);
+  if (shape === "box") drawCheck(page, point, size);
+  else if (shape === "circle") drawDot(page, point, size * 0.35);
+  else drawRing(page, point, size / 2);
+}
+
 /** 서식 값이 아닌 칸(머리·날짜·시각·방문 칸 값)을 기록에서 채운다. */
 export function drawTexts(
   page: PDFPage,
@@ -107,7 +128,7 @@ export function drawTexts(
       slot.id,
       slot.text(t, data),
       slot.box,
-      textSlotStyle(slot),
+      slotStyle(slot),
     );
   }
 }
@@ -121,13 +142,13 @@ function drawOption(
   detail: string | null | undefined,
   place: Placement,
 ): void {
-  const at = place.point(id, slot.at);
-  if (slot.shape === "box") drawCheck(page, at);
-  else drawDot(page, at);
+  drawPlacedMark(page, place, id, slot.at, slot.shape);
   if (!detail) return;
   if (slot.detailChoices) {
     const choice = slot.detailChoices[detail];
-    if (choice) drawDot(page, place.point(slotId.choice(id, detail), choice));
+    if (choice) {
+      drawPlacedMark(page, place, slotId.choice(id, detail), choice, "circle");
+    }
     return;
   }
   if (slot.detail) {
@@ -171,20 +192,14 @@ export function drawField(
     case "text": {
       const text = textValue(data, key);
       if (!text) return;
-      if (slot.mark) drawCheck(page, place.point(slotId.mark(key), slot.mark));
+      if (slot.mark) {
+        drawPlacedMark(page, place, slotId.mark(key), slot.mark, "box");
+      }
       if (!slot.multiline) {
-        drawPlaced(
-          page,
-          fonts,
-          place,
-          key,
-          text,
-          slot.box,
-          fieldSlotStyle(slot),
-        );
+        drawPlaced(page, fonts, place, key, text, slot.box, slotStyle(slot));
         return;
       }
-      const style = place.style(key, fieldSlotStyle(slot));
+      const style = place.style(key, slotStyle(slot));
       drawParagraph(page, text, place.rect(key, slot.box), {
         font: fontOf(fonts, style.bold),
         size: style.size,
@@ -201,7 +216,7 @@ export function drawField(
         key,
         String(value),
         slot.box,
-        fieldSlotStyle(slot),
+        slotStyle(slot),
       );
       return;
     }

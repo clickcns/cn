@@ -68,11 +68,8 @@ export default function FormLayoutsPage() {
       ) : !detail ? (
         <LoadingState />
       ) : (
-        // 저장하면 새 저장 시각으로 편집 화면을 새로 연다(조정 초안을 저장본으로).
-        <FormLayoutEditor
-          key={`${detail.formId}:${detail.updatedAt}`}
-          detail={detail}
-        />
+        // 서식을 바꿀 때만 편집 화면을 새로 연다(저장해도 되돌리기·선택·확대는 그대로).
+        <FormLayoutEditor key={detail.formId} detail={detail} />
       )}
     </>
   );

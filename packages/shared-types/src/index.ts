@@ -12,6 +12,7 @@ export * from "./maps.js";
 export * from "./visit.js";
 export * from "./form-pdf.js";
 export * from "./form-layout.js";
+export * from "./form-layout-edit.js";
 export * from "./dictation.js";
 export * from "./date.js";
 export * from "./schema.js";

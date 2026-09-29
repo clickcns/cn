@@ -1,9 +1,12 @@
 import {
+  adjustMarkSize,
+  adjustStyle,
   LAYOUT_ALIGN_LABELS,
   LAYOUT_ALIGNS,
   type FormLayoutAdjustments,
   type FormLayoutItem,
   type LayoutItemAdjustment,
+  type LayoutTextStyle,
 } from "@repo/shared-types";
 import { RotateCcwIcon } from "lucide-react";
 import { useState } from "react";
@@ -50,110 +53,162 @@ function NumberField({
   );
 }
 
-/** 고른 칸의 조정(옮기기·칸 크기·글자 모양)과 페이지 전체 옮기기. */
+/** 모든 값이 같으면 그 값, 아니면 undefined. */
+function common<T>(values: readonly T[]): T | undefined {
+  return values.every((value) => value === values[0]) ? values[0] : undefined;
+}
+
+/** 크기 칸의 안내: 모두 같으면 지금 크기, 아니면 "여러 값". */
+function sizePlaceholder(sizes: readonly number[]): string {
+  const size = common(sizes);
+  return size === undefined ? "여러 값" : `지금 ${size}`;
+}
+
+/**
+ * 고른 칸의 조정. 한 칸이면 위치·칸 크기를 숫자로 바꾸고, 여러 칸이면 글자 모양을 한꺼번에 바꾼다
+ * (옮기기·맞춤은 PDF 위와 도구 막대에서). 아래에 채운 값 전체 옮기기.
+ */
 export function LayoutInspector({
-  item,
-  adjustment,
-  adjusted,
-  page,
-  onChange,
+  selected,
+  adjustments,
+  adjustedIds,
+  onSetItem,
+  onSetStyle,
+  onSetMarkSize,
   onReset,
   onPageChange,
 }: {
-  item: FormLayoutItem | undefined;
-  adjustment: LayoutItemAdjustment | undefined;
-  /** 기본 자리에서 바뀌었는지(되돌리기 단추) */
-  adjusted: boolean;
-  page: FormLayoutAdjustments["page"];
-  onChange: (patch: LayoutItemAdjustment) => void;
+  /** 고른 칸(첫째가 맞춤 기준) */
+  selected: readonly FormLayoutItem[];
+  adjustments: FormLayoutAdjustments;
+  adjustedIds: ReadonlySet<string>;
+  onSetItem: (id: string, patch: LayoutItemAdjustment) => void;
+  onSetStyle: (patch: Partial<LayoutTextStyle>) => void;
+  onSetMarkSize: (size: number | undefined) => void;
   onReset: () => void;
   onPageChange: (patch: { dx?: number; dy?: number }) => void;
 }) {
-  const style = item?.kind === "mark" ? undefined : item?.style;
+  const [primary] = selected;
+  const single = selected.length === 1 ? primary : undefined;
+  const texts = selected.flatMap((item) =>
+    item.kind === "mark"
+      ? []
+      : [
+          {
+            item,
+            adjustment: adjustments.items[item.id],
+            style: adjustStyle(item.style, adjustments.items[item.id]),
+          },
+        ],
+  );
+  const marks = selected.flatMap((item) =>
+    item.kind === "mark"
+      ? [
+          {
+            adjustment: adjustments.items[item.id],
+            size: adjustMarkSize(item.markSize, adjustments.items[item.id]),
+          },
+        ]
+      : [],
+  );
+  const alignable = texts.filter((text) => text.item.kind === "text");
+  const align = common(alignable.map((text) => text.style.align));
+  const page = adjustments.page;
+
+  const field = (
+    item: FormLayoutItem,
+    key: "dx" | "dy" | "dw" | "dh",
+    label: string,
+  ) => (
+    <NumberField
+      id={`layout-${key}`}
+      label={label}
+      value={adjustments.items[item.id]?.[key] ?? 0}
+      onChange={(value) => onSetItem(item.id, { [key]: value })}
+    />
+  );
+
   return (
     <div className="grid gap-5">
-      {item ? (
+      {primary ? (
         <section className="grid gap-4" aria-label="고른 칸">
           <div className="grid gap-0.5">
-            <p className="font-semibold">{item.label}</p>
+            <p className="font-semibold">
+              {single ? single.label : `${selected.length}칸 고름`}
+            </p>
             <p className="text-muted-foreground text-xs">
-              {item.group}
-              {item.repeated && " · 다섯 칸에 함께 적용됩니다"}
+              {single
+                ? `${single.group}${single.repeated ? " · 다섯 칸에 함께 적용됩니다" : ""}`
+                : `맞춤 기준: ${primary.label}`}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <NumberField
-              id="layout-dx"
-              label="오른쪽으로(pt)"
-              value={adjustment?.dx ?? 0}
-              onChange={(dx) => onChange({ dx })}
-            />
-            <NumberField
-              id="layout-dy"
-              label="아래로(pt)"
-              value={adjustment?.dy ?? 0}
-              onChange={(dy) => onChange({ dy })}
-            />
-            {item.kind !== "mark" && (
-              <>
-                <NumberField
-                  id="layout-dw"
-                  label="칸 너비 +(pt)"
-                  value={adjustment?.dw ?? 0}
-                  onChange={(dw) => onChange({ dw })}
-                />
-                <NumberField
-                  id="layout-dh"
-                  label="칸 높이 +(pt)"
-                  value={adjustment?.dh ?? 0}
-                  onChange={(dh) => onChange({ dh })}
-                />
-              </>
-            )}
-          </div>
-          {style && (
+          {single && (
+            <div className="grid grid-cols-2 gap-3">
+              {field(single, "dx", "오른쪽으로(pt)")}
+              {field(single, "dy", "아래로(pt)")}
+              {single.kind !== "mark" && (
+                <>
+                  {field(single, "dw", "칸 너비 +(pt)")}
+                  {field(single, "dh", "칸 높이 +(pt)")}
+                </>
+              )}
+            </div>
+          )}
+          {texts.length > 0 && (
             <div className="grid gap-3">
               <div className="grid grid-cols-2 items-end gap-3">
                 <NumberField
                   id="layout-size"
                   label="글자 크기(pt)"
-                  value={adjustment?.size}
-                  placeholder={`기본 ${style.size}`}
-                  onChange={(size) => onChange({ size })}
+                  value={common(texts.map((text) => text.adjustment?.size))}
+                  placeholder={sizePlaceholder(
+                    texts.map((text) => text.style.size),
+                  )}
+                  onChange={(size) => onSetStyle({ size })}
                 />
                 <div className="flex h-9 items-center gap-2">
                   <Switch
                     id="layout-bold"
-                    checked={adjustment?.bold ?? style.bold}
-                    onCheckedChange={(bold) => onChange({ bold })}
+                    checked={texts.every((text) => text.style.bold)}
+                    onCheckedChange={(bold) => onSetStyle({ bold })}
                   />
                   <Label htmlFor="layout-bold">굵게</Label>
                 </div>
               </div>
-              {item.kind === "text" && (
+              {alignable.length > 0 && (
                 <div className="grid gap-1.5">
                   <span className="text-[13px] font-medium">정렬</span>
                   <div className="flex gap-1" role="group" aria-label="정렬">
-                    {LAYOUT_ALIGNS.map((align) => {
-                      const active =
-                        (adjustment?.align ?? style.align) === align;
-                      return (
-                        <Button
-                          key={align}
-                          type="button"
-                          size="sm"
-                          variant={active ? "secondary" : "outline"}
-                          aria-pressed={active}
-                          className="flex-1"
-                          onClick={() => onChange({ align })}
-                        >
-                          {LAYOUT_ALIGN_LABELS[align]}
-                        </Button>
-                      );
-                    })}
+                    {LAYOUT_ALIGNS.map((value) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={align === value ? "secondary" : "outline"}
+                        aria-pressed={align === value}
+                        className="flex-1"
+                        onClick={() => onSetStyle({ align: value })}
+                      >
+                        {LAYOUT_ALIGN_LABELS[value]}
+                      </Button>
+                    ))}
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          {marks.length > 0 && (
+            <div className="grid grid-cols-2 items-end gap-3">
+              <NumberField
+                id="layout-mark-size"
+                label="표시 크기(pt)"
+                value={common(marks.map((mark) => mark.adjustment?.size))}
+                placeholder={sizePlaceholder(marks.map((mark) => mark.size))}
+                onChange={onSetMarkSize}
+              />
+              <p className="text-muted-foreground pb-2 text-xs">
+                □ 체크·○ 점·동그라미 크기
+              </p>
             </div>
           )}
           <Button
@@ -161,20 +216,17 @@ export function LayoutInspector({
             variant="outline"
             size="sm"
             className="justify-self-start"
-            disabled={!adjusted}
+            disabled={!selected.some((item) => adjustedIds.has(item.id))}
             onClick={onReset}
           >
-            <RotateCcwIcon />이 칸 기본값으로
+            <RotateCcwIcon />
+            {single ? "이 칸 기본값으로" : "고른 칸 기본값으로"}
           </Button>
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            PDF 위에서 끌어 옮기고, 오른쪽 아래 모서리를 끌어 칸 크기를
-            바꿉니다. 방향키는 0.5pt, Shift+방향키는 5pt씩 옮기고, Alt+방향키로
-            칸 크기를 바꿉니다.
-          </p>
         </section>
       ) : (
         <p className="text-muted-foreground text-sm">
-          PDF 위의 칸을 누르거나 아래 목록에서 고르세요.
+          PDF 위의 칸을 누르거나 빈 곳에서 끌어 여러 칸을 고르세요. 아래
+          목록에서도 고를 수 있습니다. 단축키는 도구 막대의 [단축키]에 있습니다.
         </p>
       )}
       <section className="grid gap-3 border-t pt-4" aria-label="페이지 전체">

@@ -36,7 +36,7 @@ export interface LayoutTextStyle {
   align: LayoutAlign;
 }
 
-/** 조정 한도(pt): 옮기기 ±200, 칸 넓히기 ±300, 글자 크기 4~24. */
+/** 조정 한도(pt): 옮기기 ±200, 칸 넓히기 ±300, 글자·표시 크기 4~24. */
 export const LAYOUT_LIMITS = {
   offset: 200,
   resize: 300,
@@ -46,7 +46,10 @@ export const LAYOUT_LIMITS = {
 const offset = z.number().min(-LAYOUT_LIMITS.offset).max(LAYOUT_LIMITS.offset);
 const resize = z.number().min(-LAYOUT_LIMITS.resize).max(LAYOUT_LIMITS.resize);
 
-/** 칸 하나의 조정. 옮기기(dx·dy), 칸 넓히기(dw·dh, 오른쪽·아래로), 글자 모양. */
+/**
+ * 칸 하나의 조정. 옮기기(dx·dy), 칸 넓히기(dw·dh, 오른쪽·아래로), 글자 모양(size·bold·align).
+ * size 는 글 칸이면 글자 크기, 표시 칸(□ 체크·○ 점·동그라미)이면 표시 크기(pt)다.
+ */
 export const LayoutItemAdjustmentSchema = z
   .object({
     dx: offset.optional(),
@@ -73,6 +76,9 @@ export const FormLayoutAdjustmentsSchema = z
   })
   .strict();
 export type FormLayoutAdjustments = z.infer<typeof FormLayoutAdjustmentsSchema>;
+
+/** 글 칸을 줄여도 남기는 폭·높이(pt). */
+export const MIN_RECT_PT = 2;
 
 export const EMPTY_LAYOUT_ADJUSTMENTS: FormLayoutAdjustments = { items: {} };
 
@@ -106,7 +112,12 @@ interface FormLayoutItemBase {
 /** 조정할 수 있는 칸 하나(기본 자리). mark: □ 체크·○ 표시·동그라미, text: 한 줄 글, paragraph: 여러 줄 글 */
 export type FormLayoutItem = FormLayoutItemBase &
   (
-    | { kind: "mark"; point: LayoutPoint }
+    | {
+        kind: "mark";
+        point: LayoutPoint;
+        /** 표시 크기 기본값(pt): □ 체크의 너비·높이, ○ 점과 동그라미는 지름에 비례 */
+        markSize: number;
+      }
     | { kind: "text" | "paragraph"; rect: LayoutRect; style: LayoutTextStyle }
   );
 
@@ -131,7 +142,7 @@ export interface FormLayoutDetail extends FormLayoutSummary {
   adjustments: FormLayoutAdjustments;
 }
 
-/** 칸 조정 적용: 넓히기(최소 폭·높이 2pt) → 옮기기(칸 + 페이지 전체). */
+/** 칸 조정 적용: 넓히기(최소 폭·높이 MIN_RECT_PT) → 옮기기(칸 + 페이지 전체). */
 export function adjustRect(
   rect: LayoutRect,
   adjustment?: LayoutItemAdjustment,
@@ -139,8 +150,8 @@ export function adjustRect(
 ): LayoutRect {
   const dx = (adjustment?.dx ?? 0) + (page?.dx ?? 0);
   const dy = (adjustment?.dy ?? 0) + (page?.dy ?? 0);
-  const x1 = Math.max(rect.x0 + 2, rect.x1 + (adjustment?.dw ?? 0));
-  const y1 = Math.max(rect.y0 + 2, rect.y1 + (adjustment?.dh ?? 0));
+  const x1 = Math.max(rect.x0 + MIN_RECT_PT, rect.x1 + (adjustment?.dw ?? 0));
+  const y1 = Math.max(rect.y0 + MIN_RECT_PT, rect.y1 + (adjustment?.dh ?? 0));
   return { x0: rect.x0 + dx, y0: rect.y0 + dy, x1: x1 + dx, y1: y1 + dy };
 }
 
@@ -153,6 +164,14 @@ export function adjustPoint(
     x: point.x + (adjustment?.dx ?? 0) + (page?.dx ?? 0),
     y: point.y + (adjustment?.dy ?? 0) + (page?.dy ?? 0),
   };
+}
+
+/** 표시 칸(□·○·동그라미)의 조정한 표시 크기. */
+export function adjustMarkSize(
+  base: number,
+  adjustment?: LayoutItemAdjustment,
+): number {
+  return adjustment?.size ?? base;
 }
 
 export function adjustStyle(

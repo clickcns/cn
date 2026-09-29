@@ -1,4 +1,5 @@
 import {
+  adjustMarkSize,
   adjustPoint,
   adjustRect,
   adjustStyle,
@@ -7,7 +8,7 @@ import {
   type LayoutAlign,
   type LayoutTextStyle,
 } from "@repo/shared-types";
-import type { Point, Rect } from "../pdf-draw.js";
+import { FOOTER_SIZE, type Point, type Rect } from "../pdf-draw.js";
 import type { RecordTexts } from "../pdf-record.js";
 
 /*
@@ -33,7 +34,7 @@ export interface OptionSlot {
 
 export type FieldSlot =
   | { kind: "options"; options: Record<string, OptionSlot> }
-  /** mark 가 있으면 값이 있을 때 그 □에 체크한다(제6호 "□ 내용(…)"). size 기본 8.5pt */
+  /** mark 가 있으면 값이 있을 때 그 □에 체크한다(제6호 "□ 내용(…)"). size 기본 10pt */
   | {
       kind: "text";
       box: Rect;
@@ -41,7 +42,7 @@ export type FieldSlot =
       mark?: Point;
       size?: number;
     }
-  /** size 기본 9pt */
+  /** size 기본 10pt */
   | {
       kind: "number";
       box: Rect;
@@ -126,12 +127,32 @@ export interface OverlayLayout {
   footer: Rect;
 }
 
-/** 자리의 기본 글자 모양. */
-export const TEXT_STYLE = { size: 9, bold: false, align: "left" } as const;
-export const DETAIL_STYLE = { size: 8, bold: false, align: "left" } as const;
-export const FOOTER_STYLE = { size: 6.5, bold: false, align: "left" } as const;
+/**
+ * 자리의 기본 글자 모양. 입력 값은 원본 인쇄 글자(10~11pt)에 맞춰 10pt, 원본 괄호 사이가 좁은
+ * 괄호 내용은 9pt. 칸보다 길면 그릴 때 칸에 맞게 줄인다(drawLine·drawParagraph).
+ */
+export const TEXT_STYLE = { size: 10, bold: false, align: "left" } as const;
+export const DETAIL_STYLE = { size: 9, bold: false, align: "left" } as const;
+export const FOOTER_STYLE = {
+  size: FOOTER_SIZE,
+  bold: false,
+  align: "left",
+} as const;
 
-export function textSlotStyle(slot: TextSlot): LayoutTextStyle {
+/**
+ * 표시 크기 기본값(pt). 그리는 방법은 render.ts 의 drawPlacedMark 한 곳이다.
+ * - box: □ 체크의 너비·높이. 원본 □(약 7pt)보다 조금 크게 손으로 그은 듯이.
+ * - circle: ○ 점. 점 지름은 표시 크기의 0.7배라 7.5면 원본 ○(약 7.6pt) 안을 거의 채운다.
+ * - ring: 동그라미(제7호 체중 증/감) 지름. 글자(약 9×8.4pt)를 감싼다.
+ */
+export const MARK_SIZE = { box: 9, circle: 7.5, ring: 11 } as const;
+export type MarkShape = keyof typeof MARK_SIZE;
+
+/** 머리·방문 칸 값과 글·숫자 칸의 기본 글자 모양. */
+export function slotStyle(slot: {
+  size?: number;
+  align?: LayoutAlign;
+}): LayoutTextStyle {
   return {
     ...TEXT_STYLE,
     size: slot.size ?? TEXT_STYLE.size,
@@ -139,24 +160,13 @@ export function textSlotStyle(slot: TextSlot): LayoutTextStyle {
   };
 }
 
-/** 글(8.5pt)·숫자(9pt) 칸의 기본 글자 모양. */
-export function fieldSlotStyle(
-  slot: Extract<FieldSlot, { kind: "text" | "number" }>,
-): LayoutTextStyle {
-  return slot.kind === "text"
-    ? { ...TEXT_STYLE, size: slot.size ?? 8.5 }
-    : {
-        ...TEXT_STYLE,
-        size: slot.size ?? TEXT_STYLE.size,
-        align: slot.align ?? TEXT_STYLE.align,
-      };
-}
-
 /** 운영자 조정을 적용한 자리·글자 모양. 조정이 없는 ID는 기본 그대로다. */
 export interface Placement {
   rect(id: string, rect: Rect): Rect;
   point(id: string, point: Point): Point;
   style(id: string, style: LayoutTextStyle): LayoutTextStyle;
+  /** 표시 칸의 표시 크기(pt) */
+  markSize(id: string, base: number): number;
 }
 
 export function placement(adjustments?: FormLayoutAdjustments): Placement {
@@ -166,6 +176,7 @@ export function placement(adjustments?: FormLayoutAdjustments): Placement {
     rect: (id, value) => adjustRect(value, items[id], page),
     point: (id, value) => adjustPoint(value, items[id], page),
     style: (id, value) => adjustStyle(value, items[id]),
+    markSize: (id, base) => adjustMarkSize(base, items[id]),
   };
 }
 

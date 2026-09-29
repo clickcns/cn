@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { isDeepStrictEqual } from "node:util";
 import {
   cleanLayoutAdjustments,
   FORMS,
@@ -32,27 +33,39 @@ async function pageCount(bytes: Uint8Array): Promise<number> {
   return (await PDFDocument.load(bytes)).getPageCount();
 }
 
-/** 조정 없는 Placement 가 받은 칸 ID를 모은다(그리는 코드가 쓰는 ID). */
-function recordingPlacement(seen: Set<string>): Placement {
+interface PlacementCall {
+  method: keyof Placement;
+  id: string;
+  /** 그리는 코드의 기본값(자리·글자 모양·표시 크기) */
+  base: unknown;
+}
+
+/** 조정 없는 Placement 가 받은 부름(칸 ID와 기본값)을 모은다. */
+function recordingPlacement(calls: PlacementCall[]): Placement {
   const base = placement();
+  const seen = <T>(method: keyof Placement, id: string, value: T): T => {
+    calls.push({ method, id, base: value });
+    return value;
+  };
   return {
-    rect: (id, value) => (seen.add(id), base.rect(id, value)),
-    point: (id, value) => (seen.add(id), base.point(id, value)),
-    style: (id, value) => (seen.add(id), base.style(id, value)),
+    rect: (id, value) => base.rect(id, seen("rect", id, value)),
+    point: (id, value) => base.point(id, seen("point", id, value)),
+    style: (id, value) => base.style(id, seen("style", id, value)),
+    markSize: (id, value) => base.markSize(id, seen("markSize", id, value)),
   };
 }
 
-/** 조정 화면 표본(모든 칸·선택지를 채움)을 그리며 쓴 칸 ID. */
-async function drawnIds(formId: OriginalPdfFormId): Promise<Set<string>> {
-  const seen = new Set<string>();
-  const place = recordingPlacement(seen);
+/** 조정 화면 표본(모든 칸·선택지를 채움)을 그리며 Placement 에 물은 것. */
+async function drawnCalls(formId: OriginalPdfFormId): Promise<PlacementCall[]> {
+  const calls: PlacementCall[] = [];
+  const place = recordingPlacement(calls);
   const records = layoutPreviewRecords(formId);
   await renderPdf("테스트", (doc, fonts) =>
     formId === "HOME_CARE_NURSE"
       ? addNurseMonthPages(doc, fonts, records, "출력", place)
       : addOverlayPage(doc, fonts, OVERLAY_LAYOUTS[formId], records[0], place),
   );
-  return seen;
+  return calls;
 }
 
 describe("원본 서식 자리", () => {
@@ -88,7 +101,7 @@ describe("원본 서식 자리", () => {
   it("그리는 코드가 쓰는 칸 ID는 모두 조정 화면 칸 목록에 있다(조정이 버려지지 않는다)", async () => {
     for (const formId of FORMS_WITH_ORIGINAL_PDF) {
       const { ids } = describeLayout(formId);
-      const drawn = await drawnIds(formId);
+      const drawn = new Set((await drawnCalls(formId)).map((call) => call.id));
       assert.deepEqual(
         [...drawn].filter((id) => !ids.has(id)),
         [],
@@ -102,6 +115,28 @@ describe("원본 서식 자리", () => {
         [],
         formId,
       );
+    }
+  });
+
+  it("그리는 코드의 기본 자리·글자 모양·표시 크기는 조정 화면 칸 목록과 같다", async () => {
+    for (const formId of FORMS_WITH_ORIGINAL_PDF) {
+      const items = new Map(
+        describeLayout(formId).items.map((item) => [item.id, item]),
+      );
+      const wrong = new Set<string>();
+      for (const { method, id, base } of await drawnCalls(formId)) {
+        const item = items.get(id);
+        if (!item) continue;
+        // 표시 칸은 자리·표시 크기만, 글 칸은 칸·글자 모양만 묻는다(size 뜻이 섞이지 않게).
+        const expected: Partial<Record<keyof Placement, unknown>> =
+          item.kind === "mark"
+            ? { point: item.point, markSize: item.markSize }
+            : { rect: item.rect, style: item.style };
+        if (!isDeepStrictEqual(base, expected[method])) {
+          wrong.add(`${id} ${method}`);
+        }
+      }
+      assert.deepEqual([...wrong], [], formId);
     }
   });
 });
@@ -205,6 +240,9 @@ describe("원본 서식 조정", () => {
       place.style("b", { size: 9, bold: false, align: "right" }),
       { size: 11, bold: true, align: "right" },
     );
+    // 표시 칸의 size 는 표시 크기다.
+    assert.equal(place.markSize("b", 9), 11);
+    assert.equal(place.markSize("c", 9), 9);
   });
 
   it("저장할 때 0.1pt로 반올림하고, 바뀐 것이 없는 값·칸은 빼고, 칸 ID 순으로 늘어놓는다", () => {

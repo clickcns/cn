@@ -209,6 +209,9 @@ export function drawLine(
   });
 }
 
+/** 출력 표시 글자 크기(pt). */
+export const FOOTER_SIZE = 6.5;
+
 /** 출력 표시(쪽 아래 작은 회색 글). */
 export function drawFooter(
   page: PDFPage,
@@ -216,7 +219,11 @@ export function drawFooter(
   box: Rect,
   text: string,
 ): void {
-  drawLine(page, text, box, { font: fonts.regular, size: 6.5, color: GRAY });
+  drawLine(page, text, box, {
+    font: fonts.regular,
+    size: FOOTER_SIZE,
+    color: GRAY,
+  });
 }
 
 /** 굵게면 SemiBold, 아니면 Regular. */
@@ -329,7 +336,7 @@ export function drawParagraph(
 }
 
 /** □ 안에 체크(✓)를 그린다. 글꼴과 상관없이 선으로 그린다. */
-export function drawCheck(page: PDFPage, at: Point, size = 7): void {
+export function drawCheck(page: PDFPage, at: Point, size: number): void {
   const s = size / 2;
   const p = (dx: number, dy: number) => ({
     x: at.x + dx,
@@ -351,12 +358,12 @@ export function drawCheck(page: PDFPage, at: Point, size = 7): void {
 }
 
 /** ○ 안을 채운다(●). */
-export function drawDot(page: PDFPage, at: Point, radius = 2.4): void {
+export function drawDot(page: PDFPage, at: Point, radius: number): void {
   page.drawCircle({ x: at.x, y: flipY(page, at.y), size: radius, color: INK });
 }
 
 /** 글자 둘레에 동그라미(제7호 "증/감"처럼 고르는 글자). */
-export function drawRing(page: PDFPage, at: Point, radius = 4.2): void {
+export function drawRing(page: PDFPage, at: Point, radius: number): void {
   page.drawEllipse({
     x: at.x,
     y: flipY(page, at.y),

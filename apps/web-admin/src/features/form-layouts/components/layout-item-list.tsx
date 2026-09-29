@@ -1,28 +1,55 @@
-import type { FormLayoutItem } from "@repo/shared-types";
+import type { FormLayoutItem, SelectMode } from "@repo/shared-types";
 import { SearchIcon } from "lucide-react";
-import { useState } from "react";
+import type * as React from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { isModKey } from "@/features/form-layouts/lib/modifier-keys";
 import { cn } from "@/lib/utils";
 
-/** 칸 목록(묶음별). PDF 위에서 누르기 어려운 작은 칸도 여기서 고른다. 조정한 칸은 점으로 표시한다. */
+/**
+ * 칸 목록(묶음별). PDF 위에서 누르기 어려운 작은 칸도 여기서 고른다. 누르면 그 칸만, Ctrl+누르기는
+ * 더하거나 빼기, Shift+누르기는 마지막으로 누른 칸부터 범위, 묶음 이름은 그 묶음 전체를 고른다.
+ * 조정한 칸은 점으로 표시한다.
+ */
 export function LayoutItemList({
   items,
   adjustedIds,
-  selectedId,
+  selectedIds,
   onSelect,
 }: {
   items: FormLayoutItem[];
   adjustedIds: ReadonlySet<string>;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  /** 고른 칸(첫째가 맞춤 기준) */
+  selectedIds: readonly string[];
+  onSelect: (ids: string[], mode: SelectMode) => void;
 }) {
   const [query, setQuery] = useState("");
+  /** Shift+누르기 범위의 시작(마지막으로 누른 칸) */
+  const anchor = useRef<string | null>(null);
+  const selected = new Set(selectedIds);
   const words = query.trim().toLowerCase();
+  const visible = words
+    ? items.filter((item) => item.label.toLowerCase().includes(words))
+    : items;
   const groups = new Map<string, FormLayoutItem[]>();
-  for (const item of items) {
-    if (words && !item.label.toLowerCase().includes(words)) continue;
+  for (const item of visible) {
     groups.set(item.group, [...(groups.get(item.group) ?? []), item]);
   }
+
+  const pick = (event: React.MouseEvent, id: string) => {
+    if (event.shiftKey && anchor.current) {
+      const ids = visible.map((item) => item.id);
+      const [a, b] = [ids.indexOf(anchor.current), ids.indexOf(id)].sort(
+        (x, y) => x - y,
+      );
+      if (a >= 0) {
+        onSelect(ids.slice(a, b + 1), isModKey(event) ? "add" : "replace");
+        return;
+      }
+    }
+    anchor.current = id;
+    onSelect([id], isModKey(event) ? "toggle" : "replace");
+  };
 
   return (
     <div className="grid gap-3">
@@ -44,18 +71,28 @@ export function LayoutItemList({
         )}
         {[...groups].map(([group, groupItems]) => (
           <section key={group} className="grid gap-0.5">
-            <h3 className="text-muted-foreground px-2 text-xs font-semibold">
+            <button
+              type="button"
+              title="이 묶음을 모두 고릅니다(Ctrl: 더하기)"
+              onClick={(event) =>
+                onSelect(
+                  groupItems.map((item) => item.id),
+                  isModKey(event) ? "add" : "replace",
+                )
+              }
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/25 rounded px-2 text-left text-xs font-semibold outline-none focus-visible:ring-3"
+            >
               {group}
-            </h3>
+            </button>
             {groupItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onSelect(item.id)}
-                aria-pressed={item.id === selectedId}
+                onClick={(event) => pick(event, item.id)}
+                aria-pressed={selected.has(item.id)}
                 className={cn(
-                  "hover:bg-muted focus-visible:ring-ring/25 flex items-center gap-2 rounded px-2 py-1 text-left text-[13px] outline-none focus-visible:ring-3",
-                  item.id === selectedId && "bg-primary-soft text-primary",
+                  "hover:bg-muted focus-visible:ring-ring/25 flex items-center gap-2 rounded px-2 py-1 text-left text-[13px] outline-none select-none focus-visible:ring-3",
+                  selected.has(item.id) && "bg-primary-soft text-primary",
                 )}
               >
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
