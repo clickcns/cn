@@ -30,7 +30,9 @@ RUN pnpm --filter @repo/shared-types build && \
     pnpm --filter @repo/server prisma:generate && \
     pnpm --filter @repo/server build && \
     test -f apps/server/dist/main.js && \
-    test -f apps/server/dist/speech/stt.proto
+    test -f apps/server/dist/speech/stt.proto && \
+    test -f apps/server/dist/form-pdf/assets/templates/HOME_CARE_DOCTOR.pdf && \
+    test -f apps/server/dist/form-pdf/assets/fonts/Pretendard-Regular.ttf
 # prod 의존만 담은 독립 디렉터리로 뽑는다(심볼릭 링크 없이 실제 파일).
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm --filter @repo/server deploy --prod --legacy /prod/server && \

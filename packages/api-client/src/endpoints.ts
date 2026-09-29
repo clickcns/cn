@@ -2,6 +2,8 @@ import type {
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
+  FormPdfQuery,
+  NurseMonthPdfQuery,
   CreateOrganizationInput,
   CreateRecipientInput,
   CreateUserInput,
@@ -30,7 +32,7 @@ import type {
   VisitListQuery,
   VisitListResponse,
 } from "@repo/shared-types";
-import type { KyInstance } from "ky";
+import type { KyInstance, ResponsePromise } from "ky";
 import { withTimeout } from "./http.js";
 
 /** 음성인식 + LLM 초안까지 기다린다(보통 10~30초). */
@@ -50,6 +52,23 @@ function toSearchParams(query?: object): URLSearchParams | undefined {
     }
   }
   return params;
+}
+
+/** 서버가 만든 파일과 그 이름(Content-Disposition 의 filename*). */
+export interface FileDownload {
+  blob: Blob;
+  filename: string;
+}
+
+async function fileDownload(request: ResponsePromise): Promise<FileDownload> {
+  const response = await request;
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(
+    response.headers.get("content-disposition") ?? "",
+  )?.[1];
+  return {
+    blob: await response.blob(),
+    filename: encoded ? decodeURIComponent(encoded) : "download",
+  };
 }
 
 export function createCarenoteApi(http: KyInstance) {
@@ -93,6 +112,13 @@ export function createCarenoteApi(http: KyInstance) {
         http.post("recipients", { json: input }).json<Recipient>(),
       update: (id: string, input: UpdateRecipientInput) =>
         http.patch(`recipients/${id}`, { json: input }).json<Recipient>(),
+      /** 제7호 월간 기록지 PDF(기관 관리자·운영자). */
+      nurseMonthPdf: (id: string, query: NurseMonthPdfQuery) =>
+        fileDownload(
+          http.get(`recipients/${id}/home-care-nurse-pdf`, {
+            searchParams: toSearchParams(query),
+          }),
+        ),
     },
 
     visits: {
@@ -141,6 +167,13 @@ export function createCarenoteApi(http: KyInstance) {
         http
           .get(`visits/${id}/versions/${version}`)
           .json<VisitRecordVersionDetail>(),
+      /** 확정본 한 벌의 서식 PDF(style: 원본 위에 채움 / 표준 서식). */
+      versionPdf: (id: string, version: number, query: FormPdfQuery) =>
+        fileDownload(
+          http.get(`visits/${id}/versions/${version}/pdf`, {
+            searchParams: toSearchParams(query),
+          }),
+        ),
       /** 예정 상태의 방문만 지울 수 있다. */
       remove: (id: string) => http.delete(`visits/${id}`).json<{ ok: true }>(),
     },

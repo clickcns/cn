@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormHeading, FormView } from "@/features/forms/components/form-view";
+import { FormPdfButton } from "@/features/visits/components/form-pdf-button";
 import { useReopenVisit } from "@/features/visits/hooks/use-visit-mutations";
 import { getVisitDate } from "@/features/visits/lib/record-form";
 import {
@@ -125,6 +126,9 @@ export function VisitRecordView({
             </span>
           )}
         </p>
+        {isConfirmed && visit.versionCount > 0 && (
+          <FormPdfButton visitId={visit.id} version={visit.versionCount} />
+        )}
         {canReopen && <ReopenVisitButton visitId={visit.id} />}
       </div>
 

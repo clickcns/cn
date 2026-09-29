@@ -293,7 +293,7 @@ function formatNumber(field: NumberFieldDef, value: number): string {
 }
 
 /** 고른 항목 하나를 글로: "기타(야간 흡인)", "욕창 관리 15분" */
-function formatSelectedOption(
+export function formatSelectedOption(
   field: ChoiceFieldDef,
   selected: SelectedOption,
 ): string {

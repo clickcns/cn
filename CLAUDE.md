@@ -123,6 +123,17 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
 - 별지 제7호(간호사) 원 서식은 한 달 5회 방문을 칸으로 적는 월간 양식이다. 여기서는 방문 1건이 한 칸이고, 향후계획·총평도 방문마다 적는다(월간 서식으로 모을 때 그 달 마지막 값을 쓴다).
 - 서식 원본은 각 시범사업 지침의 부록이다(일차의료 방문진료 수가 시범사업 지침 별지 제4호, 장기요양 재택의료센터 시범사업 지침 별지 제6~8호, 장기요양 방문간호는 별지 제14호). 항목 이름과 구분은 원본과 협력 기관 확인으로 확정한다.
 
+## 서식 PDF (`apps/server/src/form-pdf/`)
+
+- 확정본 한 벌을 PDF로 준다: `GET /visits/:id/versions/:version/pdf?style=original|standard`(권한은 방문 조회와 같은 `visitScope`). 방문의 서식을 서식 순서대로 한 파일에 담고, 파일 이름은 서버가 정한다(`수급자_방문일_N차.pdf`, `inline`; api-client가 `Content-Disposition`에서 읽어 `{ blob, filename }`으로 준다). 쪽 아래 출력 표시에 몇 차 확정본인지 적고, 보관 값이 hash와 다르면(`hashMatches`) "보관 값이 원본과 다릅니다"를 붙인다.
+  - `standard`(표준 서식): 서식 정의(`FormDef`)로 그린다(`standard/render.ts`: 머리 줄 + 섹션·칸·선택지 □/○, 숫자 짝, 넘치면 다음 장 "(계속)"). 고른 항목·숫자 글은 화면과 같은 `formatSelectedOption`·`formatFieldValue`를 쓴다(제공 시간·메모, 증감). 모든 서식과 지침 개정에 코드 수정 없이 맞는다.
+  - `original`(원본 서식, 기본값): 지침 부록 원본 PDF(`assets/templates/<FormId>.pdf`) 위에 좌표로 채운다. 원본이 있는 서식은 `FORMS_WITH_ORIGINAL_PDF`(shared-types, `hasOriginalPdf`로 화면이 버튼 이름을 고른다)이고, 서버 `build.ts`의 `ORIGINAL_PAGES`가 그 키를 모두 가져야 컴파일된다. 원본이 없는 서식(지금 제14호)은 표준 서식으로 나온다.
+- 원본 위 자리는 서식마다 선언한다(`overlay/layouts.ts`: 선택지마다 □ 체크·○ 점과 괄호 칸, 글·숫자 칸, 머리 글자 `texts`). 좌표는 좌상단 원점 pt. `form-pdf.spec.ts`가 서식 정의의 모든 칸·선택지에 자리가 있는지 본다 — **서식 정의에 칸이나 선택지를 더하면 원본 자리도 더해야 테스트가 통과한다**(지침 개정으로 원본이 바뀌면 템플릿 PDF와 좌표를 함께 바꾼다).
+- 제7호(간호사)는 한 장에 방문 5칸이라 따로 그린다(`overlay/home-care-nurse.ts`, 칸 자리는 첫 칸 좌표로 적고 칸마다 좌표계를 옮겨 그린다): 방문 PDF는 첫 칸에 그 방문만, 월간 기록지 `GET /recipients/:id/home-care-nurse-pdf?month=YYYY-MM`(기관 관리자·운영자, 기관 범위)는 그 수급자의 그 달 확정 방문(지금 확정본)을 날짜순 5칸씩(넘치면 다음 장) 채우고 향후계획·총평은 그 달 마지막 방문 값을 모든 장에 쓴다.
+- 새 원본 서식 더하기: `scripts/form-def-json.ts <서식ID>`로 서식 정의를 JSON으로 뽑고 `scripts/form-pdf-coords.py 원본.pdf --def def.json`(pymupdf)이 선택지 이름 옆 □/○를 찾아 좌표 초안을 만든다(윤곽선 글자 PDF는 `--dump`로 □/○ 위치만). 초안을 `layouts.ts`에 옮기고 `scripts/form-pdf-preview.ts <폴더>`(모든 칸을 채운 표본, 하나 고르기는 장마다 다음 선택지)로 눈으로 맞춘다.
+- 글꼴은 Pretendard(OFL, `assets/fonts`)이고 쓴 글자만 넣는다(`renderPdf`). 1차는 그리지 않고 넘어온 글자만 모으고(폭 0, 글꼴 배치 없음), 2차는 그 글자만 HarfBuzz로 줄인 글꼴(`subset-font`, `noLayoutClosure`)로 그린다. 2차에만 생기는 글("…", 이어지는 장의 "(계속)")이 있으면 더해서 다시 그린다. pdf-lib 자체 subset은 Pretendard 글자를 비우고(fontkit이 짝수로 맞추지 않은 glyf를 짧은 loca로 적는다), layout closure를 켜면 `-`·`:` 뒤가 1em 벌어진다. 자산은 `nest-cli.json` assets로 dist에 복사된다(Dockerfile이 확인).
+- 화면: 관리 웹 방문 상세 "확정 이력" 카드(지금 확정본과 각 차수 창에 [원본 서식 PDF]·[표준 서식 PDF], 제7호 방문이면 [N월 월간 기록지]), 현장 웹 확정된 기록 화면의 [서식 PDF](원본). PDF는 누르자마자 빈 탭을 열고 받은 뒤 채운다(`open-pdf.ts`, 팝업 차단 방지).
+
 ## 음성 구술 → 서식 초안
 
 흐름: 현장 웹 녹음(MediaRecorder) → 브라우저에서 16kHz·모노 WAV로 변환(`features/dictation/lib/wav.ts`) → `POST /visits/:id/dictation` → STT → 문장(S1, S2…) → LLM 초안(방문의 서식 모두를 한 번에) → 자동 검사 → 되묻기 질문 → `VisitDictation` 저장 → 담당자가 "서식에 채우기" → 기존 [임시 저장]·[확정].

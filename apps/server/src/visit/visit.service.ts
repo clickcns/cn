@@ -85,7 +85,7 @@ const RECORD_LOCKED =
  * 사용자가 볼 수 있는 방문의 범위. 목록과 단건 조회가 같은 조건을 쓴다.
  * 기관 범위 + 현장 직원은 본인 방문만. 범위 밖 방문은 "없음"(404)으로 보인다.
  */
-function visitScope(actor: AuthenticatedUser): Prisma.VisitWhereInput {
+export function visitScope(actor: AuthenticatedUser): Prisma.VisitWhereInput {
   return {
     organizationId: resolveOrganizationFilter(actor),
     staffId: actor.role === "STAFF" ? actor.id : undefined,

@@ -1,5 +1,7 @@
 import {
   CARE_GRADE_LABELS,
+  formatKstDate,
+  monthOf,
   PROFESSION_LABELS,
   withParticle,
   type VisitDetail,
@@ -24,6 +26,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  FormPdfButtons,
+  NurseMonthPdfButton,
+} from "@/features/visits/components/form-pdf-buttons";
 import { RecordFormCards } from "@/features/visits/components/visit-record-view";
 import {
   useVisitVersion,
@@ -63,6 +69,23 @@ export function VisitVersionsCard({ visit }: { visit: VisitDetail }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
+        {/* 서식 PDF는 확정본(보관한 값)으로 만든다. 지금 기록이 작성 중이면 마지막 확정본이다. */}
+        <div className="bg-muted/50 grid gap-2 rounded-md px-3 py-2.5">
+          <p className="text-muted-foreground text-xs">
+            {visit.versionCount}차 확정본을 서식 PDF로 보고 인쇄합니다.
+          </p>
+          <FormPdfButtons
+            visitId={visit.id}
+            version={visit.versionCount}
+            formIds={visit.formIds}
+          />
+          {visit.formIds.includes("HOME_CARE_NURSE") && (
+            <NurseMonthPdfButton
+              recipientId={visit.recipient.id}
+              month={monthOf(formatKstDate(new Date(visit.scheduledAt)))}
+            />
+          )}
+        </div>
         {versionsQuery.isError ? (
           <ErrorState
             error={versionsQuery.error}
@@ -170,7 +193,7 @@ function VisitVersionDialog({
           ) : !detail ? (
             <LoadingState message="확정본을 불러오는 중입니다…" />
           ) : (
-            <VersionContent detail={detail} />
+            <VersionContent visitId={visitId} detail={detail} />
           )}
         </DialogBody>
       </DialogContent>
@@ -178,13 +201,24 @@ function VisitVersionDialog({
   );
 }
 
-function VersionContent({ detail }: { detail: VisitRecordVersionDetail }) {
+function VersionContent({
+  visitId,
+  detail,
+}: {
+  visitId: string;
+  detail: VisitRecordVersionDetail;
+}) {
   const { snapshot } = detail;
   const { organization, recipient, staff } = snapshot.header;
 
   return (
     <>
       <IntegrityNotice matches={detail.hashMatches} />
+      <FormPdfButtons
+        visitId={visitId}
+        version={detail.version}
+        formIds={snapshot.formIds}
+      />
       {detail.reopenedAt && (
         <p className="text-muted-foreground -mt-2 text-sm">
           {formatDateTime(detail.reopenedAt)}에{" "}
