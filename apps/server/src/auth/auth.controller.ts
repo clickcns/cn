@@ -11,14 +11,14 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service.js";
 import { CurrentUser, Public } from "./decorators/index.js";
-import { LoginDto, RefreshDto } from "./dto/index.js";
+import { ChangePasswordDto, LoginDto, RefreshDto } from "./dto/index.js";
 import { JwtRefreshGuard } from "./guards/index.js";
 import type {
   AuthenticatedUser,
   RefreshContext,
 } from "./types/authenticated-user.js";
 
-/** 비밀번호 대입을 늦추기 위해 로그인은 IP당 분당 10회로 제한한다. */
+/** 비밀번호 대입을 늦추기 위해 로그인·비밀번호 바꾸기는 IP당 분당 10회로 제한한다. */
 const LOGIN_THROTTLE = { default: { limit: 10, ttl: 60_000 } } as const;
 
 @ApiTags("auth")
@@ -47,6 +47,18 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   logout(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.logout(user);
+  }
+
+  /** 본인 비밀번호 바꾸기. 지금 비밀번호를 확인하므로 대입을 막게 로그인처럼 제한한다. */
+  @ApiBearerAuth()
+  @Throttle(LOGIN_THROTTLE)
+  @Post("password")
+  @HttpCode(HttpStatus.OK)
+  changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user, dto);
   }
 
   @ApiBearerAuth()

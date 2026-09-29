@@ -15,7 +15,6 @@ import {
   type UserListQuery,
   type UserSummary,
 } from "@repo/shared-types";
-import * as bcrypt from "bcryptjs";
 import type { z } from "zod";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import {
@@ -24,12 +23,12 @@ import {
   resolveTargetOrganizationId,
 } from "../core/utils/org-scope.js";
 import { handlePrismaError, PrismaService } from "../prisma/index.js";
+import { hashPassword } from "./password-hash.js";
 import { toUserSummary, userSelect } from "./user.mapper.js";
 
 type CreateUserData = z.output<typeof CreateUserSchema>;
 type UpdateUserData = z.output<typeof UpdateUserSchema>;
 
-const BCRYPT_ROUNDS = 10;
 const USER_NOT_FOUND = "사용자를 찾을 수 없습니다";
 const PRISMA_MESSAGES = {
   conflict: "이미 사용 중인 아이디입니다",
@@ -81,7 +80,7 @@ export class UserService {
             dto.organizationId,
             requiresOrganization(dto.role),
           ),
-          password: await bcrypt.hash(dto.password, BCRYPT_ROUNDS),
+          password: await hashPassword(dto.password),
         },
         select: userSelect,
       });
@@ -162,7 +161,7 @@ export class UserService {
     // 사용 중지·비밀번호 재설정 시 기존 로그인 세션을 모두 끊는다.
     const revokeSessions = dto.isActive === false || dto.password !== undefined;
     const password = dto.password
-      ? await bcrypt.hash(dto.password, BCRYPT_ROUNDS)
+      ? await hashPassword(dto.password)
       : undefined;
 
     try {

@@ -1,5 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -11,12 +12,14 @@ import {
   LOGIN_CLIENT_DENIED_MESSAGES,
   type AuthResponse,
   type AuthUser,
+  type ChangePasswordSchema,
   type LoginSchema,
 } from "@repo/shared-types";
 import * as bcrypt from "bcryptjs";
 import type { z } from "zod";
 import { ConfigService } from "../config/config.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { hashPassword } from "../user/password-hash.js";
 import { toAuthUser, userSelect, type UserRow } from "../user/user.mapper.js";
 import type {
   AccessTokenPayload,
@@ -147,6 +150,32 @@ export class AuthService {
     await this.prisma.refreshSession.deleteMany({
       where: { id: user.sessionId, userId: user.id },
     });
+    return { ok: true };
+  }
+
+  /**
+   * 본인 비밀번호 바꾸기. 지금 비밀번호가 맞아야 한다(틀리면 400: 401이면 앱이 토큰을 갱신하고
+   * 로그아웃시킨다). 지금 쓰는 세션은 두고 다른 기기·앱의 세션은 끊는다(비밀번호가 새어
+   * 바꾸는 경우가 많으므로).
+   */
+  async changePassword(
+    user: AuthenticatedUser,
+    { currentPassword, newPassword }: z.output<typeof ChangePasswordSchema>,
+  ): Promise<{ ok: true }> {
+    const row = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { password: true },
+    });
+    if (!row || !(await bcrypt.compare(currentPassword, row.password))) {
+      throw new BadRequestException("지금 비밀번호가 올바르지 않습니다");
+    }
+    const password = await hashPassword(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: user.id }, data: { password } }),
+      this.prisma.refreshSession.deleteMany({
+        where: { userId: user.id, id: { not: user.sessionId } },
+      }),
+    ]);
     return { ok: true };
   }
 

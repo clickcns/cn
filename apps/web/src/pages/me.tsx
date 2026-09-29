@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useCurrentUser } from "@/features/auth/hooks/use-session";
 import { useLogout } from "@/features/auth/hooks/use-logout";
+import { ChangePasswordDialog } from "@/features/me/components/change-password-dialog";
 import { ProfileCard } from "@/features/me/components/profile-card";
 
 export default function MePage() {
   const user = useCurrentUser();
   const logout = useLogout();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <>
@@ -18,6 +20,16 @@ export default function MePage() {
 
       <div className="flex max-w-xl flex-col gap-4">
         {user && <ProfileCard user={user} />}
+
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          onClick={() => setPasswordOpen(true)}
+        >
+          <KeyRound />
+          비밀번호 변경
+        </Button>
 
         <Button
           variant="destructive-outline"
@@ -31,6 +43,10 @@ export default function MePage() {
         </Button>
       </div>
 
+      <ChangePasswordDialog
+        open={passwordOpen}
+        onOpenChange={setPasswordOpen}
+      />
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

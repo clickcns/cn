@@ -1,6 +1,7 @@
 import type {
   AuthResponse,
   AuthUser,
+  ChangePasswordInput,
   CreateOrganizationInput,
   CreateRecipientInput,
   CreateUserInput,
@@ -58,6 +59,9 @@ export function createCarenoteApi(http: KyInstance) {
         http.post("auth/login", { json: input }).json<AuthResponse>(),
       logout: () => http.post("auth/logout").json<{ ok: true }>(),
       me: () => http.get("auth/me").json<AuthUser>(),
+      /** 본인 비밀번호 바꾸기. 지금 비밀번호가 틀리면 400이다. 이 기기의 로그인은 유지된다. */
+      changePassword: (input: ChangePasswordInput) =>
+        http.post("auth/password", { json: input }).json<{ ok: true }>(),
     },
 
     organizations: {

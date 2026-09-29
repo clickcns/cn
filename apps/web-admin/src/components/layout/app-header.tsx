@@ -1,14 +1,17 @@
 import { ROLE_LABELS } from "@repo/shared-types";
-import { LogOutIcon } from "lucide-react";
+import { KeyRoundIcon, LogOutIcon } from "lucide-react";
+import { useState } from "react";
 import { OrganizationScope } from "@/components/layout/organization-scope";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { ChangePasswordDialog } from "@/features/auth/components/change-password-dialog";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { useLogout } from "@/features/auth/hooks/use-logout";
 
 export function AppHeader() {
   const user = useCurrentUser();
   const logout = useLogout();
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <header className="bg-card/95 sticky top-0 z-30 flex h-(--header-height) shrink-0 items-center justify-between gap-4 border-b px-8 backdrop-blur">
@@ -29,6 +32,15 @@ export function AppHeader() {
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => setPasswordOpen(true)}
+          className="text-muted-foreground"
+        >
+          <KeyRoundIcon />
+          비밀번호 변경
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => logout.mutate()}
           disabled={logout.isPending}
           className="text-muted-foreground"
@@ -37,6 +49,10 @@ export function AppHeader() {
           로그아웃
         </Button>
       </div>
+      <ChangePasswordDialog
+        open={passwordOpen}
+        onOpenChange={setPasswordOpen}
+      />
     </header>
   );
 }
