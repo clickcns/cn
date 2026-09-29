@@ -2,6 +2,7 @@ import {
   Building2Icon,
   ClipboardListIcon,
   HeartHandshakeIcon,
+  LayoutDashboardIcon,
   UsersRoundIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -18,6 +19,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { to: ROUTES.dashboard, label: "현황판", icon: LayoutDashboardIcon },
   { to: ROUTES.visits, label: "방문 기록", icon: ClipboardListIcon },
   { to: ROUTES.recipients, label: "수급자", icon: HeartHandshakeIcon },
   { to: ROUTES.users, label: "사용자", icon: UsersRoundIcon },

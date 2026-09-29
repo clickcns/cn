@@ -5,6 +5,7 @@ export type RecipientFieldValues = Omit<UpdateRecipientInput, "isActive">;
 
 export const EMPTY_RECIPIENT_FIELDS = {
   name: "",
+  chartNumber: null,
   birthDate: null,
   gender: null,
   careGrade: null,
@@ -23,6 +24,7 @@ export function toEditRecipientFormValues(
 ): UpdateRecipientInput {
   const {
     name,
+    chartNumber,
     birthDate,
     gender,
     careGrade,
@@ -37,6 +39,7 @@ export function toEditRecipientFormValues(
   } = recipient;
   return {
     name,
+    chartNumber,
     birthDate,
     gender,
     careGrade,

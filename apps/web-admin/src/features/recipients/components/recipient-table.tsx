@@ -32,10 +32,11 @@ import {
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 10;
 
 const SORT_VALUES = {
   name: (recipient) => recipient.name,
+  chartNumber: (recipient) => recipient.chartNumber,
   // 등급·성별은 정해진 순서(1등급 → 인지지원등급)로
   careGrade: (recipient) =>
     recipient.careGrade ? CARE_GRADES.indexOf(recipient.careGrade) : null,
@@ -74,6 +75,7 @@ export function RecipientTable({
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {head("name", "이름")}
+          {head("chartNumber", "차트번호")}
           {head("careGrade", "등급")}
           <TableHead>등록 사업</TableHead>
           {head("gender", "성별")}
@@ -116,6 +118,9 @@ function RecipientRow({
   return (
     <TableRow className={cn(!recipient.isActive && "text-muted-foreground")}>
       <TableCell className="font-medium">{recipient.name}</TableCell>
+      <TableCell className="whitespace-nowrap tabular-nums">
+        {orDash(recipient.chartNumber)}
+      </TableCell>
       <TableCell className="whitespace-nowrap">
         {formatCareGrade(recipient.careGrade)}
       </TableCell>

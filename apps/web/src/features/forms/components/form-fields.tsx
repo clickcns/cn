@@ -20,6 +20,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckChips, RadioChips } from "@/components/ui/choice-chips";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fieldElementId, inputId } from "@/features/forms/lib/field-ids";
 import { Textarea } from "@/components/ui/textarea";
 import {
   toOptionState,
@@ -37,18 +38,25 @@ import { cn } from "@/lib/utils";
 
 const emptyOption = (value: string) => toOptionState({ value });
 
-const inputId = (basePath: string, key: string, suffix = "") =>
-  `${basePath}-${key}${suffix}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-
 function FieldLabel({ field, htmlFor }: { field: FieldDef; htmlFor?: string }) {
+  // 확정 전에 반드시 채울 칸
+  const mark = field.required && (
+    <span className="text-destructive ml-1" aria-label="필수">
+      *
+    </span>
+  );
   return (
     <div className="flex flex-col gap-0.5">
       {htmlFor ? (
         <Label htmlFor={htmlFor} className="text-base font-semibold">
           {field.label}
+          {mark}
         </Label>
       ) : (
-        <span className="text-base font-semibold">{field.label}</span>
+        <span className="text-base font-semibold">
+          {field.label}
+          {mark}
+        </span>
       )}
       {field.description && (
         <span className="text-muted-foreground text-sm">
@@ -389,8 +397,9 @@ function FieldControl<T extends FieldValues>({
   const labelled = field.type === "number" || field.type === "text";
   return (
     <div
+      id={fieldElementId(basePath, field.key)}
       className={cn(
-        "flex flex-col gap-2",
+        "flex scroll-mt-24 flex-col gap-2",
         field.type === "number" && "min-w-0",
       )}
     >

@@ -15,7 +15,7 @@ export default function NotFoundPage() {
         description="주소가 바뀌었거나 잘못 입력되었을 수 있습니다."
         action={
           <Button variant="outline" asChild>
-            <Link to={HOME_ROUTE}>방문 기록으로</Link>
+            <Link to={HOME_ROUTE}>처음 화면으로</Link>
           </Button>
         }
       />

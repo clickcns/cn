@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
+  findMissingRequired,
   FORMS,
   hasOptionalForms,
+  missingRequiredMessage,
   type FormId,
   type VisitDetail,
 } from "@repo/shared-types";
@@ -15,6 +17,7 @@ import { DictationPanel } from "@/features/dictation/components/dictation-panel"
 import { FormFields } from "@/features/forms/components/form-fields";
 import { FormHeading } from "@/features/forms/components/form-view";
 import { FormTabs } from "@/features/forms/components/form-tabs";
+import { fieldElementId } from "@/features/forms/lib/field-ids";
 import { FormSelectDialog } from "@/features/visits/components/record-form/form-select-dialog";
 import { RecordActionBar } from "@/features/visits/components/record-form/record-action-bar";
 import { UnsavedChangesDialog } from "@/features/visits/components/record-form/unsaved-changes-dialog";
@@ -135,6 +138,21 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
     const result = buildSaveInput(getValues(), visit.formIds);
     if (!result.ok) {
       toast.error(result.message);
+      return;
+    }
+    // 확정 전에 반드시 채울 칸이 비었으면 그 서식을 열고 첫 빈 칸으로 간다.
+    const missing = findMissingRequired(visit.formIds, result.input.forms);
+    const first = missing[0];
+    if (first) {
+      toast.error(missingRequiredMessage(missing));
+      setSelectedFormId(first.formId);
+      requestAnimationFrame(() => {
+        document
+          .getElementById(
+            fieldElementId(`forms.${first.formId}`, first.fields[0]!.key),
+          )
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
     setConfirmOpen(true);

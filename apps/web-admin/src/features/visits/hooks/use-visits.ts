@@ -101,6 +101,14 @@ export function useInfiniteVisits(
   });
 }
 
+/** 방문 목록 한 페이지. 현황판처럼 앞의 몇 건과 조건 전체 건수(total)만 볼 때 쓴다. */
+export function useVisitPage(query: VisitListQuery) {
+  return useQuery({
+    queryKey: queryKeys.visits.page(query),
+    queryFn: () => api.visits.list(query),
+  });
+}
+
 /**
  * 방문 달력(날짜별 상태 건수). 필터는 목록과 같다.
  * 달을 넘기는 동안에는 이전 달 숫자를 두어 칸이 깜박이지 않게 한다.
@@ -117,6 +125,24 @@ export function useVisit(id: string) {
   return useQuery({
     queryKey: queryKeys.visits.detail(id),
     queryFn: () => api.visits.get(id),
+  });
+}
+
+/** 확정본 이력(1차, 2차 …). 확정한 적이 없으면(enabled false) 묻지 않는다. */
+export function useVisitVersions(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.visits.versions(id),
+    queryFn: () => api.visits.versions(id),
+    enabled,
+  });
+}
+
+/** 확정본 한 벌(1차, 2차 …). version이 null이면 묻지 않는다. */
+export function useVisitVersion(id: string, version: number | null) {
+  return useQuery({
+    queryKey: queryKeys.visits.version(id, version ?? 0),
+    queryFn: () => api.visits.version(id, version!),
+    enabled: version !== null,
   });
 }
 

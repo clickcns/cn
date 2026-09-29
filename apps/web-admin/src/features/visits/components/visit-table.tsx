@@ -1,4 +1,5 @@
 import {
+  daysBetween,
   formatKstDate,
   PROFESSION_LABELS,
   PROGRAM_LABELS,
@@ -48,59 +49,70 @@ export function VisitTable({
   // 상세 화면의 "방문 기록" 링크가 지금 필터로 돌아오게 한다.
   const linkState: VisitListLinkState = { listSearch: location.search };
 
-  const renderRow = (visit: VisitSummary) => (
-    <TableRow
-      key={visit.id}
-      className="hover:bg-primary-soft/50 cursor-pointer"
-      onClick={(event) => {
-        // 이름 링크를 누른 경우는 링크가 이동을 맡는다.
-        if ((event.target as HTMLElement).closest("a")) return;
-        if (onRowClick) onRowClick(visit);
-        else navigate(ROUTES.visitDetail(visit.id), { state: linkState });
-      }}
-    >
-      <TableCell className="whitespace-nowrap">
-        <span className="inline-flex items-center gap-2">
-          {formatDateTime(visit.scheduledAt)}
-          {formatKstDate(new Date(visit.scheduledAt)) === today && (
-            <Badge variant="primary" className="h-5 px-1.5 text-[11px]">
-              오늘
-            </Badge>
-          )}
-        </span>
-      </TableCell>
-      <TableCell>
-        <Link
-          to={ROUTES.visitDetail(visit.id)}
-          state={linkState}
-          className="hover:text-primary font-medium underline-offset-4 outline-none hover:underline focus-visible:underline"
-        >
-          {visit.recipient.name}
-        </Link>
-      </TableCell>
-      <TableCell className="whitespace-nowrap">
-        {formatCareGrade(visit.recipient.careGrade)}
-      </TableCell>
-      <TableCell className="whitespace-nowrap">
-        {PROGRAM_LABELS[visit.program]}
-      </TableCell>
-      <TableCell className="whitespace-nowrap">
-        {visit.staff.name}
-        {visit.staff.profession && (
-          <span className="text-muted-foreground">
-            {" "}
-            · {PROFESSION_LABELS[visit.staff.profession]}
+  const renderRow = (visit: VisitSummary) => {
+    const date = formatKstDate(new Date(visit.scheduledAt));
+    return (
+      <TableRow
+        key={visit.id}
+        className="hover:bg-primary-soft/50 cursor-pointer"
+        onClick={(event) => {
+          // 이름 링크를 누른 경우는 링크가 이동을 맡는다.
+          if ((event.target as HTMLElement).closest("a")) return;
+          if (onRowClick) onRowClick(visit);
+          else navigate(ROUTES.visitDetail(visit.id), { state: linkState });
+        }}
+      >
+        <TableCell className="whitespace-nowrap">
+          <span className="inline-flex items-center gap-2">
+            {formatDateTime(visit.scheduledAt)}
+            {date === today ? (
+              <Badge variant="primary" className="h-5 px-1.5 text-[11px]">
+                오늘
+              </Badge>
+            ) : (
+              // 지났는데 확정하지 않은 방문(현황판의 "확정 안 된 지난 방문"과 같은 기준)
+              date < today &&
+              visit.status !== "CONFIRMED" && (
+                <span className="text-warning text-xs font-medium">
+                  {daysBetween(date, today)}일 지남
+                </span>
+              )
+            )}
           </span>
-        )}
-      </TableCell>
-      <TableCell>
-        <VisitStatusBadge status={visit.status} />
-      </TableCell>
-      <TableCell className="text-muted-foreground whitespace-nowrap">
-        {formatDateTime(visit.confirmedAt)}
-      </TableCell>
-    </TableRow>
-  );
+        </TableCell>
+        <TableCell>
+          <Link
+            to={ROUTES.visitDetail(visit.id)}
+            state={linkState}
+            className="hover:text-primary font-medium underline-offset-4 outline-none hover:underline focus-visible:underline"
+          >
+            {visit.recipient.name}
+          </Link>
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          {formatCareGrade(visit.recipient.careGrade)}
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          {PROGRAM_LABELS[visit.program]}
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          {visit.staff.name}
+          {visit.staff.profession && (
+            <span className="text-muted-foreground">
+              {" "}
+              · {PROFESSION_LABELS[visit.staff.profession]}
+            </span>
+          )}
+        </TableCell>
+        <TableCell>
+          <VisitStatusBadge status={visit.status} />
+        </TableCell>
+        <TableCell className="text-muted-foreground whitespace-nowrap">
+          {formatDateTime(visit.confirmedAt)}
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   return (
     <Table>

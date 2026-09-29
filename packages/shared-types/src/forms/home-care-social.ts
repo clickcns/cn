@@ -41,6 +41,7 @@ export const HOME_CARE_SOCIAL_FORM = {
           key: "method",
           label: "상담방법",
           type: "single",
+          required: true,
           dictation: true,
           question: "방문 상담이었나요, 전화 상담이었나요?",
           options: [
@@ -62,6 +63,7 @@ export const HOME_CARE_SOCIAL_FORM = {
           key: "content",
           label: "상담내용",
           type: "multi",
+          required: true,
           dictation: true,
           question: "어떤 내용을 상담했나요?",
           options: [

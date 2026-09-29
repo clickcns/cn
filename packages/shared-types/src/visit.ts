@@ -190,7 +190,11 @@ export const VisitListQuerySchema = z
     staffId: z.uuid().optional(),
     recipientId: z.uuid().optional(),
     program: z.enum(PROGRAMS).optional(),
-    status: z.enum(VISIT_STATUSES).optional(),
+    /** 상태 하나 또는 여러 개(쿼리스트링은 status를 여러 번 적는다: status=SCHEDULED&status=DRAFT). */
+    status: z
+      .union([z.enum(VISIT_STATUSES), z.array(z.enum(VISIT_STATUSES))])
+      .transform((value) => (Array.isArray(value) ? value : [value]))
+      .optional(),
     organizationId: z.uuid().optional(),
     /**
      * "organization"이면 기관별로(기관 이름순, 그 안은 방문 일시순) 이어서 주고
@@ -303,6 +307,7 @@ export type VisitRecipient = Pick<
   Recipient,
   | "id"
   | "name"
+  | "chartNumber"
   | "birthDate"
   | "gender"
   | "careGrade"
@@ -357,6 +362,67 @@ export interface VisitDetail extends VisitBase {
    * 같은 수급자의 지난 서식에서 가져온 기본값(이월 칸만). 아직 저장하지 않은 서식을 처음 열 때 쓴다.
    */
   carryOver: VisitForms;
+  /** 보관한 확정본 수(1차, 2차 …). 목록은 GET /visits/:id/versions */
+  versionCount: number;
+}
+
+/** 이력에 적는 사람 */
+export interface VisitVersionActor {
+  id: string;
+  name: string;
+}
+
+/**
+ * 확정본 한 벌의 요약. 확정할 때마다 그때의 기록을 통째로 보관하고, [수정]으로 되돌려 고친 뒤
+ * 다시 확정하면 이전 확정본은 그대로 두고 다음 차수를 더한다(원본 보관·수정 이력).
+ */
+export interface VisitRecordVersionSummary {
+  /** 1부터 */
+  version: number;
+  confirmedAt: string;
+  confirmedBy: VisitVersionActor;
+  /** 이 확정본을 [수정]으로 되돌린 때와 사람. 지금 확정본(또는 마지막 확정본)이면 null */
+  reopenedAt: string | null;
+  reopenedBy: VisitVersionActor | null;
+}
+
+/** 확정 당시의 기록 값 */
+/**
+ * 확정할 때의 서식 머리(기관·수급자·담당자). 서식 머리는 서식 값이 아니라 지금 정보에서 오므로,
+ * 수급자 주소·등급 등이 나중에 바뀌어도 확정 당시 원본을 되살릴 수 있게 함께 보관한다.
+ */
+export interface VisitRecordHeader {
+  organization: { name: string; code: string | null };
+  recipient: Pick<
+    Recipient,
+    | "name"
+    | "chartNumber"
+    | "birthDate"
+    | "gender"
+    | "careGrade"
+    | "ltcCertNumber"
+    | "address"
+  >;
+  staff: { name: string; licenseNumber: string | null };
+}
+
+export interface VisitRecordSnapshot {
+  program: Program;
+  profession: Profession;
+  staffId: string;
+  formIds: FormId[];
+  forms: VisitForms;
+  startedAt: string | null;
+  endedAt: string | null;
+  header: VisitRecordHeader;
+}
+
+export interface VisitRecordVersionDetail extends VisitRecordVersionSummary {
+  snapshot: VisitRecordSnapshot;
+  /** 확정본의 SHA-256(서버가 확정할 때 계산). 나중에 바뀌지 않았는지 확인하는 데 쓴다. */
+  hash: string;
+  /** 보관한 hash와 지금 다시 계산한 값이 같은지(확정본이 그 뒤로 바뀌지 않았는지) */
+  hashMatches: boolean;
 }
 
 /** 한 기관의 방문 건수(조건 전체 기준). */
@@ -556,5 +622,87 @@ export function summarizeMonthRecipients(
   }
   return summaries.sort((a, b) =>
     a.recipient.name.localeCompare(b.recipient.name, "ko"),
+  );
+}
+
+/** 이달 방문이 없는 수급자(받은 순서 그대로). summaries는 summarizeMonthRecipients 결과다. */
+export function withoutMonthVisits<T extends { id: string }>(
+  recipients: readonly T[],
+  summaries: readonly MonthRecipientSummary[],
+): T[] {
+  const visited = new Set(summaries.map((summary) => summary.recipient.id));
+  return recipients.filter((recipient) => !visited.has(recipient.id));
+}
+
+/** 재택의료센터 수급자 한 명의 이달 월 요건(관리 웹 현황판). */
+export interface HomeCareMonthStatus<T> {
+  recipient: T;
+  /** 이달 재택의료센터 방문의 직종별 건수(예정 포함) */
+  counts: HomeCareVisitCounts;
+  /** 요건에서 모자란 건수의 합. 0이면 충족 */
+  shortfall: number;
+}
+
+/**
+ * 재택의료센터에 등록한 수급자마다 이달 월 요건을 본다(방문이 없으면 모두 모자람).
+ * 모자란 건수가 많은 수급자부터, 같으면 받은 순서 그대로다.
+ */
+export function homeCareMonthStatuses<
+  T extends { id: string; programs: readonly Program[] },
+>(
+  recipients: readonly T[],
+  summaries: readonly MonthRecipientSummary[],
+): HomeCareMonthStatus<T>[] {
+  const byRecipient = new Map(
+    summaries.map((summary) => [summary.recipient.id, summary]),
+  );
+  return recipients
+    .filter((recipient) => recipient.programs.includes("HOME_CARE_CENTER"))
+    .map((recipient) => {
+      const counts =
+        byRecipient.get(recipient.id)?.homeCare ?? emptyHomeCareCounts();
+      return { recipient, counts, shortfall: homeCareShortfall(counts) };
+    })
+    .sort((a, b) => b.shortfall - a.shortfall);
+}
+
+/** 이달 담당자 한 명의 방문 요약(관리 웹 현황판). */
+export interface MonthStaffSummary {
+  staff: VisitCalendarItem["staff"];
+  organizationId: string;
+  counts: Record<VisitStatus, number>;
+  /** 오늘 전 날짜인데 확정하지 않은 방문 수 */
+  overdue: number;
+}
+
+/**
+ * 달력 항목을 담당자별로 묶는다(month 안의 방문만). 지난 미확정이 많은 담당자부터,
+ * 같으면 이름순이다.
+ */
+export function summarizeMonthStaff(
+  items: readonly VisitCalendarItem[],
+  month: string,
+  today: string,
+): MonthStaffSummary[] {
+  const byStaff = new Map<string, MonthStaffSummary>();
+  for (const item of items) {
+    const date = formatKstDate(new Date(item.scheduledAt));
+    if (monthOf(date) !== month) continue;
+    let summary = byStaff.get(item.staff.id);
+    if (!summary) {
+      summary = {
+        staff: item.staff,
+        organizationId: item.organizationId,
+        counts: emptyStatusCounts(),
+        overdue: 0,
+      };
+      byStaff.set(item.staff.id, summary);
+    }
+    summary.counts[item.status] += 1;
+    if (date < today && item.status !== "CONFIRMED") summary.overdue += 1;
+  }
+  return [...byStaff.values()].sort(
+    (a, b) =>
+      b.overdue - a.overdue || a.staff.name.localeCompare(b.staff.name, "ko"),
   );
 }

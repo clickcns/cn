@@ -33,6 +33,8 @@ export const queryKeys = {
      */
     infiniteList: (query: Omit<VisitListQuery, "page" | "pageSize">) =>
       ["visits", "list", "infinite", query] as const,
+    /** 목록 한 페이지(현황판처럼 앞의 몇 건과 전체 건수만 볼 때). */
+    page: (query: VisitListQuery) => ["visits", "list", "page", query] as const,
     /** 달력 캐시 전부(조건별로 여러 개). */
     calendars: ["visits", "list", "calendar"] as const,
     /** 달력(날짜별 건수). `lists` 접두어 아래라 등록·삭제 뒤 목록과 함께 다시 받는다. */
@@ -42,6 +44,11 @@ export const queryKeys = {
     calendarQueryOf: (key: readonly unknown[]) =>
       key[3] as VisitCalendarQuery | undefined,
     detail: (id: string) => ["visits", "detail", id] as const,
+    /** 확정본 이력. 상세 아래라 상세와 함께 무효화된다. */
+    versions: (id: string) => ["visits", "detail", id, "versions"] as const,
+    /** 확정본 한 벌. 상세 아래라 상세와 함께 무효화된다. */
+    version: (id: string, version: number) =>
+      ["visits", "detail", id, "version", version] as const,
     sameDayWarningsAll: ["visits", "same-day-warnings"] as const,
     sameDayWarnings: (query: SameDayWarningQuery) =>
       ["visits", "same-day-warnings", query] as const,

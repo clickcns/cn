@@ -50,6 +50,7 @@ export const HOME_CARE_DOCTOR_FORM = {
           key: "visitReason",
           label: "방문사유",
           type: "single",
+          required: true,
           dictation: true,
           question: "정기 방문이었나요, 수시·응급 방문이었나요?",
           options: [
@@ -117,6 +118,7 @@ export const HOME_CARE_DOCTOR_FORM = {
           key: "consultation",
           label: "진찰 및 상담",
           type: "multi",
+          required: true,
           dictation: true,
           question: "진찰·상담한 내용을 말씀해 주세요",
           options: [

@@ -132,6 +132,7 @@ export const PRIMARY_CARE_CHECK_FORM = {
           key: "appointment",
           label: "방문진료유형",
           type: "single",
+          required: true,
           dictation: true,
           carryOver: true,
           hint: "미리 잡은 방문이면 예약, 당일 요청·호출이면 비예약",
@@ -196,6 +197,7 @@ export const PRIMARY_CARE_CHECK_FORM = {
           key: "visitReason",
           label: "방문진료사유",
           type: "multi",
+          required: true,
           dictation: true,
           question: "방문진료 사유는 무엇이었나요?",
           options: [
@@ -226,6 +228,7 @@ export const PRIMARY_CARE_CHECK_FORM = {
           key: "treatment",
           label: "진료 및 조치 내용",
           type: "multi",
+          required: true,
           dictation: true,
           question: "진료하거나 조치한 내용을 말씀해 주세요",
           options: [

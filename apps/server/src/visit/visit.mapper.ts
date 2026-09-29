@@ -6,8 +6,12 @@ import {
   type VisitCalendarItem,
   type VisitDetail,
   type VisitForms,
+  type VisitRecordSnapshot,
+  type VisitRecordVersionDetail,
+  type VisitRecordVersionSummary,
   type VisitStatus,
   type VisitSummary,
+  type VisitVersionActor,
 } from "@repo/shared-types";
 import { fromDbDate } from "../core/utils/db-date.js";
 import type { Prisma } from "../generated/prisma/client.js";
@@ -18,6 +22,7 @@ import {
   visitRecipientSelect,
   visitRecipientSummarySelect,
 } from "../recipient/recipient.mapper.js";
+import { recordVersionHash } from "./record-version.js";
 
 const staffSelect = {
   select: { id: true, name: true, profession: true },
@@ -31,14 +36,35 @@ export const visitSummaryArgs = {
   },
 } as const satisfies Prisma.VisitDefaultArgs;
 
+const actorSelect = { select: { id: true, name: true } } as const;
+
+/** 확정본의 확정자·되돌린 사람 이름 */
+export const versionActorsArgs = {
+  include: { confirmedBy: actorSelect, reopenedBy: actorSelect },
+} as const satisfies Prisma.VisitRecordVersionDefaultArgs;
+
 export const visitDetailArgs = {
   include: {
     recipient: { select: visitRecipientSelect },
     staff: { select: { ...staffSelect.select, licenseNumber: true } },
     organization: { select: { name: true, code: true } },
     forms: { select: { formId: true, data: true } },
+    // 확정본 이력은 수만 센다(목록은 versionSummaryArgs로 따로 받는다).
+    _count: { select: { versions: true } },
   },
 } as const satisfies Prisma.VisitDefaultArgs;
+
+/** 확정본 이력 목록(보관한 값은 빼고 요약만, 차수 순서). */
+export const versionSummaryArgs = {
+  orderBy: { version: "asc" },
+  select: {
+    version: true,
+    confirmedAt: true,
+    reopenedAt: true,
+    confirmedBy: actorSelect,
+    reopenedBy: actorSelect,
+  },
+} as const satisfies Prisma.Visit$versionsArgs;
 
 /** 달력 칩: 수급자 이름·등급과 담당자만. 주소·연락처·서식 값은 싣지 않는다. */
 export const calendarItemArgs = {
@@ -143,5 +169,39 @@ export function toVisitDetail(
     staff: row.staff,
     forms: toVisitForms(row.forms),
     carryOver,
+    versionCount: row._count.versions,
+  };
+}
+
+export function toVisitRecordVersionSummary(row: {
+  version: number;
+  confirmedAt: Date;
+  reopenedAt: Date | null;
+  confirmedBy: VisitVersionActor;
+  reopenedBy: VisitVersionActor | null;
+}): VisitRecordVersionSummary {
+  return {
+    version: row.version,
+    confirmedAt: row.confirmedAt.toISOString(),
+    confirmedBy: row.confirmedBy,
+    reopenedAt: row.reopenedAt?.toISOString() ?? null,
+    reopenedBy: row.reopenedBy,
+  };
+}
+
+type VisitRecordVersionRow = Prisma.VisitRecordVersionGetPayload<
+  typeof versionActorsArgs
+>;
+
+/** 확정본 한 벌. 보관한 hash를 지금 값으로 다시 계산해 바뀌지 않았는지 함께 알린다. */
+export function toVisitRecordVersionDetail(
+  row: VisitRecordVersionRow,
+): VisitRecordVersionDetail {
+  const snapshot = row.snapshot as unknown as VisitRecordSnapshot;
+  return {
+    ...toVisitRecordVersionSummary(row),
+    snapshot,
+    hash: row.hash,
+    hashMatches: recordVersionHash({ ...row, snapshot }) === row.hash,
   };
 }

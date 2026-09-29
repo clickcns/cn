@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  birthDateSearchCandidates,
   checkRecipientPrograms,
   PROGRAM_LABELS,
   type CreateRecipientSchema,
@@ -19,6 +20,7 @@ import {
   resolveOrganizationFilter,
   resolveTargetOrganizationId,
 } from "../core/utils/org-scope.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { handlePrismaError, PrismaService } from "../prisma/index.js";
 import { toDbDate } from "../core/utils/db-date.js";
 import { toCareGrade, toRecipient } from "./recipient.mapper.js";
@@ -28,6 +30,21 @@ type UpdateRecipientData = z.output<typeof UpdateRecipientSchema>;
 
 const RECIPIENT_NOT_FOUND = "수급자를 찾을 수 없습니다";
 const ORGANIZATION_NOT_FOUND = "기관을 찾을 수 없습니다";
+const CHART_NUMBER_TAKEN = "이 기관에 같은 차트번호의 수급자가 있습니다";
+
+/** 검색어: 이름·차트번호의 일부, 또는 생년월일(19420815·420815·1942-08-15 등). */
+function recipientSearchWhere(q: string): Prisma.RecipientWhereInput {
+  const birthDates = birthDateSearchCandidates(q);
+  return {
+    OR: [
+      { name: { contains: q, mode: "insensitive" } },
+      { chartNumber: { contains: q, mode: "insensitive" } },
+      ...(birthDates.length > 0
+        ? [{ birthDate: { in: birthDates.map((date) => toDbDate(date)!) } }]
+        : []),
+    ],
+  };
+}
 
 /** 등록 사업은 기관이 하는 사업 안에서만 고른다. */
 function assertOrganizationPrograms(
@@ -54,7 +71,7 @@ export class RecipientService {
       where: {
         organizationId: resolveOrganizationFilter(actor, query.organizationId),
         isActive: query.includeInactive === "true" ? undefined : true,
-        name: query.q ? { contains: query.q, mode: "insensitive" } : undefined,
+        ...(query.q ? recipientSearchWhere(query.q) : {}),
       },
       orderBy: [{ isActive: "desc" }, { name: "asc" }],
     });
@@ -90,7 +107,10 @@ export class RecipientService {
       });
       return toRecipient(row);
     } catch (error) {
-      handlePrismaError(error, { foreignKey: ORGANIZATION_NOT_FOUND });
+      handlePrismaError(error, {
+        foreignKey: ORGANIZATION_NOT_FOUND,
+        conflict: CHART_NUMBER_TAKEN,
+      });
     }
   }
 
@@ -113,7 +133,10 @@ export class RecipientService {
       });
       return toRecipient(row);
     } catch (error) {
-      handlePrismaError(error, { notFound: RECIPIENT_NOT_FOUND });
+      handlePrismaError(error, {
+        notFound: RECIPIENT_NOT_FOUND,
+        conflict: CHART_NUMBER_TAKEN,
+      });
     }
   }
 

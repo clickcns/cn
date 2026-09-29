@@ -5,6 +5,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -120,6 +122,22 @@ export class VisitController {
   @HttpCode(HttpStatus.OK)
   reopen(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.visitService.reopen(actor, id);
+  }
+
+  /** 확정본 이력(1차, 2차 …, 요약만). 방문을 볼 수 있으면 본다. */
+  @Get(":id/versions")
+  versions(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
+    return this.visitService.versions(actor, id);
+  }
+
+  /** 확정본 한 벌(1차, 2차 …): 보관한 기록 값과 위변조 확인. 방문을 볼 수 있으면 본다. */
+  @Get(":id/versions/:version")
+  version(
+    @CurrentUser() actor: AuthenticatedUser,
+    @UuidParam() id: string,
+    @Param("version", ParseIntPipe) version: number,
+  ) {
+    return this.visitService.version(actor, id, version);
   }
 
   @Delete(":id")

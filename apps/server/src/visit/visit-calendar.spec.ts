@@ -7,13 +7,17 @@ import {
   daysBetween,
   formatDateLabel,
   formatMonthLabel,
+  homeCareMonthStatuses,
   isIsoMonth,
   monthGridDates,
   shiftCalendarDate,
   summarizeCalendarMonth,
   summarizeMonthRecipients,
+  summarizeMonthStaff,
+  totalCount,
   VisitCalendarQuerySchema,
   withKstDate,
+  withoutMonthVisits,
   type VisitCalendarItem,
 } from "@repo/shared-types";
 import { toCalendarDays } from "./visit.mapper.js";
@@ -245,6 +249,120 @@ describe("summarizeMonthRecipients", () => {
       { scheduledAt: "2026-09-23T15:30:00.000Z", status: "DRAFT" },
     ]);
     assert.equal(days[0].date, "2026-09-24");
+  });
+});
+
+describe("summarizeMonthStaff", () => {
+  const kim = { id: "r1", name: "김영자", careGrade: "2" as const };
+  const nurse = {
+    id: "n",
+    name: "이간호",
+    profession: "NURSE",
+    isActive: true,
+  } as const;
+  const doctor = {
+    id: "d",
+    name: "정의사",
+    profession: "DOCTOR",
+    isActive: true,
+  } as const;
+
+  it("이달 방문을 담당자별로 세고, 오늘 전 미확정이 많은 담당자부터 둔다", () => {
+    const summaries = summarizeMonthStaff(
+      [
+        calendarItem({
+          recipient: kim,
+          staff: doctor,
+          status: "CONFIRMED",
+          scheduledAt: "2026-09-03T01:00:00.000Z",
+        }),
+        calendarItem({
+          recipient: kim,
+          staff: nurse,
+          status: "DRAFT",
+          scheduledAt: "2026-09-04T01:00:00.000Z",
+        }),
+        // 오늘(한국 날짜 9/10) 방문은 아직 지난 것이 아니다
+        calendarItem({
+          recipient: kim,
+          staff: nurse,
+          status: "SCHEDULED",
+          scheduledAt: "2026-09-09T16:00:00.000Z",
+        }),
+        // 다음 달 방문은 세지 않는다
+        calendarItem({
+          recipient: kim,
+          staff: doctor,
+          scheduledAt: "2026-10-01T01:00:00.000Z",
+        }),
+      ],
+      "2026-09",
+      "2026-09-10",
+    );
+    assert.deepEqual(
+      summaries.map((s) => [s.staff.name, totalCount(s.counts), s.overdue]),
+      [
+        ["이간호", 2, 1],
+        ["정의사", 1, 0],
+      ],
+    );
+    assert.deepEqual(summaries[0].counts, {
+      SCHEDULED: 1,
+      DRAFT: 1,
+      CONFIRMED: 0,
+    });
+  });
+});
+
+describe("homeCareMonthStatuses", () => {
+  it("재택의료센터 수급자만, 방문이 없으면 모두 모자란 것으로 보고 부족한 순서로 둔다", () => {
+    const kim = { id: "r1", name: "김영자", careGrade: "2" as const };
+    const summaries = summarizeMonthRecipients(
+      [
+        calendarItem({ recipient: kim, profession: "DOCTOR" }),
+        calendarItem({ recipient: kim }),
+        calendarItem({ recipient: kim }),
+        calendarItem({ recipient: kim, profession: "SOCIAL_WORKER" }),
+      ],
+      "2026-09",
+    );
+    const statuses = homeCareMonthStatuses(
+      [
+        { id: "r1", programs: ["HOME_CARE_CENTER"] as const },
+        { id: "r2", programs: ["LTC_NURSING"] as const },
+        { id: "r3", programs: ["HOME_CARE_CENTER", "LTC_NURSING"] as const },
+      ],
+      summaries,
+    );
+    assert.deepEqual(
+      statuses.map((status) => [status.recipient.id, status.shortfall]),
+      [
+        ["r3", 4],
+        ["r1", 0],
+      ],
+    );
+    assert.deepEqual(statuses[1].counts, {
+      DOCTOR: 1,
+      NURSE: 2,
+      SOCIAL_WORKER: 1,
+    });
+  });
+});
+
+describe("withoutMonthVisits", () => {
+  it("이달 방문이 있는 수급자를 뺀다(순서는 그대로)", () => {
+    const summaries = summarizeMonthRecipients(
+      [
+        calendarItem({
+          recipient: { id: "r2", name: "이순자", careGrade: null },
+        }),
+      ],
+      "2026-09",
+    );
+    assert.deepEqual(
+      withoutMonthVisits([{ id: "r3" }, { id: "r2" }, { id: "r1" }], summaries),
+      [{ id: "r3" }, { id: "r1" }],
+    );
   });
 });
 

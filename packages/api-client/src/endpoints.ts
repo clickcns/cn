@@ -22,6 +22,8 @@ import type {
   VisitCalendarQuery,
   VisitCalendarResponse,
   VisitDetail,
+  VisitRecordVersionDetail,
+  VisitRecordVersionSummary,
   VisitDictation,
   VisitDictationResponse,
   VisitListQuery,
@@ -33,13 +35,18 @@ import { withTimeout } from "./http.js";
 /** 음성인식 + LLM 초안까지 기다린다(보통 10~30초). */
 const DICTATION_TIMEOUT_MS = 180_000;
 
-/** 조회 조건 객체 → 쿼리스트링. undefined·null·""는 빼고 숫자는 문자열로 바꾼다. */
+/**
+ * 조회 조건 객체 → 쿼리스트링. undefined·null·""는 빼고 숫자는 문자열로 바꾼다.
+ * 배열은 같은 이름을 여러 번 적는다(status=SCHEDULED&status=DRAFT).
+ */
 function toSearchParams(query?: object): URLSearchParams | undefined {
   if (!query) return undefined;
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null || value === "") continue;
-    params.set(key, String(value));
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (item === undefined || item === null || item === "") continue;
+      params.append(key, String(item));
+    }
   }
   return params;
 }
@@ -122,6 +129,14 @@ export function createCarenoteApi(http: KyInstance) {
       /** 확정한 기록을 작성 중으로 되돌린다(담당자 본인). 고친 뒤 다시 확정한다. */
       reopen: (id: string) =>
         http.post(`visits/${id}/reopen`).json<VisitDetail>(),
+      /** 확정본 이력(1차, 2차 …, 요약만) */
+      versions: (id: string) =>
+        http.get(`visits/${id}/versions`).json<VisitRecordVersionSummary[]>(),
+      /** 확정본 한 벌(1차, 2차 …): 보관한 기록 값과 위변조 확인 */
+      version: (id: string, version: number) =>
+        http
+          .get(`visits/${id}/versions/${version}`)
+          .json<VisitRecordVersionDetail>(),
       /** 예정 상태의 방문만 지울 수 있다. */
       remove: (id: string) => http.delete(`visits/${id}`).json<{ ok: true }>(),
     },

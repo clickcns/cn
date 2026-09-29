@@ -4,7 +4,9 @@ import {
   withParticle,
   type FormData,
   type FormDef,
+  type FormId,
   type VisitDetail,
+  type VisitForms,
 } from "@repo/shared-types";
 import { FileTextIcon, NotebookPenIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,10 +70,21 @@ export function VisitRecordView({ visit }: { visit: VisitDetail }) {
     );
   }
 
+  return <RecordFormCards formIds={visit.formIds} forms={visit.forms} />;
+}
+
+/** 서식들을 읽기 전용 카드로(저장하지 않은 서식은 빈 카드). 지금 기록과 지난 확정본이 함께 쓴다. */
+export function RecordFormCards({
+  formIds,
+  forms,
+}: {
+  formIds: readonly FormId[];
+  forms: VisitForms;
+}) {
   return (
     <div className="grid gap-5">
-      {visit.formIds.map((formId) => {
-        const data = visit.forms[formId];
+      {formIds.map((formId) => {
+        const data = forms[formId];
         return data ? (
           <FormCard key={formId} form={FORMS[formId]} data={data} />
         ) : (

@@ -25,8 +25,8 @@ export function RecipientSearchInput({
         inputMode="search"
         enterKeyHint="search"
         autoComplete="off"
-        placeholder="이름으로 찾기"
-        aria-label="수급자 이름 검색"
+        placeholder="이름·차트번호·생년월일"
+        aria-label="수급자 검색"
         // 서버 검색어 제한과 같게 막아, 길게 붙여넣어도 오류가 나지 않게 한다.
         maxLength={50}
         value={value}

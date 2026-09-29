@@ -48,7 +48,7 @@ export default function RecipientsPage() {
             }
             description={
               debouncedSearch.trim()
-                ? "이름을 다시 확인해 주세요."
+                ? "이름·차트번호·생년월일(예: 19420819)을 다시 확인해 주세요."
                 : "수급자 등록은 기관 관리자에게 요청해 주세요."
             }
           />

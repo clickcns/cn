@@ -93,20 +93,20 @@ export function RecipientInfoCard({
           columns={2}
           items={[
             { label: "이름", value: recipient.name },
+            { label: "차트번호", value: orDash(recipient.chartNumber) },
             {
               label: "장기요양등급",
               value: formatCareGrade(recipient.careGrade),
             },
             { label: "성별", value: formatGender(recipient.gender) },
+            {
+              label: "생년월일",
+              value: formatBirthDate(recipient.birthDate),
+            },
             { label: "연락처", value: orDash(recipient.phone) },
             {
               label: "장기요양인정번호",
               value: orDash(recipient.ltcCertNumber),
-              wide: true,
-            },
-            {
-              label: "생년월일",
-              value: formatBirthDate(recipient.birthDate),
               wide: true,
             },
             { label: "주소", value: orDash(recipient.address), wide: true },

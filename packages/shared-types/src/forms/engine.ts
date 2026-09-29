@@ -45,6 +45,11 @@ interface FieldCommon {
   hint?: string;
   /** 화면에 보이는 도움말 */
   description?: string;
+  /**
+   * 확정 전에 반드시 채울 칸(제출할 곳의 필수 항목). 비어 있으면 확정하지 못한다.
+   * 어느 칸인지는 협력 기관 확인에 따라 서식 정의에서만 켜고 끈다.
+   */
+  required?: boolean;
 }
 
 export interface SingleFieldDef extends FieldCommon {
@@ -129,6 +134,16 @@ export type FormData = Record<string, FieldValue>;
 
 export function formFields(form: FormDef): FieldDef[] {
   return form.sections.flatMap((section) => section.fields);
+}
+
+/** 확정 전에 채워야 하는데 비어 있는 칸(서식 순서대로). */
+export function missingRequiredFields(
+  form: FormDef,
+  data: Readonly<Record<string, unknown>> | undefined,
+): FieldDef[] {
+  return formFields(form).filter(
+    (field) => field.required && isEmptyValue(data?.[field.key]),
+  );
 }
 
 /** 구술에서 채우는 칸 */

@@ -26,6 +26,8 @@ const SIZE_CLASSES = {
   sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-xl",
+  /** 서식 전체를 보여 줄 때(확정본 보기) */
+  xl: "max-w-3xl",
 } as const;
 
 export function DialogContent({

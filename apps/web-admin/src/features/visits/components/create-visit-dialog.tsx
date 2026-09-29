@@ -101,6 +101,7 @@ export function CreateVisitDialog({
 
 function recipientLabel(recipient: Recipient, organizationName?: string) {
   const details = [
+    recipient.chartNumber ? `차트 ${recipient.chartNumber}` : null,
     recipient.birthDate ? `${recipient.birthDate.slice(0, 4)}년생` : null,
     recipient.careGrade ? CARE_GRADE_LABELS[recipient.careGrade] : null,
     organizationName,

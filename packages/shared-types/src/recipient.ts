@@ -5,6 +5,7 @@ import {
   requiresCareGrade,
   type Program,
 } from "./programs.js";
+import { isIsoDate } from "./date.js";
 import { blankToNull, optionalText } from "./schema.js";
 import { withParticle } from "./text.js";
 
@@ -69,6 +70,8 @@ const RecipientFieldsSchema = z.object({
     .trim()
     .min(1, "이름을 입력해 주세요")
     .max(50, "이름은 50자 이하로 입력해 주세요"),
+  /** 차트번호(기관 EMR의 환자 번호). 기관 안에서 겹치지 않는다. */
+  chartNumber: optionalText(30, "차트번호"),
   /** YYYY-MM-DD */
   birthDate: blankToNull(z.iso.date("생년월일 형식이 올바르지 않습니다")),
   gender: blankToNull(z.enum(GENDERS)),
@@ -125,16 +128,41 @@ export const UpdateRecipientSchema = RecipientFieldsSchema.omit({
 export type UpdateRecipientInput = z.input<typeof UpdateRecipientSchema>;
 
 export const RecipientListQuerySchema = z.object({
+  /** 이름·차트번호의 일부, 또는 생년월일(birthDateSearchCandidates) */
   q: z.string().trim().max(50).optional(),
   organizationId: z.uuid().optional(),
   includeInactive: z.enum(["true", "false"]).optional(),
 });
 export type RecipientListQuery = z.infer<typeof RecipientListQuerySchema>;
 
+/** 1942-08-15, 1942.8.15, 42/8/15: 구분 기호가 있으면 월·일은 한 자리여도 된다. */
+const BIRTH_DATE_WITH_SEPARATOR =
+  /^(?<year>\d{4}|\d{2})(?<sep>[.\-/ ])(?<month>\d{1,2})\k<sep>(?<day>\d{1,2})\.?$/;
+/** 19420815, 420815(주민등록번호 앞자리) */
+const BIRTH_DATE_DIGITS = /^(?<year>\d{4}|\d{2})(?<month>\d{2})(?<day>\d{2})$/;
+
+/**
+ * 검색어를 생년월일(YYYY-MM-DD)로 읽는다. 읽을 수 없으면 빈 목록이다.
+ * 네 자리 연도는 그 날짜 하나, 두 자리 연도는 1900년대와 2000년대 날짜를 모두 돌려준다.
+ */
+export function birthDateSearchCandidates(q: string): string[] {
+  const text = q.trim();
+  const groups = (
+    BIRTH_DATE_WITH_SEPARATOR.exec(text) ?? BIRTH_DATE_DIGITS.exec(text)
+  )?.groups;
+  if (!groups) return [];
+  const { year = "", month = "", day = "" } = groups;
+  const years = year.length === 4 ? [year] : [`19${year}`, `20${year}`];
+  return years
+    .map((y) => `${y}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
+    .filter(isIsoDate);
+}
+
 export interface Recipient {
   id: string;
   organizationId: string;
   name: string;
+  chartNumber: string | null;
   /** YYYY-MM-DD */
   birthDate: string | null;
   gender: Gender | null;

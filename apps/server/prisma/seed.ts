@@ -13,6 +13,7 @@ import {
   resolveFormIds,
   FORMS,
   toKstIsoDateTime,
+  VisitFormsSchema,
   type FormData,
   type FormId,
   type Profession,
@@ -27,6 +28,11 @@ import {
   type Prisma,
   type VisitStatus,
 } from "../src/generated/prisma/client.js";
+import {
+  recordHeaderSelect,
+  recordVersionData,
+  toRecordSnapshot,
+} from "../src/visit/record-version.js";
 
 dotenv.config({ path: ".env" });
 
@@ -125,14 +131,15 @@ async function seedVisits(
   for (const visit of visits) {
     const { profession } = visit.staff;
     if (!profession) throw new Error("방문 담당자는 직종이 있어야 합니다");
-    await prisma.visit.create({
+    const formIds = resolveFormIds(visit.program, profession);
+    const created = await prisma.visit.create({
       data: {
         organizationId,
         recipientId: recipients.get(visit.recipient)!,
         staffId: visit.staff.id,
         program: visit.program,
         profession,
-        formIds: resolveFormIds(visit.program, profession),
+        formIds,
         scheduledAt: visit.scheduledAt,
         startedAt: visit.startedAt,
         endedAt: visit.endedAt,
@@ -145,7 +152,31 @@ async function seedVisits(
           })),
         },
       },
+      select: { id: true, ...recordHeaderSelect },
     });
+    // 확정한 방문은 앱에서 확정할 때처럼 1차 확정본을 보관한다.
+    if (visit.status === "CONFIRMED" && visit.confirmedAt) {
+      await prisma.visitRecordVersion.create({
+        data: recordVersionData({
+          visitId: created.id,
+          version: 1,
+          confirmedById: visit.staff.id,
+          confirmedAt: visit.confirmedAt,
+          snapshot: toRecordSnapshot(
+            {
+              program: visit.program,
+              profession,
+              staffId: visit.staff.id,
+              formIds,
+              startedAt: visit.startedAt ?? null,
+              endedAt: visit.endedAt ?? null,
+            },
+            VisitFormsSchema.parse(visit.forms ?? {}),
+            created,
+          ),
+        }),
+      });
+    }
   }
 }
 
@@ -191,6 +222,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
   const recipients = await seedRecipients(organization.id, [
     {
       name: "김영자",
+      chartNumber: "1001",
       programs: ["LTC_NURSING"],
       birthDate: new Date("1936-04-12T00:00:00Z"),
       gender: "FEMALE",
@@ -204,6 +236,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "박순례",
+      chartNumber: "1002",
       programs: ["LTC_NURSING"],
       birthDate: new Date("1941-09-03T00:00:00Z"),
       gender: "FEMALE",
@@ -217,6 +250,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "이만수",
+      chartNumber: "1003",
       programs: ["LTC_NURSING"],
       birthDate: new Date("1938-01-27T00:00:00Z"),
       gender: "MALE",
@@ -229,6 +263,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "최말순",
+      chartNumber: "1004",
       programs: ["LTC_NURSING"],
       birthDate: new Date("1944-06-15T00:00:00Z"),
       gender: "FEMALE",
@@ -238,6 +273,7 @@ async function seedLtcNursingCenter(passwordHash: string) {
     },
     {
       name: "정덕배",
+      chartNumber: "1005",
       programs: ["LTC_NURSING"],
       birthDate: new Date("1946-11-30T00:00:00Z"),
       gender: "MALE",
@@ -357,6 +393,7 @@ async function seedHomeCareClinic(passwordHash: string) {
   const recipients = await seedRecipients(organization.id, [
     {
       name: "강옥자",
+      chartNumber: "2001",
       programs: ["HOME_CARE_CENTER"],
       birthDate: new Date("1939-03-02T00:00:00Z"),
       gender: "FEMALE",
@@ -370,6 +407,7 @@ async function seedHomeCareClinic(passwordHash: string) {
     },
     {
       name: "문태식",
+      chartNumber: "2002",
       // 장기요양등급은 있지만 재택의료센터에는 등록하지 않은 환자: 의사 방문은 별지 제4호만 쓴다.
       programs: ["PRIMARY_CARE"],
       birthDate: new Date("1942-08-19T00:00:00Z"),
@@ -383,6 +421,7 @@ async function seedHomeCareClinic(passwordHash: string) {
     },
     {
       name: "서금순",
+      chartNumber: "2003",
       programs: ["HOME_CARE_CENTER"],
       birthDate: new Date("1945-12-05T00:00:00Z"),
       gender: "FEMALE",

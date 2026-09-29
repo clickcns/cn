@@ -23,6 +23,7 @@ export const visitRecipientSummarySelect = {
 /** 방문 상세용. */
 export const visitRecipientSelect = {
   ...visitRecipientSummarySelect,
+  chartNumber: true,
   birthDate: true,
   gender: true,
   phone: true,
@@ -54,6 +55,7 @@ export function toVisitRecipientSummary(
 export function toVisitRecipient(row: VisitRecipientRow): VisitRecipient {
   return {
     ...toVisitRecipientSummary(row),
+    chartNumber: row.chartNumber,
     birthDate: fromDbDate(row.birthDate),
     gender: row.gender,
     phone: row.phone,

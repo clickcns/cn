@@ -88,7 +88,7 @@ function ReopenVisitButton({ visitId }: { visitId: string }) {
         onConfirm={handleConfirm}
         isPending={reopenVisit.isPending}
         title="기록을 다시 고칠까요?"
-        description="작성 중으로 되돌립니다. 고친 뒤 다시 확정해 주세요. 심평원·공단에 이미 입력했다면 그곳의 기록도 함께 고쳐야 합니다."
+        description="작성 중으로 되돌립니다. 고친 뒤 다시 확정해 주세요. 지금 확정본은 이력으로 보관됩니다. 심평원·공단에 이미 입력했다면 그곳의 기록도 함께 고쳐야 합니다."
         confirmText="수정하기"
       />
     </>
@@ -119,6 +119,9 @@ export function VisitRecordView({
           {isConfirmed && visit.confirmedAt && (
             <span className="block font-normal">
               확정 시각: {formatDateTimeLabel(visit.confirmedAt)}
+              {/* 고쳐서 다시 확정했으면 몇 번째 확정본인지(이전 확정본은 보관된다) */}
+              {visit.versionCount > 1 &&
+                ` · ${visit.versionCount}차 확정본(이전 확정본 ${visit.versionCount - 1}건 보관)`}
             </span>
           )}
         </p>

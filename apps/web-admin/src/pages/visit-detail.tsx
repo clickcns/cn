@@ -17,6 +17,7 @@ import {
 } from "@/features/visits/components/visit-info-cards";
 import { VisitRecordView } from "@/features/visits/components/visit-record-view";
 import { VisitStatusBadge } from "@/features/visits/components/visit-status-badge";
+import { VisitVersionsCard } from "@/features/visits/components/visit-versions-card";
 import { useVisitListHref } from "@/features/visits/hooks/use-visit-list-href";
 import { useVisit } from "@/features/visits/hooks/use-visits";
 import { formatDateTime } from "@/lib/format";
@@ -93,6 +94,7 @@ export default function VisitDetailPage() {
             visit={visit}
             organizationName={organizationNames?.get(visit.organizationId)}
           />
+          <VisitVersionsCard visit={visit} />
           <RecipientInfoCard recipient={visit.recipient} />
         </div>
       </div>

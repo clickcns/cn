@@ -11,12 +11,14 @@ import {
   conflictsOnSameDay,
   countVisitsByDay,
   emptyStatusCounts,
+  findMissingRequired,
   totalCount,
   formatKstTime,
   formFields,
   FORMS,
   isRecordEditable,
   keepDraftForms,
+  missingRequiredMessage,
   kstStartOfDay,
   PROGRAM_LABELS,
   selectForms,
@@ -35,6 +37,8 @@ import {
   type VisitCalendarQuerySchema,
   type VisitCalendarResponse,
   type VisitDetail,
+  type VisitRecordVersionDetail,
+  type VisitRecordVersionSummary,
   type VisitForms,
   type VisitListQuerySchema,
   type VisitListResponse,
@@ -50,6 +54,11 @@ import {
 import { toVisitDictation } from "../dictation/dictation.mapper.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/index.js";
+import {
+  recordHeaderSelect,
+  recordVersionData,
+  toRecordSnapshot,
+} from "./record-version.js";
 import { isAssignableStaff, planVisitUpdate } from "./visit-update.js";
 import {
   calendarItemArgs,
@@ -57,7 +66,12 @@ import {
   toCalendarDays,
   toVisitCalendarItem,
   toVisitDetail,
+  toVisitForms,
+  toVisitRecordVersionDetail,
+  toVisitRecordVersionSummary,
   toVisitSummary,
+  versionActorsArgs,
+  versionSummaryArgs,
   visitDetailArgs,
   visitSummaryArgs,
   type VisitDetailRow,
@@ -89,7 +103,8 @@ function filterWhere(
     staffId?: string;
     recipientId?: string;
     program?: Program;
-    status?: VisitStatus;
+    /** 목록은 여러 상태를 함께 받는다. */
+    status?: VisitStatus | VisitStatus[];
   },
   scheduledAt: Prisma.DateTimeFilter | undefined,
 ): Prisma.VisitWhereInput {
@@ -100,7 +115,9 @@ function filterWhere(
     staffId: scope.staffId ?? filter.staffId,
     recipientId: filter.recipientId,
     program: filter.program,
-    status: filter.status,
+    status: Array.isArray(filter.status)
+      ? { in: filter.status }
+      : filter.status,
     scheduledAt,
   };
 }
@@ -493,9 +510,16 @@ export class VisitService {
   async confirm(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
     const row = await this.prisma.$transaction(async (tx) => {
       const visit = await this.lockWritable(tx, actor, id);
-      const saved = await tx.visitForm.findMany({
-        where: { visitId: id, formId: { in: visit.formIds } },
-        select: { formId: true, data: true },
+      // 저장한 서식 값과 확정본에 함께 보관할 서식 머리
+      const { forms: saved, ...header } = await tx.visit.findUniqueOrThrow({
+        where: { id },
+        select: {
+          ...recordHeaderSelect,
+          forms: {
+            where: { formId: { in: visit.formIds } },
+            select: { formId: true, data: true },
+          },
+        },
       });
       const missing = visit.formIds.find(
         (formId) => !saved.some((form) => form.formId === formId),
@@ -514,10 +538,28 @@ export class VisitService {
           parsed.error.issues[0]?.message ?? "내용이 올바르지 않습니다",
         );
       }
+      // 확정 전에 반드시 채울 칸(서식 정의의 required)
+      const missingRequired = findMissingRequired(visit.formIds, parsed.data);
+      if (missingRequired.length > 0) {
+        throw new BadRequestException(missingRequiredMessage(missingRequired));
+      }
+      // 확정본을 통째로 보관한다(1차, 2차 …). [수정]으로 되돌려도 지우지 않는다.
+      const confirmedAt = new Date();
+      const latest = await latestRecordVersion(tx, id);
+      await tx.visitRecordVersion.create({
+        data: recordVersionData({
+          visitId: id,
+          version: (latest?.version ?? 0) + 1,
+          confirmedById: actor.id,
+          confirmedAt,
+          snapshot: toRecordSnapshot(visit, parsed.data, header),
+        }),
+        select: { id: true },
+      });
       return tx.visit.update({
         ...visitDetailArgs,
         where: { id },
-        data: { status: "CONFIRMED", confirmedAt: new Date() },
+        data: { status: "CONFIRMED", confirmedAt },
       });
     });
     return this.toDetail(actor, row);
@@ -532,7 +574,16 @@ export class VisitService {
       await lockVisitRow(tx, id);
       const visit = await tx.visit.findFirst({
         where: { id, ...visitScope(actor) },
-        select: { staffId: true, status: true },
+        select: {
+          staffId: true,
+          status: true,
+          program: true,
+          profession: true,
+          formIds: true,
+          startedAt: true,
+          endedAt: true,
+          confirmedAt: true,
+        },
       });
       if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
       if (visit.staffId !== actor.id) {
@@ -540,6 +591,42 @@ export class VisitService {
       }
       if (visit.status !== "CONFIRMED") {
         throw new ConflictException("확정된 방문이 아닙니다");
+      }
+      // 지금 확정본에 되돌린 사람·시각을 적는다(지우지 않는다).
+      const reopened = { reopenedById: actor.id, reopenedAt: new Date() };
+      const confirmedAt = visit.confirmedAt ?? new Date();
+      const latest = await latestRecordVersion(tx, id);
+      if (latest && latest.confirmedAt.getTime() === confirmedAt.getTime()) {
+        await tx.visitRecordVersion.update({
+          where: { id: latest.id },
+          data: reopened,
+        });
+      } else {
+        // 확정본 이력 전에 확정한 방문: 그 확정본을 여기서 보관한다(서식 머리는 지금 정보).
+        const { forms, ...header } = await tx.visit.findUniqueOrThrow({
+          where: { id },
+          select: {
+            ...recordHeaderSelect,
+            forms: { select: { formId: true, data: true } },
+          },
+        });
+        await tx.visitRecordVersion.create({
+          data: {
+            ...recordVersionData({
+              visitId: id,
+              version: (latest?.version ?? 0) + 1,
+              confirmedById: visit.staffId,
+              confirmedAt,
+              snapshot: toRecordSnapshot(
+                { ...visit, formIds: toFormIds(visit.formIds) },
+                toVisitForms(forms),
+                header,
+              ),
+            }),
+            ...reopened,
+          },
+          select: { id: true },
+        });
       }
       return tx.visit.update({
         ...visitDetailArgs,
@@ -620,6 +707,33 @@ export class VisitService {
       });
     });
     return this.toDetail(actor, row);
+  }
+
+  /** 확정본 이력(1차, 2차 …, 요약만). 방문을 볼 수 있는 사람이면 본다. */
+  async versions(
+    actor: AuthenticatedUser,
+    id: string,
+  ): Promise<VisitRecordVersionSummary[]> {
+    const visit = await this.prisma.visit.findFirst({
+      where: { id, ...visitScope(actor) },
+      select: { versions: versionSummaryArgs },
+    });
+    if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
+    return visit.versions.map(toVisitRecordVersionSummary);
+  }
+
+  /** 확정본 한 벌(보관한 값과 위변조 확인). 방문을 볼 수 있는 사람이면 본다. */
+  async version(
+    actor: AuthenticatedUser,
+    id: string,
+    version: number,
+  ): Promise<VisitRecordVersionDetail> {
+    const row = await this.prisma.visitRecordVersion.findFirst({
+      where: { visitId: id, version, visit: visitScope(actor) },
+      ...versionActorsArgs,
+    });
+    if (!row) throw new NotFoundException("확정본을 찾을 수 없습니다");
+    return toVisitRecordVersionDetail(row);
   }
 
   async remove(actor: AuthenticatedUser, id: string): Promise<{ ok: true }> {
@@ -740,6 +854,18 @@ function scheduledRange(query: {
     gte: query.from ? kstStartOfDay(query.from) : undefined,
     lt: query.to ? kstStartOfDay(addKstDays(query.to, 1)) : undefined,
   };
+}
+
+/**
+ * 마지막 확정본(다음 차수는 이 차수 + 1). 방문 행을 잠근 트랜잭션 안에서만 부른다
+ * (동시에 확정해도 차수가 겹치지 않게).
+ */
+function latestRecordVersion(tx: Prisma.TransactionClient, visitId: string) {
+  return tx.visitRecordVersion.findFirst({
+    where: { visitId },
+    orderBy: { version: "desc" },
+    select: { id: true, version: true, confirmedAt: true },
+  });
 }
 
 /** 방문 행을 잠근다(SELECT … FOR UPDATE). 같은 방문을 바꾸는 요청을 차례로 처리한다. 트랜잭션 안에서만. */

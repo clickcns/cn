@@ -43,7 +43,7 @@ export function RecipientFields({
     <div className="grid grid-cols-6 gap-x-4 gap-y-4">
       <FormField
         label="이름"
-        className="col-span-3"
+        className="col-span-2"
         htmlFor={id("name")}
         required
         error={errors.name?.message}
@@ -57,8 +57,22 @@ export function RecipientFields({
         />
       </FormField>
       <FormField
+        label="차트번호"
+        className="col-span-2"
+        htmlFor={id("chartNumber")}
+        error={errors.chartNumber?.message}
+      >
+        <Input
+          id={id("chartNumber")}
+          autoComplete="off"
+          placeholder="기관 EMR의 환자 번호"
+          aria-invalid={!!errors.chartNumber}
+          {...register("chartNumber")}
+        />
+      </FormField>
+      <FormField
         label="생년월일"
-        className="col-span-3"
+        className="col-span-2"
         htmlFor={id("birthDate")}
         error={errors.birthDate?.message}
       >

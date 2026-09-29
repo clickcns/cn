@@ -8,6 +8,7 @@ export * from "./auth.js";
 export * from "./organization.js";
 export * from "./user.js";
 export * from "./recipient.js";
+export * from "./maps.js";
 export * from "./visit.js";
 export * from "./dictation.js";
 export * from "./date.js";

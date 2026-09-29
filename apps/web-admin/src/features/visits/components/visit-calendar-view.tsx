@@ -14,6 +14,7 @@ import {
   VISIT_STATUS_LABELS,
   VISIT_STATUSES,
   withKstDate,
+  withoutMonthVisits,
   type VisitCalendarDay,
   type VisitCalendarItem,
   type VisitCalendarQuery,
@@ -197,13 +198,10 @@ export function VisitCalendarView({
     if (conditions.program && conditions.program !== "HOME_CARE_CENTER") {
       return [];
     }
-    const visited = new Set(summaries.map((s) => s.recipient.id));
-    return (recipientsQuery.data ?? [])
-      .filter(
-        (recipient) =>
-          recipient.programs.includes("HOME_CARE_CENTER") &&
-          !visited.has(recipient.id),
-      )
+    const homeCareRecipients = (recipientsQuery.data ?? []).filter(
+      (recipient) => recipient.programs.includes("HOME_CARE_CENTER"),
+    );
+    return withoutMonthVisits(homeCareRecipients, summaries)
       .map((recipient) => ({
         id: recipient.id,
         name: recipient.name,

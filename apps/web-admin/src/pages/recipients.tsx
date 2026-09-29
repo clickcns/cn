@@ -66,15 +66,15 @@ export default function RecipientsPage() {
               id="recipient-filter-organization"
               showLabel={false}
             />
-            <div className="relative w-72">
+            <div className="relative w-80">
               <SearchIcon
                 aria-hidden
                 className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
               />
               <Input
                 type="search"
-                aria-label="수급자 이름 검색"
-                placeholder="이름으로 검색"
+                aria-label="수급자 검색"
+                placeholder="이름·차트번호·생년월일로 검색"
                 className="pl-9"
                 value={search}
                 maxLength={50}

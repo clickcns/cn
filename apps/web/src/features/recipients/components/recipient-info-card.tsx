@@ -3,6 +3,7 @@ import type { VisitRecipient } from "@repo/shared-types";
 import { Phone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CareGradeBadge } from "@/features/recipients/components/care-grade-badge";
+import { MapLinks } from "@/features/recipients/components/map-links";
 import { formatRecipientMeta } from "@/features/recipients/lib/format";
 import { cn, toTelHref } from "@/lib/utils";
 
@@ -49,7 +50,14 @@ export function RecipientInfoCard({
 
       <dl className="flex flex-col gap-4">
         <InfoRow label="주소">
-          {recipient.address ?? "등록된 주소 없음"}
+          {recipient.address ? (
+            <div className="flex flex-col gap-2">
+              <span>{recipient.address}</span>
+              <MapLinks address={recipient.address} />
+            </div>
+          ) : (
+            "등록된 주소 없음"
+          )}
         </InfoRow>
 
         {recipient.phone && (

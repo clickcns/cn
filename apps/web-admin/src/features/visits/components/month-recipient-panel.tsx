@@ -1,7 +1,5 @@
 import {
   emptyHomeCareCounts,
-  HOME_CARE_MONTHLY_VISITS,
-  PROFESSION_LABELS,
   type CareGrade,
   type HomeCareVisitCounts,
   type MonthRecipientSummary,
@@ -16,6 +14,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { groupRows } from "@/features/organizations/lib/group-rows";
+import { HomeCareCounts } from "@/features/visits/components/home-care-counts";
 import { formatCareGrade } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -43,12 +42,6 @@ interface MonthRecipientPanelProps {
   onSelectRecipient: (recipientId: string | undefined) => void;
   organizationNames?: Map<string, string>;
 }
-
-const HOME_CARE_PARTS: { key: keyof HomeCareVisitCounts; short: string }[] = [
-  { key: "DOCTOR", short: "의" },
-  { key: "NURSE", short: "간" },
-  { key: "SOCIAL_WORKER", short: "사" },
-];
 
 type SortOrder = "shortfall" | "name";
 
@@ -282,26 +275,7 @@ function RecipientButton({
           {detailText}
         </span>
       )}
-      {homeCare && (
-        <span className="flex flex-wrap gap-x-1.5 text-xs tabular-nums">
-          <span className="text-muted-foreground">재택</span>
-          {HOME_CARE_PARTS.map(({ key, short }) => {
-            const required = HOME_CARE_MONTHLY_VISITS[key];
-            const short_ = homeCare[key] < required;
-            return (
-              <span
-                key={key}
-                title={`${PROFESSION_LABELS[key]} ${homeCare[key]}회 / 요건 ${required}회`}
-                className={
-                  short_ ? "text-warning font-semibold" : "text-success"
-                }
-              >
-                {short} {homeCare[key]}/{required}
-              </span>
-            );
-          })}
-        </span>
-      )}
+      {homeCare && <HomeCareCounts counts={homeCare} />}
     </button>
   );
 }

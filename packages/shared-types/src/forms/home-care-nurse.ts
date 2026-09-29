@@ -69,6 +69,7 @@ export const HOME_CARE_NURSE_FORM = {
           key: "care",
           label: "방문내용",
           type: "multi",
+          required: true,
           dictation: true,
           question: "오늘 제공한 간호 내용을 말씀해 주세요",
           options: HOME_CARE_NURSING_ITEMS.map((item) =>

@@ -33,6 +33,10 @@ export const router = createBrowserRouter([
             children: [
               { path: "/", element: <Navigate to={HOME_ROUTE} replace /> },
               {
+                path: ROUTES.dashboard,
+                lazy: page(() => import("@/pages/dashboard")),
+              },
+              {
                 path: ROUTES.visits,
                 lazy: page(() => import("@/pages/visits")),
               },
