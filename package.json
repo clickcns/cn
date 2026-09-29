@@ -17,6 +17,8 @@
     "prisma:generate": "turbo run prisma:generate",
     "db:migrate": "pnpm --filter @repo/server prisma:migrate",
     "db:deploy": "pnpm --filter @repo/server prisma:deploy",
+    "db:deploy:prod": "pnpm --filter @repo/server prisma:deploy:prod",
+    "db:admin:prod": "pnpm --filter @repo/server admin:create:prod",
     "db:seed": "pnpm --filter @repo/server db:seed",
     "db:studio": "pnpm --filter @repo/server prisma:studio"
   },

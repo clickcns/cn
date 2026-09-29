@@ -21,7 +21,7 @@ export default function LoginPage() {
       <section className="bg-primary text-primary-foreground relative hidden flex-col justify-between overflow-hidden px-12 py-10 lg:flex">
         <div className="flex items-center gap-2.5">
           <img
-            src="/favicon.svg"
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
             alt=""
             className="size-8 rounded-lg ring-1 ring-white/30"
           />
@@ -60,7 +60,11 @@ export default function LoginPage() {
       <section className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <img src="/favicon.svg" alt="" className="size-8" />
+            <img
+              src={`${import.meta.env.BASE_URL}favicon.svg`}
+              alt=""
+              className="size-8"
+            />
             <span className="text-lg font-bold tracking-tight">
               케어노트 관리
             </span>

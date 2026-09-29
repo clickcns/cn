@@ -151,6 +151,14 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
 - `@repo/api-client`는 빌드 없이 src를 바로 export한다(웹 전용). 오류 문구(`getErrorMessage`)·재시도 규칙(`shouldRetryQuery`)도 여기 있다. 오래 걸리는 요청은 `withTimeout(ms)`로 시간 제한을 준다(401 뒤 토큰 갱신 재요청에도 같은 제한이 걸린다).
 - 새 워크스페이스 패키지를 만들 때도 같은 `"@repo/source"` 조건을 쓰면 앱 설정을 고칠 필요가 없다. 추후 React Native(Metro)는 `resolver.unstable_conditionNames`에 같은 조건을 넣는다.
 
+## 배포 (cn.clickcns.com)
+
+- 주소: `cn.clickcns.com`(현장 웹) · `cn.clickcns.com/admin`(관리 웹) · `/api`(서버). 한 도메인이라 두 웹 모두 API를 `/api`로 부른다. 두 웹의 로그인 저장 키가 달라(`carenote-web-auth`·`carenote-admin-auth`) 세션이 섞이지 않는다.
+- 흐름: `main`에 push → GitHub Actions(`docker-server.yml`·`docker-web.yml`·`docker-web-admin.yml`, 바뀐 경로만) → `build-image.yml`이 루트 `Dockerfile`의 target(`server`·`web`·`web-admin`)을 빌드해 `ghcr.io/clickcns/cn/<target>:<커밋 SHA 7자리>`로 올림 → `clickcns/cns-k8s`의 `projects/cn/values.yaml` 태그 갱신(시크릿 `K8S_UPDATE_TOKEN`) → ArgoCD 앱 `cn`이 자동 동기화.
+- 이미지: 서버는 `pnpm deploy --prod --legacy`로 prod 의존만 뽑는다(shared-types dist 포함, 실행 확인 단계 있음). 관리 웹은 빌드할 때만 vite `base: "/admin/"`(개발 서버는 `/`)이고 라우터 `basename`은 `import.meta.env.BASE_URL`, 공개 파일 경로도 `BASE_URL`을 붙인다. 현장 웹 서비스 워커는 `/api`·`/admin`을 가로채지 않는다(`navigateFallbackDenylist`). 로컬 확인: `docker build --target server -t cn-server .`
+- 차트: `cns-k8s/projects/cn`(서브차트 `cn-server`·`cn-web`·`cn-web-admin` + 인그레스). 서버는 요청 제한이 파드 메모리에 있어 1개로 둔다. 서버 환경 변수는 시크릿 `cn-server-secret`(git 밖 `projects/cn/secrets.yaml`, 키 목록은 `secrets.example.yaml`).
+- DB: 호스트 PostgreSQL 18의 `cn` DB(pgbouncer 6432). 마이그레이션은 배포에 포함되지 않는다 — 로컬에서 `pnpm db:deploy:prod`(`apps/server/.env.production`의 `DATABASE_URL`, gitignore). 스키마가 바뀌는 커밋은 push 전에 먼저 적용한다(마이그레이션은 이전 서버도 돌아가게 더하는 방향으로 쓴다). 처음 운영자 계정은 `pnpm db:admin:prod`(이미 있으면 건드리지 않음).
+
 ## Development Workflow
 
 코드 변경 후 루트에서 `pnpm build`와 `pnpm lint`로 전체를 검증한다. `check-types`만으로는 Vite 번들링·Nest 빌드 실패를 놓칠 수 있다.

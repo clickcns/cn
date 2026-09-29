@@ -5,7 +5,10 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defaultClientConditions, defineConfig } from "vite";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // 운영에서는 현장 웹과 같은 도메인의 /admin 아래에 둔다(cn.clickcns.com/admin).
+  // 개발 서버는 그대로 / 에서 띄운다.
+  base: command === "build" ? "/admin/" : "/",
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
@@ -30,4 +33,4 @@ export default defineConfig({
     port: 5211,
     strictPort: true,
   },
-});
+}));

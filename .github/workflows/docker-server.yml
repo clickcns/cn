@@ -1,0 +1,36 @@
+name: Docker (server)
+
+# 서버(NestJS) 이미지 → GHCR → cns-k8s projects/cn 태그 갱신. 실제 작업은 build-image.yml.
+# main 에 push 하면 운영(cn.clickcns.com)으로 나간다.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/server/**"
+      - "packages/shared-types/**"
+      - "packages/typescript-config/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/build-image.yml"
+      - ".github/workflows/docker-server.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docker-server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      target: server
+      chart-key: cn-server
+    secrets:
+      K8S_UPDATE_TOKEN: ${{ secrets.K8S_UPDATE_TOKEN }}

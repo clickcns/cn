@@ -38,7 +38,11 @@ export function AppSidebar() {
   return (
     <aside className="bg-card sticky top-0 flex h-dvh w-(--sidebar-width) shrink-0 flex-col border-r">
       <div className="flex h-(--header-height) shrink-0 items-center gap-2.5 border-b px-5">
-        <img src="/favicon.svg" alt="" className="size-7" />
+        <img
+          src={`${import.meta.env.BASE_URL}favicon.svg`}
+          alt=""
+          className="size-7"
+        />
         <span className="text-[15px] font-bold tracking-tight">
           케어노트 관리
         </span>

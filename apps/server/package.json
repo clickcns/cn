@@ -13,8 +13,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "prisma:deploy:prod": "cross-env NODE_ENV=production prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "admin:create:prod": "cross-env NODE_ENV=production tsx scripts/create-admin.ts",
     "dictation:eval": "tsx scripts/dictation-eval.ts"
   },
   "dependencies": {

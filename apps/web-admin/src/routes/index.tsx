@@ -13,62 +13,68 @@ const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({
   Component: (await load()).default,
 });
 
-export const router = createBrowserRouter([
-  {
-    errorElement: <RouteError />,
-    // 첫 화면의 페이지 코드를 받는 동안 보여 준다.
-    hydrateFallbackElement: <LoadingState className="min-h-dvh" />,
-    children: [
-      {
-        element: <GuestGuard />,
-        children: [
-          { path: ROUTES.login, lazy: page(() => import("@/pages/login")) },
-        ],
-      },
-      {
-        element: <AuthGuard />,
-        children: [
-          {
-            element: <AppLayout />,
-            children: [
-              { path: "/", element: <Navigate to={HOME_ROUTE} replace /> },
-              {
-                path: ROUTES.dashboard,
-                lazy: page(() => import("@/pages/dashboard")),
-              },
-              {
-                path: ROUTES.visits,
-                lazy: page(() => import("@/pages/visits")),
-              },
-              {
-                path: `${ROUTES.visits}/:id`,
-                lazy: page(() => import("@/pages/visit-detail")),
-              },
-              {
-                path: ROUTES.recipients,
-                lazy: page(() => import("@/pages/recipients")),
-              },
-              {
-                path: ROUTES.users,
-                lazy: page(() => import("@/pages/users")),
-              },
-              {
-                element: <AdminGuard />,
-                children: [
-                  {
-                    path: ROUTES.organizations,
-                    lazy: page(() => import("@/pages/organizations")),
-                  },
-                ],
-              },
-              {
-                path: "*",
-                lazy: page(() => import("@/pages/not-found")),
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-]);
+/** 운영 빌드는 /admin 아래에서 뜬다(vite base). 개발 서버는 "/". */
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+
+export const router = createBrowserRouter(
+  [
+    {
+      errorElement: <RouteError />,
+      // 첫 화면의 페이지 코드를 받는 동안 보여 준다.
+      hydrateFallbackElement: <LoadingState className="min-h-dvh" />,
+      children: [
+        {
+          element: <GuestGuard />,
+          children: [
+            { path: ROUTES.login, lazy: page(() => import("@/pages/login")) },
+          ],
+        },
+        {
+          element: <AuthGuard />,
+          children: [
+            {
+              element: <AppLayout />,
+              children: [
+                { path: "/", element: <Navigate to={HOME_ROUTE} replace /> },
+                {
+                  path: ROUTES.dashboard,
+                  lazy: page(() => import("@/pages/dashboard")),
+                },
+                {
+                  path: ROUTES.visits,
+                  lazy: page(() => import("@/pages/visits")),
+                },
+                {
+                  path: `${ROUTES.visits}/:id`,
+                  lazy: page(() => import("@/pages/visit-detail")),
+                },
+                {
+                  path: ROUTES.recipients,
+                  lazy: page(() => import("@/pages/recipients")),
+                },
+                {
+                  path: ROUTES.users,
+                  lazy: page(() => import("@/pages/users")),
+                },
+                {
+                  element: <AdminGuard />,
+                  children: [
+                    {
+                      path: ROUTES.organizations,
+                      lazy: page(() => import("@/pages/organizations")),
+                    },
+                  ],
+                },
+                {
+                  path: "*",
+                  lazy: page(() => import("@/pages/not-found")),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { basename },
+);
