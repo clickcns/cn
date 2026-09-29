@@ -167,7 +167,7 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
 
 ## 배포 (cn.clickcns.com)
 
-- 주소: `cn.clickcns.com`(현장 웹) · `cn.clickcns.com/admin`(관리 웹) · `/api`(서버). 한 도메인이라 두 웹 모두 API를 `/api`로 부른다. 두 웹의 로그인 저장 키가 달라(`carenote-web-auth`·`carenote-admin-auth`) 세션이 섞이지 않는다.
+- 주소: `cn.clickcns.com`(현장 웹) · `cn.clickcns.com/admin`(관리 웹) · `/api`(서버) · `/dev`(개발 지침 문서 `docs/dev-guide.html`: 현장 웹 이미지에 `dev/index.html`로 넣고 nginx가 `/dev`·`/dev/`로 준다, 검색 제외. 현장 웹 서비스 워커는 `/dev`도 가로채지 않는다). 한 도메인이라 두 웹 모두 API를 `/api`로 부른다. 두 웹의 로그인 저장 키가 달라(`carenote-web-auth`·`carenote-admin-auth`) 세션이 섞이지 않는다.
 - 흐름: `main`에 push → GitHub Actions(`docker-server.yml`·`docker-web.yml`·`docker-web-admin.yml`, 바뀐 경로만) → `build-image.yml`이 루트 `Dockerfile`의 target(`server`·`web`·`web-admin`)을 빌드해 `ghcr.io/clickcns/cn/<target>:<커밋 SHA 7자리>`로 올림 → `clickcns/cns-k8s`의 `projects/cn/values.yaml` 태그 갱신(시크릿 `K8S_UPDATE_TOKEN`) → ArgoCD 앱 `cn`이 자동 동기화.
 - 이미지: 서버는 `pnpm deploy --prod --legacy`로 prod 의존만 뽑는다(shared-types dist 포함, 실행 확인 단계 있음). 관리 웹은 빌드할 때만 vite `base: "/admin/"`(개발 서버는 `/`)이고 라우터 `basename`은 `import.meta.env.BASE_URL`, 공개 파일 경로도 `BASE_URL`을 붙인다. 현장 웹 서비스 워커는 `/api`·`/admin`을 가로채지 않는다(`navigateFallbackDenylist`). 로컬 확인: `docker build --target server -t cn-server .`
 - 차트: `cns-k8s/projects/cn`(서브차트 `cn-server`·`cn-web`·`cn-web-admin` + 인그레스). 서버는 요청 제한이 파드 메모리에 있어 1개로 둔다. 서버 환경 변수는 시크릿 `cn-server-secret`(git 밖 `projects/cn/secrets.yaml`, 키 목록은 `secrets.example.yaml`).

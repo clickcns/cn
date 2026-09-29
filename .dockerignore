@@ -20,3 +20,5 @@ apps/server/src/generated
 **/*.log
 **/.DS_Store
 docs
+# 개발 지침 문서만 현장 웹 이미지의 /dev 로 넣는다.
+!docs/dev-guide.html

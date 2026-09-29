@@ -62,6 +62,8 @@ RUN pnpm --filter @repo/web build
 FROM nginx:1.29-alpine AS web
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web-build /app/apps/web/dist /usr/share/nginx/html
+# 개발 지침 문서 → cn.clickcns.com/dev (nginx.conf 의 /dev)
+COPY docs/dev-guide.html /usr/share/nginx/html/dev/index.html
 EXPOSE 80
 
 # ===== WEB-ADMIN (관리 웹, /admin 아래) =====

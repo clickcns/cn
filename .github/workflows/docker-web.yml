@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - "apps/web/**"
+      # 개발 지침 문서(/dev)도 현장 웹 이미지에 들어 있다.
+      - "docs/dev-guide.html"
       - "packages/shared-types/**"
       - "packages/api-client/**"
       - "packages/typescript-config/**"

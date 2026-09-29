@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>케어노트 개발 지침</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,7 +317,7 @@
 
 <main class="wrap">
   <header class="hero" id="top">
-    <div class="eyebrow">개발 지침 · 2026년 9월 24일 기준</div>
+    <div class="eyebrow">개발 지침 · 2026년 9월 29일 기준</div>
     <h1>케어노트 개발 지침</h1>
     <p class="lead">케어노트를 올바르게 만들기 위해 알아야 할 사실을 그림으로 정리했습니다. 근거(지침 쪽수)와 세부 내용은 각 그림 아래 "근거와 자세히"에 있습니다.</p>
 
@@ -357,8 +358,8 @@
           <rect class="nhis" x="762" y="86" width="186" height="20" rx="4"/>
           <text x="855" y="100" text-anchor="middle">스마트장기요양 앱</text>
           <text class="s" x="855" y="127" text-anchor="middle">공개 API 없음</text>
-          <rect class="dash-keep" x="750" y="165" width="210" height="60" rx="8"/>
-          <text class="b t-keep" x="855" y="190" text-anchor="middle">PDF·종이 (아직 없음)</text>
+          <rect class="keep" x="750" y="165" width="210" height="60" rx="8"/>
+          <text class="b t-keep" x="855" y="190" text-anchor="middle">확정본 PDF · 종이</text>
           <text class="s" x="855" y="208" text-anchor="middle">원본 보관 · 수급자 제공 · 자료 요청</text>
         </svg>
       </div>
@@ -584,7 +585,7 @@
           <line class="ln" x1="290" y1="104" x2="346" y2="104" marker-end="url(#m2)"/>
           <rect class="bad" x="350" y="54" width="260" height="100" rx="10"/>
           <text class="b t-bad" x="480" y="96" text-anchor="middle">재택의료 급여 산정 안 함</text>
-          <text class="s" x="480" y="121" text-anchor="middle">케어노트: 등록할 때 경고 (작업 중)</text>
+          <text class="s" x="480" y="121" text-anchor="middle">케어노트: 등록할 때 경고 (막지는 않음)</text>
           <line class="ln" x1="668" y1="104" x2="614" y2="104" marker-end="url(#m2)"/>
           <text class="s" x="641" y="96" text-anchor="middle">같은 결과</text>
           <text class="b" x="672" y="24">케어노트가 모르는 다른 겹침</text>
@@ -756,7 +757,8 @@
         <li>방문진료 대상: 보행이 곤란·불가하고 환자·보호자가 요청한 경우. 원칙은 내원 경험 1회 이상(초진도 의사 판단 시 가능). 사회복지시설·장기요양기관 입소자 제외. <span class="src">일차의료 지침 4쪽</span></li>
         <li>동일 건물 연속 방문 75%, 동일 세대는 두 번째 환자부터 50%. 간호사·물리치료사·작업치료사 동반 시 가산. <span class="src">일차의료 지침 10쪽</span></li>
         <li>급여 금액(2026.2.1): 재택의료기본료 140,000원, 지속관리료 60,000원(6개월 연속 시), 추가간호료 53,770원. 청구는 다음 달 1~10일. <span class="src">재택 지침 14·19·20쪽</span></li>
-        <li>서식 정의에는 "산정횟수 예외적용", "동일 건물·세대", "동반 인력", "방문·유선 상담" 칸이 이미 있습니다. 횟수를 세어 경고하는 기능은 아직 없습니다.</li>
+        <li>서식 정의에는 "산정횟수 예외적용", "동일 건물·세대", "동반 인력", "방문·유선 상담" 칸이 이미 있습니다. 한도(60/140회, 주 3회, 추가 3회)를 세어 경고하는 기능은 아직 없습니다.</li>
+        <li>매달 채울 요건은 관리 웹이 보여 줍니다. 현황판과 방문 달력의 "이달 수급자"가 재택의료센터 수급자마다 의사 1·간호사 2·사회복지사 1회 중 채운 수와 모자란 직종을 표시합니다(예정 방문 포함, 방문한 직종 기준). 요건 값은 <code>HOME_CARE_MONTHLY_VISITS</code> 한 곳에 있고 협력 기관 확인 대상입니다.</li>
       </ul>
     </details>
   </section>
@@ -1063,8 +1065,18 @@
           <text class="b t-keep" x="908" y="243" text-anchor="middle">PDF 필요</text>
         </svg>
       </div>
-      <figcaption>세 사업 모두 서식은 전산 화면으로 받습니다. 케어노트에 출력 기능은 아직 없고, 원본을 종이로 할지 전자서명으로 할지 먼저 정해야 합니다.</figcaption>
+      <figcaption>세 사업 모두 서식은 전산 화면으로 받습니다. 케어노트는 확정본을 PDF로 냅니다(아래). 원본을 종이로 할지 전자서명으로 할지는 아직 정해야 합니다.</figcaption>
     </figure>
+
+    <h3 class="sub-h">케어노트가 내는 PDF</h3>
+    <div class="tiles">
+      <div class="tile"><b>원본 서식 PDF</b><span class="s">지침 부록 양식(제4·6·7·8호) 위에 확정 값을 채움</span><span class="pill good">됨</span></div>
+      <div class="tile"><b>표준 서식 PDF</b><span class="s">서식 정의로 그림. 원본 양식이 없는 제14호도</span><span class="pill good">됨</span></div>
+      <div class="tile"><b>제7호 월간 기록지</b><span class="s">수급자 한 달 확정 방문을 한 장 5칸에. 정기 1~2칸, 추가 3~5칸</span><span class="pill good">됨</span></div>
+      <div class="tile"><b>원본 서식 조정</b><span class="s">운영자가 칸 자리·글자 크기·체크 크기를 웹에서 미세조정</span><span class="pill good">됨</span></div>
+      <div class="tile"><b>확정본 차수 표시</b><span class="s">쪽 아래에 몇 차 확정본인지, 보관 값이 바뀌었으면 경고</span><span class="pill good">됨</span></div>
+      <div class="tile"><b>원본 방식</b><span class="s">종이(인쇄·서명·편철)인지 전자서명인지</span><span class="pill warn">정해야 함</span></div>
+    </div>
 
     <details class="more">
       <summary>근거와 자세히</summary>
@@ -1073,7 +1085,9 @@
         <li>재택의료센터: 청구 때 요양기관정보마당(medicare.nhis.or.kr)으로 제5~8호를 함께 제출. 우편은 시스템 장애로 공단이 안내할 때만. 원본은 편철해 사업 종료 후 5년, 전자문서는 의료법 제22·23조에 따라. 정보마당 출력본은 원본 아님. <span class="src">재택 지침 18~20쪽, 질의응답 Q5-3·Q5-4(74쪽)</span></li>
         <li>방문간호: 앱 태그로 시작·종료·내용·특이사항 전송. 전송 내역을 쓰지 않거나 5분 넘게 고치면 기록지 작성 필수. 급여제공기록지·지시서는 문서 또는 전자문서로 5년 보존. <span class="src">재가급여전자관리시스템 가이드북 22·24~25쪽, 노인장기요양보험법 시행규칙 제27조④</span></li>
         <li>자료 요청: 두 지침 모두 복지부·심평원·공단이 요청하면 지체 없이 제출. 심평원 진료비확인요청 자료는 업무포털에 PDF·JPG·엑셀로 올립니다. <span class="src">재택 지침 30쪽, 심평원 제출방법 안내</span></li>
-        <li>별지 제7호(한 달 5회 칸 월간 양식)를 월 단위로 모아 입력하는지는 확인 대기입니다.</li>
+        <li>별지 제7호(한 달 5회 칸 월간 양식)를 월 단위로 모아 입력하는지는 확인 대기입니다. 케어노트는 방문 1건을 한 칸으로 적고, 월간 기록지 PDF는 원본의 방문사유 줄에 맞춰 정기 방문을 1~2번 칸, 추가 방문을 3~5번 칸에 날짜순으로 모읍니다(넘치면 다음 장). 향후계획·총평은 그 달 마지막 방문 값입니다.</li>
+        <li>PDF는 확정본(1차·2차…)마다 볼 때 그립니다. 관리 웹 방문 상세의 "확정 이력"과 현장 웹 확정 기록 화면에서 엽니다. 확정 뒤 [수정]해 다시 확정해도 이전 확정본과 그 PDF는 남습니다.</li>
+        <li>원본 서식 칸 자리는 서식 정의의 모든 칸·선택지에 있어야 테스트가 통과합니다. 지침이 개정돼 원본 양식이 바뀌면 템플릿 PDF와 좌표를 함께 바꾸고, 운영자가 조정 화면에서 미세조정합니다(모든 기관에 공통 적용).</li>
       </ul>
     </details>
   </section>
@@ -1344,21 +1358,23 @@
 
     <div class="table-wrap">
       <table>
-        <thead><tr><th>재택·방문간호 앱</th><th class="c">방문 중 녹음</th><th class="c">방문 뒤 구술·인터뷰</th><th class="c">빠진 항목 되묻기</th><th class="c">담당자 확정</th><th class="c">기록 시스템 연동</th></tr></thead>
+        <thead><tr><th>재택·방문 돌봄 앱</th><th class="c">방문 중 녹음</th><th class="c">방문 뒤 구술·인터뷰</th><th class="c">빠진 항목 되묻기</th><th class="c">담당자 확정</th><th class="c">기록 시스템 연동</th></tr></thead>
         <tbody>
           <tr><th>WellSky Scribe <span class="pill plain">미국</span></th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td></tr>
           <tr><th>Apricot <span class="pill plain">미국</span></th><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td></tr>
-          <tr><th>カイポケ訪問看護 <span class="pill plain">일본</span></th><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr><th>カイポケ訪問看護 <span class="pill plain">일본</span></th><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr><th>노보젠 MINT <span class="pill plain">한국 · 방문의료</span></th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot n">—</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr><th>와플랫 <span class="pill plain">한국 · AI 안부</span></th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot p">◐</span></td></tr>
           <tr class="ours"><th>케어노트</th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부(선택 녹음, 애드온) · ○ 없음 · ? 공개 자료로 확인 못 함. 공통점은 "초안 → 담당자 검토·확정"이고, 해외 앱은 자사 기록 시스템에 바로 넣지만 케어노트는 공식 전산에 API가 없어 사람이 옮깁니다.</p>
+    <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부(선택 녹음, 애드온, 자사 관리 화면만, 필수 항목 누락 검사) · ○ 없음 · — 해당 없음(AI 초안 없이 직접 작성) · ? 공개 자료로 확인 못 함. 기록 앱의 공통점은 "초안 → 담당자 검토·확정"이고, 해외 앱은 자사 기록 시스템에 바로 넣지만 케어노트는 공식 전산에 API가 없어 사람이 옮깁니다. 와플랫은 기록 앱이 아니라 AI가 어르신과 대화해 안부·위험을 살피는 지자체 돌봄 앱이라 담당자 기록 기능은 없습니다(2026.9 기준, 아래).</p>
 
     <h3 style="margin-top:32px; font-size:17px">기관 기록이 되려면 필요한 것</h3>
     <div class="tiles">
       <div class="tile"><b>전자서명</b><span class="s">서명자·서명값·일시</span><span class="pill bad">아직</span></div>
-      <div class="tile"><b>수정 이력</b><span class="s">수정 전후·일시·사용자</span><span class="pill warn">일부</span></div>
+      <div class="tile"><b>수정 이력</b><span class="s">확정본마다 1차·2차… 보관, 해시로 원본 확인. 칸별 수정 전후는 아직</span><span class="pill warn">일부</span></div>
       <div class="tile"><b>접속기록 2년</b><span class="s">민감정보 처리 시스템</span><span class="pill bad">아직</span></div>
       <div class="tile"><b>권한 기록 3년</b><span class="s">부여·변경·말소</span><span class="pill bad">아직</span></div>
       <div class="tile"><b>추가 인증</b><span class="s">밖에서 접속: OTP 등 또는 VPN</span><span class="pill bad">아직</span></div>
@@ -1376,6 +1392,12 @@
         <li>보존: 장기요양 급여제공기록지·방문간호지시서 5년, 재택의료센터 서식 사업 종료 후 5년, 진료기록부 10년·간호기록부 5년. <span class="src">노인장기요양보험법 시행규칙 제27조④, 재택 지침 18쪽, 의료법 시행규칙 제15조</span></li>
         <li>EMR 시스템 인증은 자율(2026.5 통합, 지표 59개)이고 ISMS 의무 대상은 매출·이용자 규모 기준이라 지금은 해당하지 않습니다. 인증 기준은 설계 체크리스트로 씁니다.</li>
         <li>민간 프로그램의 "공단 연동": 담당자가 공단 사이트 "기타 &gt; 엑셀다운로드"에서 급여계약통보서·일정계획·청구내역상세를 엑셀로 내려받아 프로그램에 올립니다. 프로그램은 이 자료로 수급자 등록, 일정 대조, 본인부담금 계산, 급여비용명세서 출력을 합니다. 프로그램에서 공단으로 올리는 절차는 이 매뉴얼에 없습니다. <span class="src">케어포 주야간보호 사용 매뉴얼 10·35·38쪽(방문간호용은 확인 못 함)</span></li>
+        <li>노보젠(NOVOGEN) MINT는 방문의료센터용 업무 서비스입니다(PC 운영 프로그램 + 모바일). 의사·간호사·사회복지사가 모바일로 일차의료 방문진료·재택의료센터·장애인 주치의 서식과 검사지(MMSE 등 15종 이상)를 직접 작성하고(이전 문서 불러오기, 임시 저장), 문서 관리(검색·수정·PDF 보기·인쇄, 암호화와 hash, PC·NAS·자체 드라이브·구글/네이버 드라이브 3중 백업, 5년 보관), 운영(미방문·미작성 현황판, 카카오 알림톡 청구서와 모바일 카드 결제, 캘린더·카카오워크 연동, 물품·투약 관리, 방문 동선 지도)을 한 제품에 담았습니다. 음성·AI 기록 기능은 소개 자료에 없습니다.</li>
+        <li>MINT는 <b>심평원 자동입력</b>을 내세웁니다: 일차의료 방문진료 점검서식을 자동으로 입력하고 청구 전 필수 항목 누락을 검사하며, 재택의료센터 점검서식 자동입력(공단)은 개발 중이라고 합니다. 케어노트의 "사이트 입력 지원" 과제와 같은 방향이므로, 어떤 방식(공식 경로·브라우저 자동화)인지 확인하면 우선순위를 정하는 데 도움이 됩니다.</li>
+        <li>케어노트와 비교: 겹치는 것은 직종별 서식 작성, 차트번호·생년월일·이름 검색, 지난 값 불러오기, 미방문·미작성 현황판, 지도 바로가기, 문서 hash, PDF입니다. MINT에만 있는 것은 장애인 주치의·검사지·행정 서식, 수납·결제, 백업·드라이브, 캘린더·메신저 연동, 재고 관리, 최적 동선입니다. 케어노트에만 있는 것은 방문 뒤 구술 → 서식 초안(근거 대조·되묻기)과 확정본 이력입니다.</li>
+        <li>와플랫(엔에이치엔와플랫, NHN 자회사)의 "AI 생활지원사"는 지자체 노인맞춤·통합돌봄용 안드로이드 앱입니다(2024.7 정식 출시). AI 휴먼이 주 1회 어르신에게 전화·앱으로 말을 걸어 기분·건강·수면·식사 등 위험요소를 점검하고 결과를 요약해 수행기관의 자사 관리자 페이지로 보내며, 스마트폰 센서로 안부를 확인합니다. 담당자 방문을 녹음하거나 구술로 기록 초안을 만드는 기능, 공단·EMR 연동은 공개 자료에 없습니다. 2026.8 기준 42개 지자체·기관, 2,000명 이상에게 제공합니다.</li>
+        <li>와플랫이 참여한 NHN 컨소시엄은 2026.5 복지부 AX Sprint "스마트홈" 과제에 선정됐습니다(경기·전남 400가구 실증, 2027년까지). 이 과제의 돌봄 종사자 업무 앱은 한강시스템(케어포 개발사)이 맡고, 사회보장정보원 PHIS 연계는 사업 종료 때 계획입니다. 방문 기록 쪽 경쟁은 와플랫보다 민간 장기요양 프로그램 쪽에서 올 수 있습니다.</li>
+        <li>カイポケ: 2026.9.17 ENBASE "スタンドLM"과 제휴해, 케어 중 대화를 녹음하면 AI가 訪問看護記録書Ⅱ를 만들고 담당자가 확인 화면을 거쳐 カイポケ에 등록합니다(별도 계약 애드온이라 ◐). WellSky는 2026.5 방문 중 녹음을 합친 방문 간호사용 Point of Care 앱을 내고, 2026.8부터 Scribe 등 AI 기능을 Home Health EHR 고객에게 추가 비용 없이 줍니다(400곳 넘게 사용). Apricot은 첫 방문(SOC)에서 모든 방문으로 넓혔습니다.</li>
         <li>도입은 협력 기관 파일럿에서 시작합니다. Apricot도 재택간호 기관의 얼리어답터 임상가에게 먼저 줬습니다. 케어노트도 협력 기관 한두 곳, 개인정보 검토로 시작해 수개월 단위로 계획합니다.</li>
         <li>공단 앱 방문간호 입력: 태그 → 건강관리 → 간호처치 → 특이사항 → 요양요원 서명 → 수급자 서명 → 종료 전송(태그 후 10분 안). 2025.6 개편으로 인증서 로그인, 전자서식 14종, Wi-Fi가 추가됐습니다.</li>
       </ul>
@@ -1391,7 +1413,7 @@
         <h3><span class="pill bad">높음</span></h3>
         <ul style="display:grid; gap:8px">
           <li>심평원·공단 사이트 입력 지원 (공식 경로 확인 → 크롬 확장)</li>
-          <li>원본 방식 결정과 인쇄 화면</li>
+          <li>원본 방식 결정 (종이·전자서명) · PDF 출력은 됨</li>
           <li>파일럿 전 보안·보존 요건</li>
         </ul>
       </div>
@@ -1439,7 +1461,7 @@
           <li><span>다음 우선순위 <span class="pill">추천: 사이트 입력 확인부터</span></span></li>
           <li><span>협력 기관·현장 사용자 확보</span></li>
           <li><span>실제 데이터용 AI·음성 처리 위치</span></li>
-          <li><span>배포 환경 (HTTPS 도메인)</span></li>
+          <li><span>배포 환경 <span class="pill good">정함: cn.clickcns.com</span></span></li>
           <li><span>로그인 추가 인증 여부</span></li>
           <li><span>제품명 <span class="pill warn">같은 이름 앱 있음</span></span></li>
         </ol>
@@ -1450,7 +1472,7 @@
       <ul class="in">
         <li>제품명: 케어마인더가 간호사 음성으로 간호기록·인수인계를 만드는 앱을 "케어노트(CareNote)"라는 이름으로 2026년 8월 공개했습니다. 상표·명칭 확인이 필요합니다.</li>
         <li>협력 기관 답을 받으면 서식 규칙(<code>programs.ts</code>)과 서식 정의만 고칩니다.</li>
-        <li>배포는 음성인식 서버가 있는 클러스터에 함께 올리는 방안이 가장 간단합니다. 마이크는 HTTPS에서만 켜집니다.</li>
+        <li>배포: 음성인식 서버가 있는 클러스터에 함께 올렸습니다. 현장 웹 <code>cn.clickcns.com</code>, 관리 웹 <code>/admin</code>, 서버 <code>/api</code>, 이 문서 <code>/dev</code>. HTTPS라 현장 웹 마이크가 켜집니다. 실제 대상자 데이터 전에는 AI·음성 처리 위치를 다시 정합니다.</li>
       </ul>
     </details>
   </section>
@@ -1479,7 +1501,10 @@
         <summary>현장·앱·AI</summary>
         <ul>
           <li>WellSky Scribe: <a href="https://wellsky.com/wellsky-introduces-ai-powered-ambient-listening-and-transcription-capabilities-within-ehr-to-transform-the-home-health-visit/">wellsky.com</a> · Apricot: <a href="https://www.apricothealth.ai/">apricothealth.ai</a> · Apricot 파일럿: <a href="https://homehealthcarenews.com/2024/06/elara-caring-choice-health-at-home-praise-new-home-health-ai-tool-apricot/">homehealthcarenews.com</a></li>
-          <li>カイポケ訪問看護: <a href="https://houkan.kaipoke.biz/function/">houkan.kaipoke.biz</a> · 介護のマナ: <a href="https://lifeshift-inc.com/kaipoke-houmon-kiroku-app/">lifeshift-inc.com</a></li>
+          <li>カイポケ訪問看護: <a href="https://houkan.kaipoke.biz/function/">houkan.kaipoke.biz</a> · 介護のマナ: <a href="https://lifeshift-inc.com/kaipoke-houmon-kiroku-app/">lifeshift-inc.com</a> · ENBASE スタンドLM 제휴(2026.9.17): <a href="https://prtimes.jp/main/html/rd/p/000000027.000154525.html">prtimes.jp</a></li>
+          <li>WellSky Point of Care 앱(2026.5.28): <a href="https://wellsky.com/wellsky-unifies-ai-and-the-patient-record-in-new-point-of-care-app-for-home-health-clinicians/">wellsky.com</a> · SkySense AI 포함(2026.8.5): <a href="https://wellsky.com/wellsky-scribe-solution-helps-home-health-clinicians-see-more-patients-spend-less-time-on-after-hours-documentation/">wellsky.com</a></li>
+          <li>노보젠 MINT: <a href="https://www.novogen.co.kr">novogen.co.kr</a> · 업체 소개 자료 "MINT 방문의료센터를 위한 업무효율화 서비스" v4.0(2026.1, 업체 제공)</li>
+          <li>와플랫 공공 서비스: <a href="https://waplat.co.kr/government">waplat.co.kr</a> · 회사 소개: <a href="https://waplat.co.kr/about">waplat.co.kr</a> · 앱: <a href="https://play.google.com/store/apps/details?id=com.nhn.waplat">Google Play</a> · AX Sprint 스마트홈 선정(2026.5): <a href="https://waplat.co.kr/news/?bmode=view&amp;idx=171168380&amp;t=board">waplat.co.kr</a> · 42개 지자체·기관(2026.8.31): <a href="https://www.ajunews.com/view/20260831150601985">ajunews.com</a></li>
           <li>케어포 공단연동 매뉴얼: <a href="https://www.carefor.co.kr/ct_att/contents_article/0/202206/12/Dov8rzFqBv.pdf">carefor.co.kr</a> · 스마트장기요양 앱 개편(2025.6): <a href="https://www.yoyangnews.co.kr/news/articleView.html?idxno=23414">yoyangnews.co.kr</a></li>
           <li>식약처 생성형 AI 의료기기 가이드라인 해설: <a href="https://www.shinkim.com/kor/media/newsletter/2739">shinkim.com</a> · 개인정보위 생성형 AI 안내서(2025.8): <a href="https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&amp;bbscttNo=20836">privacy.go.kr</a></li>
           <li>케어마인더 "케어노트" 공개(2026.8.21): <a href="https://digitalchosun.dizzo.com/site/data/html_dir/2026/08/21/2026082180187.html">digitalchosun.dizzo.com</a></li>
@@ -1492,7 +1517,7 @@
   </section>
 
   <footer>
-    <p>작성 기준일 2026년 9월 24일 · 지침 쪽수는 지침 본문에 인쇄된 쪽 번호입니다.</p>
+    <p>작성 2026년 9월 24일 · 최신화 2026년 9월 29일 · 지침 쪽수는 지침 본문에 인쇄된 쪽 번호입니다.</p>
     <p>법률·규제 해석은 전문가 검토 전 내용입니다. 케어노트 반영 상태는 커밋 7d7c1e4와 작업 중 변경 기준입니다.</p>
   </footer>
 </main>

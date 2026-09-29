@@ -46,9 +46,9 @@ export default defineConfig({
         // 글꼴은 미리 받지 않고, 실제로 쓰인 조각만 런타임에 캐시한다.
         globPatterns: ["**/*.{js,css,html,ico,svg}"],
         navigateFallback: "index.html",
-        // 같은 도메인의 /admin 은 관리 웹이다. 현장 웹 서비스 워커가 가로채면 관리 웹 대신
-        // 현장 웹이 뜬다.
-        navigateFallbackDenylist: [/^\/api/, /^\/admin/],
+        // 같은 도메인의 /admin 은 관리 웹, /dev 는 개발 지침 문서다. 현장 웹 서비스 워커가
+        // 가로채면 그 대신 현장 웹이 뜬다.
+        navigateFallbackDenylist: [/^\/api/, /^\/admin/, /^\/dev(\/|$)/],
         runtimeCaching: [
           {
             urlPattern: /\.(?:woff2?|ttf|otf)$/,
