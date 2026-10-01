@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>케어노트 시장조사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --ink: #15202a;
+    --ink-2: #3a4854;
+    --muted: #63717d;
+    --line: #dee4e9;
+    --line-strong: #b9c3cc;
+    --accent: #2446b0;
+    --accent-ink: #1d3c9e;
+    --accent-soft: #e8edfa;
+    --hira: #0f766e;
+    --hira-soft: #dcf2ee;
+    --nhis: #6a3fbf;
+    --nhis-soft: #efe8fb;
+    --keep: #8e5b06;
+    --keep-soft: #fbefd6;
+    --good: #1c7447;
+    --good-soft: #e2f2e8;
+    --warn: #8e5b06;
+    --warn-soft: #fbefd6;
+    --bad: #b3342a;
+    --bad-soft: #fbe6e3;
+    --font-display: "Hahmlet", "Noto Serif KR", "AppleMyungjo", serif;
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0e141a;
+      --surface: #151d25;
+      --surface-2: #1b252e;
+      --ink: #e7edf2;
+      --ink-2: #c3ced7;
+      --muted: #91a0ac;
+      --line: #27333d;
+      --line-strong: #455461;
+      --accent: #8da7ff;
+      --accent-ink: #afc1ff;
+      --accent-soft: #1c2746;
+      --hira: #5fd0c2;
+      --hira-soft: #12352f;
+      --nhis: #b99cff;
+      --nhis-soft: #291f44;
+      --keep: #e8b75a;
+      --keep-soft: #33270e;
+      --good: #62cc92;
+      --good-soft: #14301f;
+      --warn: #e8b75a;
+      --warn-soft: #33270e;
+      --bad: #f38c7e;
+      --bad-soft: #3a1c18;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e141a;
+    --surface: #151d25;
+    --surface-2: #1b252e;
+    --ink: #e7edf2;
+    --ink-2: #c3ced7;
+    --muted: #91a0ac;
+    --line: #27333d;
+    --line-strong: #455461;
+    --accent: #8da7ff;
+    --accent-ink: #afc1ff;
+    --accent-soft: #1c2746;
+    --hira: #5fd0c2;
+    --hira-soft: #12352f;
+    --nhis: #b99cff;
+    --nhis-soft: #291f44;
+    --keep: #e8b75a;
+    --keep-soft: #33270e;
+    --good: #62cc92;
+    --good-soft: #14301f;
+    --warn: #e8b75a;
+    --warn-soft: #33270e;
+    --bad: #f38c7e;
+    --bad-soft: #3a1c18;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  a { color: var(--accent-ink); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+  h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
+  b { font-weight: 600; }
+  code { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-2); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding-inline: 20px; }
+
+  .toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .toc-inner { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 10px; }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc a { flex: none; padding: 5px 12px; border-radius: 999px; font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { background: var(--surface); }
+
+  .hero { padding-block: 44px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  .hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.25; }
+  .hero .lead { font-size: 17.5px; color: var(--ink-2); max-width: 60ch; }
+
+  .musts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 20px; counter-reset: m; }
+  .musts li { counter-increment: m; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 8px; font-size: 15px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .musts li::before { content: counter(m); font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+
+  section.sec { padding-block: 60px 0; scroll-margin-top: 56px; }
+  .sec-label { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); }
+  .sec h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3vw, 29px); line-height: 1.35; margin-top: 6px; }
+  .sec .lead { margin-top: 8px; font-size: 16px; color: var(--ink-2); max-width: 64ch; }
+
+  figure { margin: 20px 0 0; }
+  .fig { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .fig-scroll { overflow-x: auto; }
+  .fig-scroll svg { min-width: 680px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-2); max-width: 72ch; }
+
+  .dg { color: var(--ink); }
+  .dg text { font-family: var(--font-body); font-size: 12px; fill: currentColor; }
+  .dg .b { font-size: 13px; font-weight: 600; }
+  .dg .s { font-size: 11px; fill: var(--muted); }
+  .dg .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+  .dg .soft { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+  .dg .acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+  .dg .hira { fill: var(--hira-soft); stroke: var(--hira); stroke-width: 1.2; }
+  .dg .nhis { fill: var(--nhis-soft); stroke: var(--nhis); stroke-width: 1.2; }
+  .dg .keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.2; }
+  .dg .good { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.2; }
+  .dg .bad { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 1.4; }
+  .dg .dash { fill: none; stroke: var(--line-strong); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-nhis { fill: none; stroke: var(--nhis); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .ln { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+  .dg .ln-d { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-dasharray: 5 4; }
+  .dg .snd { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 3; }
+  .dg .ah { fill: var(--ink-2); }
+  .dg .t-acc { fill: var(--accent-ink); }
+  .dg .t-hira { fill: var(--hira); }
+  .dg .t-nhis { fill: var(--nhis); }
+  .dg .t-keep { fill: var(--keep); }
+  .dg .t-good { fill: var(--good); }
+  .dg .t-bad { fill: var(--bad); }
+  .dg .f-acc { fill: var(--accent); }
+  .dg .f-nhis { fill: var(--nhis); }
+  .dg .f-hira { fill: var(--hira); }
+  .dg .f-muted { fill: var(--line-strong); }
+  .dg .o-acc { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1.2px solid; }
+  .legend .l-hira { background: var(--hira-soft); border-color: var(--hira); }
+  .legend .l-nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .legend .l-dash { border-style: dashed; border-color: var(--line-strong); }
+  .legend .l-acc { background: var(--accent-soft); border-color: var(--accent); }
+  .legend .l-keep { background: var(--keep-soft); border-color: var(--keep); }
+
+  .multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .multi .fig { display: grid; gap: 8px; align-content: start; }
+  .multi h3 { font-size: 15px; font-weight: 600; }
+  .multi .span2 { grid-column: 1 / -1; }
+  .note-sm { font-size: 13.5px; color: var(--ink-2); }
+  .note-sm b { color: var(--ink); }
+
+  .pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; line-height: 1; padding: 5px 8px; border-radius: 999px; white-space: nowrap; background: var(--accent-soft); color: var(--accent-ink); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.plain { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14.5px; }
+  th, td { padding: 10px 14px; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); }
+  thead th { border-top: 0; font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+  tbody th { font-weight: 600; white-space: nowrap; }
+  td.c, th.c { text-align: center; }
+  tr.ours th, tr.ours td { background: var(--accent-soft); }
+  /* 두 서식 비교표: 항목 칸은 좁게 줄바꿈하고 칸은 위로 맞춘다. */
+  table.cmp { min-width: 540px; }
+  table.cmp th, table.cmp td { vertical-align: top; }
+  table.cmp tbody th { white-space: normal; width: 6.5em; }
+  /* 좁은 화면: 표 대신 항목마다 두 서식을 위아래로 */
+  @media (max-width: 640px) {
+    table.cmp { min-width: 0; }
+    table.cmp thead { display: none; }
+    table.cmp tr, table.cmp tbody th, table.cmp td { display: block; width: auto; }
+    table.cmp td { border-top: 0; padding-top: 2px; }
+    table.cmp td::before { content: attr(data-label); display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  }
+  .dot { font-size: 16px; line-height: 1; }
+  .dot.y { color: var(--good); }
+  .dot.p { color: var(--warn); }
+  .dot.n { color: var(--line-strong); }
+  .dot.q { color: var(--muted); font-size: 13px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .tile b { font-size: 14.5px; line-height: 1.45; }
+  .tile span.s { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .tile .pill { justify-self: start; }
+
+  .lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .lane { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 8px; align-content: start; }
+  .lane h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .lane li { font-size: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
+
+  .qd { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .qd .fig h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .qd ol { display: grid; gap: 0; counter-reset: q; }
+  .qd ol li { counter-increment: q; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 6px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .qd ol li:first-child { border-top: 0; }
+  .qd ol li .pill { margin-left: 6px; }
+  .qd ol li::before { content: counter(q); font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+
+  details.more { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in { margin-top: 10px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in li { padding-left: 14px; position: relative; }
+  details.more .in li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  details.more .src { font-size: 12.5px; color: var(--muted); }
+
+  .sources { display: grid; gap: 10px; margin-top: 16px; }
+  .sources details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  .sources summary { cursor: pointer; font-weight: 600; font-size: 14.5px; }
+  .sources ul { margin-top: 8px; display: grid; gap: 5px; font-size: 13.5px; color: var(--ink-2); }
+  .sources a { overflow-wrap: anywhere; }
+
+  footer { padding-block: 48px 64px; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+
+  .tiles.t3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dest { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .dcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+  .dcard .dtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dcard .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; }
+  .dcard .org.hira { background: var(--hira-soft); border-color: var(--hira); color: var(--ink); }
+  .dcard .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); color: var(--ink); }
+  .dcard > b { font-size: 16px; }
+  .dcard > code { justify-self: start; font-size: 13px; }
+  .dcard dl { margin: 4px 0 0; display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 5px 10px; font-size: 14px; }
+  .dcard dt { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .dcard dd { margin: 0; color: var(--ink-2); line-height: 1.55; }
+  .dcard .tagline { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; }
+  .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; color: var(--ink); }
+  .org.hira { background: var(--hira-soft); border-color: var(--hira); }
+  .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .org.paper { background: var(--surface-2); border-color: var(--line-strong); }
+  .dg .hit { cursor: pointer; }
+  .dg .hit:focus { outline: none; }
+  .dg .ring { fill: none; stroke: var(--accent); stroke-width: 2.4; opacity: 0; }
+  .dg .hit:hover .ring { opacity: 0.45; }
+  .dg .hit.on .ring, .dg .hit:focus-visible .ring { opacity: 1; }
+  .where { margin-top: 12px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 8px; }
+  .where .w-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .where .w-title { font-size: 16px; }
+  .where .w-form { font-size: 13.5px; color: var(--muted); }
+  .where .w-form b { color: var(--ink); }
+  .where .w-row { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .where .w-row .k { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .where a, .dcard a { overflow-wrap: anywhere; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 1px 0 3px; }
+  .crumbs.in-line { display: inline-flex; margin: 0 0 0 4px; vertical-align: middle; }
+  .crumbs li { display: inline-flex; align-items: center; }
+  .crumbs li span { font-size: 12.5px; line-height: 1.4; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 6px; padding: 2px 7px; color: var(--ink); }
+  .crumbs li:not(:last-child)::after { content: "›"; margin: 0 5px; color: var(--muted); font-size: 13px; }
+  .dcard dd b { font-weight: 600; color: var(--ink); }
+  .sub-h { margin-top: 36px; font-size: 18px; font-weight: 700; }
+  .golink { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; }
+  .golink a { font-weight: 700; font-size: 16px; }
+  .golink span { font-size: 13.5px; color: var(--ink-2); }
+  @media (max-width: 760px) {
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tiles.t3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding-inline: 16px; }
+    .musts, .multi, .lanes, .qd, .dest { grid-template-columns: 1fr; }
+    .fig { padding: 12px; }
+    section.sec { padding-block: 48px 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+  .prose { margin-top: 12px; display: grid; gap: 10px; font-size: 15px; color: var(--ink-2); max-width: 72ch; }
+  .prose b { color: var(--ink); }
+  .bul { display: grid; gap: 6px; margin-top: 12px; font-size: 14.5px; color: var(--ink-2); }
+  .bul li { padding-left: 14px; position: relative; }
+  .bul li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  .bul b { color: var(--ink); }
+  .multi .bul { margin-top: 0; }
+  .callout { margin-top: 20px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; font-size: 15px; color: var(--ink); }
+  .steps { margin-top: 14px; display: grid; counter-reset: st; }
+  .steps li { counter-increment: st; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 8px; font-size: 14.5px; color: var(--ink-2); padding: 8px 0; border-top: 1px solid var(--line); }
+  .steps li::before { content: counter(st); font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+  .steps b { color: var(--ink); }
+  .idea { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 12px; }
+  .idea h3 { font-size: 18px; font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .idea dl { margin: 0; display: grid; grid-template-columns: 6em minmax(0, 1fr); gap: 10px 16px; font-size: 14.5px; }
+  .idea dt { color: var(--muted); font-size: 13px; font-weight: 600; padding-top: 2px; }
+  .idea dd { margin: 0; color: var(--ink-2); min-width: 0; }
+  .idea dd b { color: var(--ink); }
+  .idea dd ul { display: grid; gap: 4px; }
+  .idea dd li { padding-left: 14px; position: relative; }
+  .idea dd li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  .idea .table-wrap table { min-width: 560px; }
+  .ok { color: var(--good); font-weight: 600; }
+  .mid { color: var(--warn); font-weight: 600; }
+  .ng { color: var(--bad); font-weight: 600; }
+  @media (max-width: 640px) {
+    .idea { padding: 14px; }
+    .idea dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .idea dt { padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="목차">
+  <div class="wrap toc-inner">
+    <a href="/dev">← 개발 지침</a>
+    <a href="#top">결론</a>
+    <a href="#why">왜 어려운가</a>
+    <a href="#money">시장·돈</a>
+    <a href="#pain">현장 불편</a>
+    <a href="#rivals">국내 경쟁</a>
+    <a href="#abroad">해외</a>
+    <a href="#portal">전산 연동</a>
+    <a href="#ideas">아이디어</a>
+    <a href="#blockers">팔기 전에</a>
+    <a href="#sales">가격·판매</a>
+    <a href="#next">다음 할 일</a>
+    <a href="#sources">출처</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero" id="top">
+    <div class="eyebrow">시장조사 · 2026년 10월 1일 기준</div>
+    <h1>케어노트를 돈 내고 쓰게 하려면</h1>
+    <p class="lead">출발점은 오너의 판단입니다: "지금 기능으로는 돈 받고 쓰라고 하기 어렵다." 정책·수가, 국내 경쟁사, 해외 사례, 현장의 불편, 심평원·공단 연동, 가격·판매 경로 여섯 갈래로 조사했습니다. 결론은 파는 가치를 <b>"음성으로 기록을 써 준다"</b>에서 <b>"재택의료센터의 수입을 지켜 주고, 공식 전산에 다시 입력하는 일을 줄여 준다"</b>로 옮기는 것입니다.</p>
+
+    <ol class="musts" aria-label="결론 요약">
+      <li><span>첫 유료 고객은 <b>재택의료센터</b>(463곳). 수가·규칙·세 직종 서식이 가장 많이 몰려 있다</span></li>
+      <li><span>돈은 <b>수입 지키기</b>에서 받는다. 기본료 14만원은 요건 하나만 빠져도 0원</span></li>
+      <li><span>현장 요구는 <b>"사이트 자동 입력"</b>. 입력 도우미부터 단계적으로 줄인다</span></li>
+      <li><span>AI 구술은 <b>기본 기능</b>이다. 국내외 모두 무료가 되고 있어 단독 과금은 어렵다</span></li>
+      <li><span>팔기 전에 <b>이름·LLM·보안 서류</b>를 정리한다. 지금은 기관 개인정보 담당자 단계에서 막힌다</span></li>
+      <li><span>시장은 작다(매달 기록이 생기는 기관 <b>1,400~1,900곳</b>). 확장 시장을 함께 본다</span></li>
+    </ol>
+  </header>
+
+  <!-- 왜 어려운가 -->
+  <section class="sec" id="why">
+    <div class="sec-label">진단</div>
+    <h2>지금 돈을 받기 어려운 이유 세 가지</h2>
+    <div class="tiles t3">
+      <div class="tile"><span class="pill bad">일이 늘어남</span><b>케어노트에 쓰고 나서 공식 전산에 다시 입력한다</b><span class="s">현장이 원하는 것은 기록 앱이 아니라 입력이 줄어드는 것</span></div>
+      <div class="tile"><span class="pill warn">AI 무료화</span><b>음성 기록 AI는 공짜가 되는 중이다</b><span class="s">국내 EMR 업체도, 미국 대형 업체도 AI를 추가 비용 없이 준다</span></div>
+      <div class="tile"><span class="pill plain">경쟁</span><b>AI가 아닌 기능은 MINT에 이미 있다</b><span class="s">재택의료센터 30여 곳이 쓰고, 심평원 자동입력까지 내세운다</span></div>
+    </div>
+
+    <h3 class="sub-h">1. 일이 하나 늘어난다</h3>
+    <div class="prose">
+      <p>지금 흐름은 <b>방문 → 구술 → 케어노트에서 확정 → 심평원·공단 화면에 다시 입력</b>입니다. 케어노트가 초안을 아무리 잘 만들어도, 공식 전산 입력이 그대로 남아 있으면 담당자 입장에서는 화면이 하나 더 생긴 것입니다.</p>
+      <p>현장에서 들은 말이 이것을 그대로 보여 줍니다: "청구는 HIRA 사이트에 직접 입력한다. 녹음 방문일지가 사이트에 자동 입력되면 쓰겠다."</p>
+    </div>
+    <ul class="bul">
+      <li>보사연 인터뷰(2025.12): "하나가 안 들어가면 저장이 안 되는데… 어디가 잘못되었는지를 알려주지 않는" 시스템, "환자 한 명을 입력하는 데 40~50분". 일차의료 시범사업의 포괄평가 입력 이야기이고, 결국 사회복지사가 대신 입력했다고 합니다.</li>
+      <li>2023 방문진료 설문: "급여비 청구시스템 입력과정이 번거롭고 많은 시간 소요".</li>
+      <li>심평원 한의 방문진료 평가(2024.12): 한의사 1,010명 중 43.4%가 개선 과제로 "환자관리, 의료기관 연계 등 행정업무시스템 개발"을 꼽았습니다.</li>
+    </ul>
+
+    <h3 class="sub-h">2. 음성 기록 AI는 공짜가 되는 중이다</h3>
+    <ul class="bul">
+      <li><b>의사랑 AI</b>(GC메디아이): 음성 → SOAP 차트. 정상가 월 7만원인데 2026년 말까지 전 기능 무료이고, 타사 EMR 사용자도 쓸 수 있습니다. "국내 처리, 해외 이전 없음, ISMS 인증"을 내세웁니다(2026.8.6).</li>
+      <li><b>니어닥</b>(AI 차트): 400곳 넘게 도입, 월 반복 매출 1,230만원, 무료 → 유료 전환율 50% 이상(2026.8.5). 의원 AI 차트의 가격대가 낮다는 신호입니다.</li>
+      <li><b>미국</b>: WellSky는 2026.8부터 AI 묶음 전체를 추가 비용 없이 줍니다. Epic(2026.2)과 athena도 자체 AI 기록을 기본 기능으로 넣었습니다. "2년 만에 범용화됐고 가격이 떨어지기 시작했다"는 평가가 나옵니다(Medical Economics 2026.3).</li>
+      <li><b>효과도 업체 말보다 작습니다</b>: 학술의료센터 5곳·임상가 1,800명 연구에서 진료 8시간당 16분 절감, 퇴근 뒤 기록에는 유의한 변화가 없었습니다(STAT 2026.4). 가정에서는 TV·가족 소음 때문에 성능이 떨어지고, 처음 4주는 검토 부담이 오히려 늘어난다는 보고도 있습니다.</li>
+    </ul>
+
+    <h3 class="sub-h">3. AI가 아닌 기능은 MINT에 이미 있다</h3>
+    <div class="prose">
+      <p>노보젠 MINT는 전국 재택의료센터 30여 곳이 씁니다(2026.5). 지난 기록 불러오기, 문서 hash·5년 보관, 미방문·미작성 현황판처럼 케어노트가 가진 AI 아닌 기능을 대부분 갖고 있고, 그 위에 <b>심평원 원클릭 자동입력·제출 전 오류 체크, 수납(Mint Pay), 동선·교통비, 재고 관리, 네이티브 앱</b>을 더했습니다.</p>
+      <p>MINT에 없는 것은 <b>음성·AI 초안</b>과 <b>공단 재택의료 서식(제6~8호) 자동입력</b>입니다. 케어노트가 이길 자리는 여기와, 둘 다 약한 <b>재택의료센터 팀 업무</b>입니다.</p>
+    </div>
+    <p class="callout">그래서 "기록을 써 준다"가 아니라 <b>"돈을 지켜 주고, 일을 덜어 주고, 책임을 덜어 준다"</b>를 팔아야 합니다. AI 구술은 그 안에서 입력을 줄이는 수단으로 씁니다.</p>
+  </section>
+
+  <!-- 시장·돈 -->
+  <section class="sec" id="money">
+    <div class="sec-label">시장과 돈의 흐름</div>
+    <h2>누가 돈을 낼 수 있고, 무엇을 놓치면 돈을 잃나</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>대상</th><th>규모</th><th>버는 돈</th><th>지금 소프트웨어에 내는 돈</th><th>판단</th></tr></thead>
+        <tbody>
+          <tr class="ours"><th>재택의료센터</th><td>463곳(2026.6)<br>2023년 28곳에서 빠르게 늘어남</td><td>수급자 1명 월 약 28만원<br>40명이면 월 약 1,100만원</td><td>MINT: 기본료 + 환자당<br>(금액 비공개)</td><td><span class="pill">첫 유료 대상</span></td></tr>
+          <tr><th>일차의료 방문진료 의원</th><td>실제 청구 의과 256곳(2024)<br>의원의 2.8% 참여·0.6% 청구</td><td>1회 131,720원<br>의사 월 60회까지</td><td>EMR 부가 기능<br>의사랑 AI 무료</td><td>작고 가격 압박이 큼</td></tr>
+          <tr><th>장기요양 방문간호</th><td>898곳(2025)<br>이용자 약 2만 명</td><td>1회 42,880~64,690원</td><td>장기요양 프로그램<br>월 1~3만원</td><td>무료 요금제로 넓히기</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">재택의료센터는 얼마를 버나</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>항목(2026)</th><th>금액</th><th>조건</th><th>청구하는 곳</th></tr></thead>
+        <tbody>
+          <tr><th>재택의료기본료</th><td>140,000원/월</td><td>의사 1회·간호사 2회·사회복지사 상담 모두. 사망 종결 달은 70,000원</td><td>공단</td></tr>
+          <tr><th>지속관리료</th><td>60,000원/6개월</td><td>기본료를 6회 연속 받아야</td><td>공단</td></tr>
+          <tr><th>추가간호료</th><td>53,770원/회</td><td>월 3회까지, 30분 이상, 의사 동행 아님</td><td>공단</td></tr>
+          <tr><th>방문진료료Ⅰ</th><td>의원 131,720원 · 병원 140,600원</td><td>의사 방문마다(Ⅱ 91,630원, 한의 108,260원)</td><td>심평원</td></tr>
+          <tr><th>협업 인센티브</th><td>20,000원/월</td><td>의원 + 보건소 협업형에서 의원에</td><td>공단</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="bul">
+      <li><b>수급자 1명 · 한 달(의사 1회)</b>: 방문진료료 131,720 + 기본료 140,000 + 지속관리료를 월로 나눈 10,000 = <b>281,720원</b>. 의사가 2회 오면 413,440원, 추가간호 3회를 더하면 161,310원이 늘어납니다.</li>
+      <li><b>센터 한 곳</b>: 수급자 40명이면 월 약 1,100만원, 50명이면 월 약 1,400만원(연 약 1.7억원). 의사 1명이 한도(기본료 140명·방문진료 140회)까지 채우면 월 약 3,900만원입니다.</li>
+      <li><b>방문진료만 하는 의원</b>: 의사 월 60회 한도 × 131,720원 = 월 약 790만원.</li>
+      <li>그래서 재택의료센터에 월 15만원은 수입의 1~2% 수준이고, 장기요양 방문간호 기관(지금 월 1~3만원)과는 지불 여력이 다릅니다.</li>
+    </ul>
+
+    <h3 class="sub-h">놓치면 돈을 잃는 것</h3>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>규칙</th><th>내용</th><th>놓치면</th></tr></thead>
+        <tbody>
+          <tr><th>기본료 요건</th><td data-label="내용">의사 1회·간호사 2회·사회복지사 상담 중 하나라도 빠지면. "단순 안부확인"은 상담이 아님</td><td data-label="놓치면">그 수급자 그달 기본료 14만원 0원</td></tr>
+          <tr><th>지속관리료</th><td data-label="내용">기본료 6회 연속</td><td data-label="놓치면">한 번 끊기면 다시 6회</td></tr>
+          <tr><th>포괄평가 기한</th><td data-label="내용">1년이 되는 달의 다음 달 말까지 재평가</td><td data-label="놓치면">급여비용을 아예 산정하지 않음</td></tr>
+          <tr><th>같은 날 겹침</th><td data-label="내용">가정간호·방문간호가 있는 날, 방문요양 사회복지사 급여관리 시간·주야간보호 이용 시간, 장애인 주치의·일차의료 만성질환관리를 이용한 날</td><td data-label="놓치면">그날 재택센터 방문 산정 안 함</td></tr>
+          <tr><th>한도</th><td data-label="내용">의사 1인당 기본료 140명·방문진료 140회(재택 참여). 방문진료는 의사 월 60회, 환자 주 3회(넘으면 예외사유), 같은 건물 75%·같은 세대 둘째부터 50%</td><td data-label="놓치면">초과분 산정 안 함·삭감</td></tr>
+          <tr><th>청구 기한</th><td data-label="내용">재택센터 다음 달 10일(시범 종료 뒤 2개월 지나면 못 냄), 방문진료 2개월 안. 점검서식은 명세서보다 먼저, 최종 제출 뒤 수정 불가</td><td data-label="놓치면">청구 불가·반송</td></tr>
+          <tr><th>환수·지정 취소</th><td data-label="내용">착오·허위로 받은 돈은 전액 반환. 2년 동안 실적이 없으면 지정 취소, 취소되면 5년간 재지정 불가</td><td data-label="놓치면">센터 문을 닫음</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="bul">
+      <li>실제 처분: 병원이 주야간보호기관에 가서 가정간호를 하고 청구했다가 부당청구 2.6억원, 과징금 약 13억원. 법원도 처분을 인정했습니다(의협신문 2026.8.23).</li>
+      <li>현지조사: 부당금액이 월평균 800만원을 넘으면 비율이 낮아도 조사 대상이 되고, "핵심은 기록"이라고 합니다(2026.9.7).</li>
+    </ul>
+
+    <h3 class="sub-h">시장 크기</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>사업</th><th>기관</th><th>현장 인력</th><th>이용·방문</th></tr></thead>
+        <tbody>
+          <tr><th>재택의료센터</th><td>463곳(2025년 344곳: 의원 201, 한의원 89, 지방의료원 26, 보건의료원 11, 보건소 17)</td><td>추정 1,850~2,300명</td><td>2025.1~11 이용자 15,154명. 장기요양 등급자의 0.9%만 이용</td></tr>
+          <tr><th>방문진료 의과</th><td>실제 참여 256곳(2024), 상당수가 재택센터와 겹침</td><td>추정 300~500명</td><td>연 64,194건·환자 19,227명(2024)</td></tr>
+          <tr><th>방문진료 한의</th><td>청구 868곳(2024.7 누적)</td><td>958명(누적)</td><td>누적 123,089건</td></tr>
+          <tr><th>장기요양 방문간호</th><td>898곳(수도권 45%)</td><td>확인 못 함(추정 1,800~2,700명)</td><td>이용자 약 2만 명(재가 이용자의 2.5%)</td></tr>
+          <tr><th>장애인 건강주치의</th><td>588곳(활동 기관은 훨씬 적음)</td><td>활동 주치의 227명</td><td>이용자 10,531명. 급여의 92.8%가 방문</td></tr>
+          <tr><th>가정형 호스피스</th><td>40곳</td><td>추정 120명 이상</td><td>약 2,000명</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend" style="margin-top:8px">매달 방문 기록이 생기는 기관은 약 1,400~1,900곳, 현장 인력은 약 4,300~5,800명으로 추정합니다(등록 기준이면 약 5,500곳이지만 중복·휴면이 많습니다). 재택의료센터 463곳이 모두 월 15만원을 내도 연 약 8억원입니다. 같은 보도자료의 추이 표에는 2026.6 재택의료센터가 413곳으로 적혀 있어 본문(463곳)과 다릅니다.</p>
+
+    <h3 class="sub-h">커지는 쪽: 통합돌봄과 새 사업</h3>
+    <ul class="bul">
+      <li><b>돌봄통합지원법(2026.3.27 시행)</b>: 예산 2026년 914억원(2025년 71억원), 2027년 정부안 1,558억원. 전담인력 5,346명, 2026~27년 2,400명분 인건비 국고 보조, 예상 대상자 약 242만 명.</li>
+      <li><b>6개월 실적(2026.8까지)</b>: 신청 93,139명, 이용 68,715명, 연계 232,083건. 이 중 <b>보건의료 연계는 7.4%</b>로 100일 시점(9.1%)보다 낮아졌습니다. 지자체에도 의료 쪽 연계 실적이 필요합니다.</li>
+      <li><b>법이 기관에 지우는 일</b>: 의뢰를 받은 기관은 제공 여부·내용을 시군구에 통보하고, 바뀌면 다시 통보합니다(제14조③). 시군구는 처음 1개월, 그 뒤 3개월마다 점검합니다. 통합지원정보시스템이 연계하는 대상에 <b>민간 기관 시스템은 없습니다</b>(제22조③).</li>
+      <li><b>지자체가 직접 돈을 대기 시작</b>: 안성 재택간호센터는 통합돌봄 대상자 비용을 시가 전액 지원하고, 영동군은 2027년부터 재택의료 본인부담금을 지원합니다.</li>
+      <li><b>새로 생기는 방문형 사업</b>: 거점 재택의료센터(2026 하반기 시범), 지역사회 일차의료 혁신 시범(2026.9.29, 120개 의원, 통합수가에 방문진료·간호 포함), 정신질환자 통합돌봄(2027 시범), 질환별 재택의료 7종 통합(2027.12).</li>
+      <li><b>본사업 전환</b>: 재택의료센터는 "2026년 평가 뒤 4차 시범 또는 본사업 판단", 일차의료 방문진료는 2028.12까지 연장(3년 약 535억원)했고 본사업 일정은 확인 못 했습니다.</li>
+    </ul>
+  </section>
+
+  <!-- 현장 불편 -->
+  <section class="sec" id="pain">
+    <div class="sec-label">현장의 불편</div>
+    <h2>현장은 무엇 때문에 힘든가</h2>
+    <p class="lead">전문지·정부 문서·연구보고서를 읽었습니다. 커뮤니티 후기와 사회복지사 본인의 목소리는 확인하지 못해 인터뷰로 채워야 합니다.</p>
+
+    <div class="multi">
+      <div class="fig">
+        <h3>재택의료센터 (의사·간호사·사회복지사)</h3>
+        <ul class="bul">
+          <li>서식이 많습니다: 포괄평가·케어플랜(제5호), 방문점검(제6·7호), 업무기록(제8호), 청구(제9·10호), 사실확인서(제13호). 사회복지사는 <b>유선 상담도 제8호</b>를 씁니다.</li>
+          <li>팀 사례회의 월 2회 이상, 포괄평가는 세 직종이 함께 30분 이상·연 1회 이상. 인력이 바뀌면 15일 안에 신고, 청구는 다음 달 10일까지.</li>
+          <li>입력 시스템이 오류 위치를 알려 주지 않아 "환자 한 명 40~50분"(포괄평가 입력), 행정이 사회복지사에게 쏠립니다. 간호사: "행정처리는 사회복지사 선생님들이 하다 보니" 업무 분장이 모호.</li>
+          <li><b>인력 이탈</b>: 전담 인력 퇴사로 21곳이 운영을 멈췄고, 수원의 한 센터는 의사 2명이 그만둬 7개월 휴진했습니다. 1년 단위 계약이라 지원을 꺼립니다.</li>
+          <li>실제 방문은 월평균 방문진료 1.05회·방문간호 2.24회로 요건(의사 1·간호 2)에 바짝 붙어 있습니다.</li>
+        </ul>
+      </div>
+      <div class="fig">
+        <h3>일차의료 방문진료 의사</h3>
+        <ul class="bul">
+          <li>의원의 2.8%만 참여하고 0.6%만 실제로 청구합니다(81.8%가 단독 개원). 등록 6,986곳 중 실제 활동 934곳(13.3%), 59개 시군구는 0곳.</li>
+          <li>2023 설문: 환자 발굴 어려움 32.3%, 외래 기회비용 22.6%, 행정 절차 복잡 20%. "지방은 1시간 이상 가야 하는 사례".</li>
+          <li>이동시간·교통비·장비 비용이 수가에 없습니다. 소규모 의원은 "일과 중 의원 문을 닫고 이동하기 어렵다".</li>
+          <li>삭감을 두려워합니다("삭감을 두려워하지 말고 직접 부딪혀 보라"는 조언이 나올 정도). 처방전 당일 팩스 제한, 임종 뒤 분쟁 위험.</li>
+          <li>수요는 "월 30건에서 최근 월 300건"으로 늘었다는 현장 이야기가 있고, 본인부담 30%(1회 39,500원) 때문에 이용을 고민하는 가족도 있습니다.</li>
+        </ul>
+      </div>
+      <div class="fig">
+        <h3>장기요양 방문간호</h3>
+        <ul class="bul">
+          <li>방문간호지시서가 발급 180일을 넘긴 채 급여제공계획을 쓰면 그 평가 지표 전체가 <b>불인정</b>. 계획은 서명받아 급여 시작일까지 공단에 통보.</li>
+          <li>평가 '우수'는 RFID 참여율 95%·청구활용률 90% 이상. 태그 누락·시간 불일치는 가족과의 분쟁 거리.</li>
+          <li>898곳 중 45%가 수도권, "소규모·분절 운영으로 각자도생", 기록지가 표준화되지 않음, 경력 간호사 구인난.</li>
+          <li>보건소 방문간호·가정간호·장기요양 방문간호·장애인 주치의 방문간호가 나뉘어 있어 "제도부터 통일"을 요구합니다.</li>
+        </ul>
+      </div>
+      <div class="fig">
+        <h3>통합돌봄 지자체·수행기관</h3>
+        <ul class="bul">
+          <li>담당 공무원 81.7%가 겸직, 읍면동 3,560곳에 전담 151명. 83%가 "인력충원 없이 업무가 늘었다".</li>
+          <li>서비스 기관은 시스템 권한이 없어 <b>문서로 내고 지자체가 다시 입력</b>하는 이중 부담(사회보장정보원 2026.5). 퇴원 연계는 서식이 많아 수기 처리.</li>
+          <li>의뢰할 때 이동·식사·배설 상태와 보호자 여건을 함께 보내야 하고, "진료 결과와 다음 방문 일정 등을 공유하는 체계"가 필요하다는 의견(2026.9).</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-h">페인포인트 순위</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th class="c">순위</th><th>페인포인트</th><th class="c">빈도</th><th class="c">심각도</th><th>돈과의 연결</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td class="c">1</td><th>재택의료 월 산정 요건을 놓쳐 기본료를 못 받음</th><td class="c">중</td><td class="c">상</td><td>직결(수급자당 월 14만원)</td></tr>
+          <tr class="ours"><td class="c">2</td><th>전산 입력 시간·오류, EMR·정보마당·심평원 중복 입력</th><td class="c">상</td><td class="c">상</td><td>인건비·청구 포기</td></tr>
+          <tr><td class="c">3</td><th>인력 이탈·구인(21곳 운영 중단)</th><td class="c">상</td><td class="c">상</td><td>센터 매출 0</td></tr>
+          <tr><td class="c">4</td><th>방문진료 기회비용·이동시간</th><td class="c">상</td><td class="c">중</td><td>방문 수</td></tr>
+          <tr><td class="c">5</td><th>청구 행정 복잡·삭감 두려움</th><td class="c">중</td><td class="c">중</td><td>삭감</td></tr>
+          <tr><td class="c">6</td><th>방문간호지시서 180일 만료 → 평가 불인정</th><td class="c">중</td><td class="c">중</td><td>평가 등급·매출</td></tr>
+          <tr><td class="c">7</td><th>통합돌봄 기관 → 지자체 문서 제출·재입력</th><td class="c">중</td><td class="c">중</td><td>공무원·기관 시간</td></tr>
+          <tr><td class="c">8</td><th>사례회의·케어플랜, 사회복지사에게 쏠리는 행정</th><td class="c">중</td><td class="c">중</td><td>사회복지사 인건비</td></tr>
+          <tr><td class="c">9</td><th>본인부담 30%(39,500원)로 이용 중단</th><td class="c">상</td><td class="c">중</td><td>방문 수</td></tr>
+          <tr><td class="c">10</td><th>평가·현지조사 대비 서류</th><td class="c">중</td><td class="c">중</td><td>가산금·환수</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">사용자가 직접 말한 "원하는 것"</h3>
+    <ul class="bul">
+      <li>"녹음 방문일지가 사이트에 자동 입력되면 쓰겠다." (케어노트 현장 인터뷰)</li>
+      <li>입력 오류가 어디서 났는지 알려 주는 시스템 (보사연 2025.12, 의사 인터뷰 취지)</li>
+      <li>"행정업무 간소화", "환자와 의료진 연계 시스템 마련", "이동거리 가산" (심평원 한의 방문진료 평가 2024.12)</li>
+      <li>서비스 제공 기관의 직접 조회·입력 권한, 의뢰·모니터링 전산화, "AI 기술을 활용하여 업무 부담을 경감" (사회보장정보원 2026.5)</li>
+      <li>기관별 연락 창구, 다음 방문 일정 공유, 일상생활 정보를 담은 의뢰 (2026.9)</li>
+      <li>의료진 보호 장치와 실무 교육, 방문간호 제도 통일, 인력 충원(70.7%)</li>
+    </ul>
+  </section>
+
+  <!-- 국내 경쟁 -->
+  <section class="sec" id="rivals">
+    <div class="sec-label">국내 경쟁</div>
+    <h2>누가 이미 무엇을 하고 있나</h2>
+
+    <h3 class="sub-h">가장 직접적인 경쟁자: 노보젠 MINT</h3>
+    <div class="dcard" style="margin-top:14px">
+      <div class="dtop"><b>노보젠 MINT</b><span class="pill plain">방문의료센터용 · Since 2023</span></div>
+      <dl>
+        <dt>대상</dt><dd>일차방문진료 의원, 재택의료센터, 장애인 주치의 의원(상담 신청에 가정간호도)</dd>
+        <dt>기능</dt><dd>모바일 서식 20개+·검사지 15개+(MMSE 등), "이전 기록 자동 불러오기로 변경된 항목만 입력", 직군별 ID, 3중 백업·암호화·<b>고유 hash</b>·5년 보관, 동의서 알림톡, 환자 타임라인(사진·동영상), 재고·투약, 미방문·미작성 대시보드, 캘린더·카카오워크 연동, <b>MINT 지도</b>(최적 동선·택시비·연료비), <b>Mint Pay</b>(알림톡 청구서·카드결제·미수금)</dd>
+        <dt>자동입력</dt><dd>"일차방문진료·장애인주치의 HIRA 원클릭 자동 입력 … 오류 항목은 제출 전 자동 체크". 실제 방식(브라우저 확장·RPA 등)은 공개 자료로 확인 못 함. 공단 재택의료 서식 자동입력은 사이트에 언급 없음</dd>
+        <dt>가격</dt><dd>"기본료 + 방문진료 환자당 과금 구조"만 공개, 금액 확인 못 함</dd>
+        <dt>고객</dt><dd>전국 30여 재택의료센터(2026.5, 463곳의 약 7%), 누적 문서 13,781(2025년 3분기)</dd>
+        <dt>없는 것</dt><dd>음성·AI 기록. 사용자 후기는 찾지 못함(매뉴얼 접근 막힘)</dd>
+      </dl>
+    </div>
+
+    <h3 class="sub-h">그 밖의 제품</h3>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>제품</th><th>무엇을 하나</th><th>가격 · 비고</th></tr></thead>
+        <tbody>
+          <tr><th>모비닥 홈케어</th><td data-label="무엇을 하나">재택진료 병원용 방문 관리 앱(방문 순서, 방문 정보, 시범사업 수가 입력)</td><td data-label="가격 · 비고">의원 CRM 월 2.9만원, 홈케어 모듈 가격 확인 못 함. 다운로드 10+</td></tr>
+          <tr><th>케어허브</th><td data-label="무엇을 하나">방문진료 예약·일정·GPS 동선·진료 기록·기관 의뢰·보호자 앱(2025.3 출시)</td><td data-label="가격 · 비고">가격·법정 서식·AI 확인 못 함</td></tr>
+          <tr><th>이지케어</th><td data-label="무엇을 하나">재가 장기요양 1위(방문요양 9,589곳, 점유 54%). 방문간호 기록 언급 없음. 공단 연동은 엑셀 가져오기</td><td data-label="가격 · 비고">월 1만원 + (수급자−10)×500원, 37명이면 25,850원</td></tr>
+          <tr><th>케어포(한강시스템)</th><td data-label="무엇을 하나">일정·청구·RFID "공단연동", 방문간호 평가지표 18개, 직원·보호자 앱. 기관 인증서로 공단 급여제공계획을 불러옴(한 방향)</td><td data-label="가격 · 비고">가정방문 월 11,000원~, 시설 33,000원~. iOS 평점 2.0</td></tr>
+          <tr><th>하이케어</th><td data-label="무엇을 하나">"국내 유일 롱텀 양방향 연동", 인증서 비밀번호 없이 롱텀 로그인, RFID 오류 카톡 알림</td><td data-label="가격 · 비고">가격·기술 방식 확인 못 함</td></tr>
+          <tr><th>엔젤시스템</th><td data-label="무엇을 하나">시설·주야간 중심, 전자결재·보호자 서명, IoT, 사용법 챗봇</td><td data-label="가격 · 비고">CMS 부가 월 3만원</td></tr>
+          <tr><th>공단 롱텀·스마트장기요양 앱</th><td data-label="무엇을 하나">공공 무료. 태그 전송·지시서 확인·업무일지·전자서명</td><td data-label="가격 · 비고">앱 평점 1.4(315건). 2025.6 개편 첫날 장애</td></tr>
+          <tr><th>의원 EMR</th><td data-label="무엇을 하나">비트U차트는 방문진료 기능 언급 없음, 2026.9 심사청구 AI 출시. 의사랑·포인트닉스·이지스는 확인 못 함</td><td data-label="가격 · 비고">최신 월 사용료 확인 못 함</td></tr>
+          <tr><th>퍼즐에이아이</th><td data-label="무엇을 하나">의사용 Puzzle Gen(EMR에 직접 입력), 간호용 Voice ENR. 170여 의료 현장</td><td data-label="가격 · 비고">견적. 방문 현장 지원 확인 못 함</td></tr>
+          <tr><th>셀바스AI 메디보이스</th><td data-label="무엇을 하나">진료·간호·판독 음성 → EMR/ENR, 병원 서버 설치, 인터넷 제한 환경 기록</td><td data-label="가격 · 비고">견적</td></tr>
+          <tr><th>케어마인더 "케어노트"</th><td data-label="무엇을 하나">병원 간호사 녹음 → 인수인계(PASS-BAR)·SOAP·DAR. 분당서울대병원 IRB, 고대구로·국립재활원 시범</td><td data-label="가격 · 비고">사용자당 월 0·9,900·39,000원, 기업용 견적. 2026.6 앱 출시. <b>이름·범주가 겹침</b></td></tr>
+          <tr><th>케어닥</th><td data-label="무엇을 하나">기관용 SW는 시니어하우징 운영(케어옵스). 방문의료 기록 아님</td><td data-label="가격 · 비고">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">기능 비교</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>기능</th><th class="c">케어노트</th><th class="c">MINT</th><th class="c">모비닥</th><th class="c">케어허브</th><th class="c">이지케어</th><th class="c">케어포</th><th class="c">하이케어</th><th class="c">공단</th><th class="c">퍼즐AI</th><th class="c">케어마인더</th></tr></thead>
+        <tbody>
+          <tr><th>방문 일정·달력</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>심평원 제4호</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>공단 재택 제6~8호</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>방문간호 제14호</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>지난 기록 불러오기</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c">–</td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td></tr>
+          <tr><th>음성 → 기록 초안</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td></tr>
+          <tr class="ours"><th>법정 서식 칸에 맞춘 초안</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr class="ours"><th>공식 전산 자동 입력</th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot y">●</span></td><td class="c">자체</td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot p">◐</span></td></tr>
+          <tr><th>청구·수납</th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>동선·지도</th><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>전자서명</th><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td></tr>
+          <tr><th>관리자 현황판</th><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot y">●</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot p">◐</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot q">?</span></td><td class="c"><span class="dot n">○</span></td><td class="c"><span class="dot n">○</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend" style="margin-top:8px">● 있음 · ◐ 일부·주장(엑셀 연동, EMR 입력, API 등) · ○ 없음 · ? 공개 자료로 확인 못 함. 공단의 "자체"는 공단 시스템 자체라는 뜻입니다.</p>
+
+    <h3 class="sub-h">빈자리와 위협</h3>
+    <div class="qd">
+      <div class="fig">
+        <h3>케어노트가 이길 수 있는 곳</h3>
+        <ol>
+          <li><span><b>방문 현장의 "음성 → 법정 서식 칸" 초안</b>. 확인한 음성 AI는 모두 병원 EMR·병동 인수인계용이고, 방문 현장의 MINT는 AI가 없다</span></li>
+          <li><span><b>공단 재택의료(제6~8호)</b>. MINT 자동입력은 심평원만, 장기요양 프로그램은 재택 서식이 없다</span></li>
+          <li><span><b>방문간호 간호사의 현장 기록</b>. 재가 프로그램은 방문요양 중심, 공단 앱은 평점 1.4</span></li>
+          <li><span><b>사업을 가로지르는 산정 규칙 검사</b>. 재택 간호와 방문간호 같은 날 겹침 같은 경고를 하는 제품은 찾지 못했다</span></li>
+          <li><span><b>공개 가격 + 셀프 가입</b>. MINT는 상담형, AI 스크라이브는 견적형이다</span></li>
+        </ol>
+      </div>
+      <div class="fig">
+        <h3>위협</h3>
+        <ol>
+          <li><span>MINT가 AI 아닌 기능과 심평원 자동입력을 이미 30여 센터에 깔았다</span></li>
+          <li><span>의사랑 AI 무료(2026년 말까지)가 의원 쪽 음성 기록 가격의 상한이 된다</span></li>
+          <li><span>장기요양 프로그램이 "만원 단위" 가격에 시장을 길들였다</span></li>
+          <li><span>케어마인더 "케어노트"가 같은 이름·같은 범주로 언론 노출이 활발하다</span></li>
+          <li><span>복지부 AX Sprint 스마트홈 과제의 돌봄 종사자 앱을 케어포 개발사(한강시스템)가 맡았다</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 해외 -->
+  <section class="sec" id="abroad">
+    <div class="sec-label">해외 사례</div>
+    <h2>해외는 무엇으로 돈을 버나</h2>
+    <p class="lead">미국·일본·영국의 재택·방문 의료 소프트웨어를 봤습니다. 업체가 발표한 효과 수치는 "업체 수치"이고, 대규모 독립 연구에서는 효과가 훨씬 작게 나옵니다.</p>
+
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>제품</th><th>돈 받는 기능</th><th>가격 · 효과(업체 수치)</th></tr></thead>
+        <tbody>
+          <tr><th>WellSky <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">기록·일정·EVV·OASIS·청구를 묶은 EHR. AI 묶음은 2026.8부터 추가 비용 없음. Point of Care 앱(오프라인, 방문 전 AI 요약, 약 대조)</td><td data-label="가격 · 효과(업체 수치)">비공개·다년 계약. 기록 시간 최대 50%↓, 임상가 1인당 월 8.6명 더 봄</td></tr>
+          <tr><th>Axxess <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">자연어 검색, 호스피스 전환 예측, 방문 동선, 일정 충돌 걸러 내기, 청구 자동 계산(상위 등급 별도)</td><td data-label="가격 · 효과(업체 수치)">비공개. 연 9,000시간+ 절감, 수작업 청구 80%↓</td></tr>
+          <tr><th>Netsmart <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">기록 보조, 노트 100% 품질 검토, 코딩, 청구 거절 처리</td><td data-label="가격 · 효과(업체 수치)">비공개. 노트 완료 시간 67%↓, 코딩 차트당 3분↓</td></tr>
+          <tr><th>Apricot <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">방문 전 요약, <b>방문 뒤 질문으로 이끄는 인터뷰</b>, OASIS·코딩, QA</td><td data-label="가격 · 효과(업체 수치)">비공개. 첫 방문 기록 120분 → 15~30분</td></tr>
+          <tr><th>Brellium <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">차트 100% 자동 감사, <b>승인한 차트가 환수되면 대신 물어 주는 보증</b></td><td data-label="가격 · 효과(업체 수치)">문의. 감사 시간 87%↓</td></tr>
+          <tr><th>외주 OASIS 검토 <span class="pill plain">미국</span></th><td data-label="돈 받는 기능">사람이 하는 코딩·OASIS 검토</td><td data-label="가격 · 효과(업체 수치)">건당 $70, 코딩만 $40 — AI 점검의 가격 기준점</td></tr>
+          <tr><th>カイポケ <span class="pill plain">일본</span></th><td data-label="돈 받는 기능">전자차트 + 레세프트(청구) + 일정. AI 기록은 제휴(スタンドLM, 2026.9) — 확인 뒤 한 번 눌러 등록</td><td data-label="가격 · 효과(업체 수치)">월 ¥25,000 정액. 기록 1건 10분 → 2분</td></tr>
+          <tr><th>iBow <span class="pill plain">일본</span></th><td data-label="돈 받는 기능">방문간호 전자차트, AI 계획서·보고서</td><td data-label="가격 · 효과(업체 수치)">기본 ¥18,000~, <b>AI는 방문당 ¥20</b>. 계획서 15분 → 3분</td></tr>
+          <tr><th>homis <span class="pill plain">일본</span></th><td data-label="돈 받는 기능">방문진료: 청구 연동, 일정·지도, 다직종 타임라인, 주치의 의견서 AI</td><td data-label="가격 · 효과(업체 수치)">초기 ¥200,000, 월 ¥20,000 + 환자당</td></tr>
+          <tr><th>マナ·ミルモ <span class="pill plain">일본</span></th><td data-label="돈 받는 기능">음성 → SOAP, <b>RPA로 カイポケ에 자동으로 옮겨 적기</b></td><td data-label="가격 · 효과(업체 수치)">¥15,000(8명), ¥5,000/40시간</td></tr>
+          <tr><th>Birdie <span class="pill plain">영국</span></th><td data-label="돈 받는 기능">재가 돌봄 일정·투약·청구·급여(이동거리)·가족 앱·평가 대비. AI 돌봄 계획 별도</td><td data-label="가격 · 효과(업체 수치)">월 £200~, AI는 녹음 1시간당 £3.50</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">고객이 돈을 내는 기능 순위</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th class="c">순위</th><th>기능</th><th class="c">근거 수</th><th>판단</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td class="c">1</td><th>청구·수가 정확도(코딩·레세프트·거절 처리)</th><td class="c">10</td><td>따로 돈을 받는다(건당 $70 등)</td></tr>
+          <tr><td class="c">2</td><th>기록 시간 단축(AI 초안)</th><td class="c">12</td><td>수요는 가장 크지만 무료 기본 기능이 되는 중</td></tr>
+          <tr class="ours"><td class="c">3</td><th>감사·컴플라이언스(차트 100% 점검, 조사 대비)</th><td class="c">7</td><td>규제 강화로 우선순위 상승(미국 CMS 2026.5 신규 등록 6개월 중단)</td></tr>
+          <tr><td class="c">4</td><th>일정·동선·인력</th><td class="c">4</td><td>기본 모듈, 따로 상품화한 곳도 있음</td></tr>
+          <tr><td class="c">5</td><th>예측·위험 알림</th><td class="c">4</td><td>상위 등급에 넣어 판다</td></tr>
+          <tr><td class="c">6</td><th>계획서·보고서·의견서 자동 작성</th><td class="c">3</td><td>일본에서 두드러짐(방문당 ¥20)</td></tr>
+          <tr><td class="c">7</td><th>환자·가족·다직종 소통</th><td class="c">3</td><td>차별점으로 쓰임</td></tr>
+          <tr><td class="c">8</td><th>방문 증빙(EVV)</th><td class="c">3</td><td>규제가 강제하는 수요</td></tr>
+          <tr><td class="c">9</td><th>급여·이동거리 정산</th><td class="c">1~2</td><td>재가 돌봄의 기본</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">스크라이브가 무료가 된 뒤 차별점이 옮겨 가는 곳</h3>
+    <ol class="steps">
+      <li><b>기록 시스템 안에 들어가기</b>: 앱을 오가며 두 번 적지 않게 한다(HCHB가 EHR 안에 스크라이브를 넣음). 한국에서는 공식 전산 입력 줄이기에 해당합니다.</li>
+      <li><b>수가·코딩·청구</b>: Abridge 청구 전 검토(2026.9), Epic Penny가 200여 기관에서 청구 거절 20%↓.</li>
+      <li><b>100% 품질 검토와 금전 보증</b>: Brellium의 환수 보증, Netsmart Quality Coach.</li>
+      <li><b>되묻기·양방향 음성</b>: Apricot 디브리프, WellSky WILA. 케어노트의 "빠진 항목 되묻기"와 같은 방향입니다.</li>
+      <li><b>전산 연결 대행</b>: 일본은 한 번 누르기·RPA로 기존 시스템에 옮겨 적고, 미국 EVV 업체는 주 정부 집계기 형식으로 내보냅니다. 공공 시스템이 무료여도 민간은 "연결"과 "운영 도구"로 돈을 법니다.</li>
+      <li><b>사용량 과금</b>: 방문당 ¥20, 녹음 1시간당 £3.50.</li>
+    </ol>
+    <p class="callout">해외 흐름과 맞는 구성: <b>구술 초안은 기본 기능</b>, <b>점검·수가·옮겨 적기를 유료 축</b>으로.</p>
+  </section>
+
+  <!-- 전산 연동 -->
+  <section class="sec" id="portal">
+    <div class="sec-label">심평원·공단 연동</div>
+    <h2>공식 전산 입력: 무엇이 되고 무엇이 위험한가</h2>
+    <p class="lead">세 사이트 모두 공식 "쓰기 API"는 찾지 못했습니다. 다만 심평원 자료제출 시스템에는 EMR 연계(Agent)와 엑셀 업로드 기능이 있어, <b>방문진료 점검서식에도 쓸 수 있는지 묻는 것</b>이 가장 값싼 다음 걸음입니다.</p>
+
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>사이트(서식)</th><th>공식 경로</th><th>비공식 경로 · 위험</th></tr></thead>
+        <tbody>
+          <tr><th>심평원 자료제출 시스템<br>(별지 제4호)</th><td data-label="공식 경로">2020.12 개통 때부터 EMR·OCS 연계(송·수신 Agent)·엑셀 업로드·직접 입력. 재활환자 재택의료는 점검서식을 엑셀로 올림(9행부터, 올린 건은 임시저장). 그런데 일차의료 방문진료 지침에는 화면 입력만 나옴. 입력 순서: 의사 이름·면허번호·실시일 → 주민번호(재진 불러오기) → 항목 체크 → 임시저장 → 최종 제출(수정·삭제 불가)</td><td data-label="비공식 경로 · 위험">화면이 넥사크로 17이라 일반 입력칸이 아니고 내부 객체를 다뤄야 할 것으로 봄. 화면이 바뀌면 깨지고, 최종 제출 뒤에는 되돌릴 수 없음</td></tr>
+          <tr><th>심평원 청구<br>(방문진료료)</th><td data-label="공식 경로">의원 EMR 청구 프로그램으로 청구(특정기호 S017)</td><td data-label="비공식 경로 · 위험">케어노트가 할 일이 아님</td></tr>
+          <tr><th>공단 요양기관정보마당<br>(재택 제5~8호, 청구 제9·10호)</th><td data-label="공식 경로">화면 입력만 확인. 방문마다 행추가 → 입력 → 저장, "작성완료" 건만 청구명세서에 자동으로 들어감. 엑셀 일괄 등록은 매뉴얼에 없음</td><td data-label="비공식 경로 · 위험">WebSquare + 키보드 보안(TouchEn nxKey)이 자동 입력을 막을 수 있음. 입력이 곧 청구 자료라 잘못 채우면 청구 오류</td></tr>
+          <tr><th>스마트장기요양 앱<br>(방문간호)</th><td data-label="공식 경로">공단 앱만. 태그 → 건강관리 → 간호처치 → 특이사항 → 서명 → 종료 전송(태그 뒤 10분 안)</td><td data-label="비공식 경로 · 위험">현장 NFC 태그가 핵심이라 사실상 불가능. 대신 찍으면 부당청구 소지</td></tr>
+          <tr><th>노인장기요양보험 포털<br>(청구)</th><td data-label="공식 경로">전자문서교환 또는 전산매체. 공공데이터 API는 기관 현황 조회 전용</td><td data-label="비공식 경로 · 위험">업계는 인증서·세션 기반으로 하고 있음(아래)</td></tr>
+          <tr><th>통합돌봄·사회보장정보시스템</th><td data-label="공식 경로">민간 연계 계획 확인 못 함. 법에 민간 연계 조항 없음</td><td data-label="비공식 경로 · 위험">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">경쟁사의 "자동입력"은 실제로 어떻게 하나</h3>
+    <ul class="bul">
+      <li><b>MINT</b>: 방식은 확인 못 함. 방문진료 지침에 공개된 업로드·Agent가 없으므로 (가) 사용자 브라우저에서 넥사크로 화면을 채우거나 (나) 심평원과 따로 협의한 연계로 추정. 데모에서 인증서를 어디에 두는지, 최종 제출을 누가 누르는지 확인할 것.</li>
+      <li><b>웰체크</b>(일차의료 만성질환관리): 심평원 자료제출 시스템에 "자동 연동" 제출, EMR 개발사용 API 제공(2024.3). 심평원 쪽에 공식 연계 선례가 있다는 뜻으로 읽힙니다.</li>
+      <li><b>케어포</b>: 기관 인증서를 등록하면 공단의 급여제공계획을 불러옴(공단 → 케어포 한 방향, 2025.10). 그전에는 엑셀.</li>
+      <li><b>하이케어</b>: "롱텀 양방향 연동", 인증서 비밀번호 없이 롱텀 접속. 서버가 인증서로 포털을 조작하는 방식으로 추정.</li>
+      <li><b>케어하자</b>(크롬 확장): 공단 포털 세션 쿠키를 자사 서버로 보내고 5분마다 갱신, 공동인증서 자동 로그인(사용자 38명).</li>
+    </ul>
+
+    <h3 class="sub-h">법적 위험</h3>
+    <ul class="bul">
+      <li><b>전자서명법 제19조</b>: 타인의 전자서명생성정보를 도용·누설하면 3년 이하 징역 또는 3천만원 이하 벌금, 부정 행사 목적으로 인증서를 양도·대여하면 1년 이하 또는 1천만원 이하. 직원 개인 인증서를 업체가 보관·사용하면 위험이 커집니다.</li>
+      <li><b>정보통신망법 제48조④</b>(2024.1 신설): "정상적인 보호·인증 절차를 우회하여" 접근하게 하는 프로그램의 설치·유포 금지. 세션 쿠키 중계, 키보드 보안 우회가 해석 문제가 될 수 있습니다.</li>
+      <li><b>의료법 제23조</b>: 전자의무기록은 전자서명이 기재된 전자문서여야 하고, 수정하면 접속기록을 보관해야 합니다.</li>
+      <li><b>청구 소프트웨어</b>: 청구서 전자문서에 심평원 검사 승인번호가 필요하고, 검사받지 않은 기간에 청구하면 반송(사유 27-04). 재택센터는 청구명세서가 공단 포털 안에서 자동으로 만들어져 외부 청구 SW가 끼어들 자리가 없습니다. <b>기록 앱이 청구까지 하는 것은 권하지 않습니다.</b></li>
+    </ul>
+
+    <h3 class="sub-h">위험이 낮은 것부터: 입력을 줄이는 순서</h3>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>단계</th><th>무엇</th><th>위험 · 사용자 이득</th></tr></thead>
+        <tbody>
+          <tr><th>1. 확정본을 원본으로</th><td data-label="무엇">포털 출력본은 원본이 아니고 원본은 기관이 5년 보관(재택 지침 Q5-3·5-4). 확정본 이력·PDF에 전자서명을 더한다</td><td data-label="위험 · 사용자 이득"><span class="pill good">위험 없음</span> 출력·종이 편철이 없어짐</td></tr>
+          <tr><th>2. 입력 도우미 화면</th><td data-label="무엇">값을 포털 화면 순서·이름 그대로(심평원 ①~⑩, 공단 탭 순서, 스마트장기요양의 건강관리 → 간호처치 → 특이사항), 칸마다 복사, "포털 입력 완료" 체크·제출번호 메모</td><td data-label="위험 · 사용자 이득"><span class="pill good">위험 없음</span> 두 화면을 오가며 찾는 시간과 빠뜨리는 항목이 줄어듦</td></tr>
+          <tr><th>3. 제출·청구 전 검사</th><td data-label="무엇">점검서식을 명세서보다 먼저, 방문진료실시일 = 진료를 시작한 날, 의사 이름 공백·숫자 금지, 최종 제출 뒤 수정 불가 경고, 월 기본 방문·추가간호 월 3회, 청구 마감, 케어플랜 통보 전 서비스제공내역 입력 불가</td><td data-label="위험 · 사용자 이득"><span class="pill good">위험 없음</span> MINT의 "오류 항목 제출 전 체크"와 같은 효과</td></tr>
+          <tr><th>4. 미입력 현황판</th><td data-label="무엇">확정했지만 포털 입력 체크가 안 된 방문, 마감까지 남은 날</td><td data-label="위험 · 사용자 이득"><span class="pill good">위험 없음</span> 청구 누락 방지</td></tr>
+          <tr><th>5. 공식 일괄 파일</th><td data-label="무엇">심평원에 방문진료용 엑셀·Agent 양식이 있으면 그대로 만들어 줌</td><td data-label="위험 · 사용자 이득"><span class="pill good">위험 낮음</span> 한 달 치를 한 번에 올림</td></tr>
+          <tr><th>6. 브라우저 확장</th><td data-label="무엇">사용자 PC·본인 세션에서만, 누를 때 한 건씩 임시저장까지, 최종 제출은 사람이. 인증서·쿠키를 밖으로 보내지 않고, 채운 뒤 화면 값과 케어노트 값을 대조. 심평원부터, 공단은 키보드 보안 실험 뒤. 시작 전 심평원·공단에 문의</td><td data-label="위험 · 사용자 이득"><span class="pill warn">위험 중간</span> "사이트에 자동 입력"에 가장 가까움</td></tr>
+          <tr><th>하지 말 것</th><td data-label="무엇">서버에 인증서 보관·원격 로그인·세션 쿠키 중계, 스마트장기요양 태그 대체, 청구 SW 직접 만들기</td><td data-label="위험 · 사용자 이득"><span class="pill bad">금지</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 아이디어 -->
+  <section class="sec" id="ideas">
+    <div class="sec-label">아이디어</div>
+    <h2>돈을 받을 핵심 기능 5개</h2>
+    <p class="lead">권하는 순서입니다. ①과 ②가 "돈을 낼 이유"를 만들고, ③~⑤가 MINT와 장기요양 프로그램이 약한 자리를 채웁니다.</p>
+
+    <article class="idea">
+      <h3>① 재택의료 수입 지킴이 <span class="pill bad">먼저</span></h3>
+      <dl>
+        <dt>무엇</dt>
+        <dd>관리 웹 현황판과 수급자 화면에 <b>이번 달 판정을 금액으로</b> 보여 줍니다. 수급자마다 요건별 상태(충족·남음·위험)와 위험 금액, 기관 합계로 "이번 달 예상 수입 / 위험 금액 / 남은 기간에 지킬 수 있는 금액". 부족한 방문은 [일정 잡기]로 방문 등록 화면에 바로 갑니다.</dd>
+        <dt>왜</dt>
+        <dd>기본료 14만원은 요건 하나만 빠져도 0원이고, 실제 방문이 요건에 바짝 붙어 있습니다(월평균 의사 1.05회·간호 2.24회). 페인포인트 순위 1위이고, 해외에서 따로 돈을 받는 "청구·수가 정확도"에 해당합니다.</dd>
+        <dt>점검 규칙</dt>
+        <dd><ul>
+          <li>기본료 세 요건, 사회복지사 상담이 "단순 안부확인"에 그쳤다는 경고(제8호 상담 구분·내용)</li>
+          <li>지속관리료 연속 횟수(n/6), 포괄평가 기한까지 남은 날</li>
+          <li>추가간호: 30분 이상(방문 시각), 의사 동행 아님(제6호 동행자), 월 3회</li>
+          <li>같은 날 겹침: 우리 방문은 이미 경고, 다른 기관 서비스(방문간호·가정간호·주야간보호 요일, 장애인 주치의)는 수급자 정보에 적어 받음</li>
+          <li>의사 1인당 140명·140회, 사망 종결 50%, 청구 마감(다음 달 10일)</li>
+          <li>방문진료: 의사 월 60회, 환자 주 3회(넘으면 예외사유), 같은 건물 75%·같은 세대 50%</li>
+        </ul></dd>
+        <dt>화면 예시</dt>
+        <dd>
+          <div class="table-wrap" style="margin-top:4px">
+            <table>
+              <thead><tr><th>수급자</th><th class="c">의사</th><th class="c">간호사</th><th class="c">상담</th><th>판정</th><th>위험 금액</th><th>할 일</th></tr></thead>
+              <tbody>
+                <tr><th>수급자 A</th><td class="c"><span class="ok">1/1</span></td><td class="c"><span class="mid">1/2</span></td><td class="c"><span class="ok">완료</span></td><td>간호사 1회 남음</td><td>140,000원</td><td>25일까지 간호 방문 잡기</td></tr>
+                <tr><th>수급자 B</th><td class="c"><span class="ng">0/1</span></td><td class="c"><span class="ok">2/2</span></td><td class="c"><span class="ng">안부만</span></td><td>의사 방문·상담 필요</td><td>140,000원</td><td>의사 방문·사회복지 상담 잡기</td></tr>
+                <tr><th>수급자 C</th><td class="c"><span class="ok">1/1</span></td><td class="c"><span class="ok">2/2</span></td><td class="c"><span class="ok">완료</span></td><td>충족 · 연속 5/6</td><td>—</td><td>다음 달 충족하면 지속관리료 6만원</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </dd>
+        <dt>지금 코드</dt>
+        <dd>현황판의 월 요건(<code>homeCareMonthStatuses</code>, <code>HOME_CARE_MONTHLY_VISITS</code>), 직원별 이달 방문(<code>summarizeMonthStaff</code>), 같은 날 경고(<code>conflictsOnSameDay</code>)를 넓힙니다. 산정 규칙은 서식 정의처럼 shared-types 한 곳에 두고, 수가표는 지침 개정에 맞춰 설정으로 바꿉니다(2025.10 → 2026.1 → 2026.2로 자주 바뀜).</dd>
+        <dt>판매 문구</dt>
+        <dd>"수급자 1명의 기본료를 한 번 지키면 한 달 요금이 나온다."</dd>
+        <dt>확인할 것</dt>
+        <dd>협력 기관이 지난 1년 동안 못 받은 기본료 사례와 금액, 다른 기관 서비스 이용을 어떻게 아는지.</dd>
+      </dl>
+    </article>
+
+    <article class="idea">
+      <h3>② 공식 전산 입력 줄이기 <span class="pill bad">먼저</span></h3>
+      <dl>
+        <dt>무엇</dt>
+        <dd>위 "입력을 줄이는 순서"를 그대로 제품 단계로: <b>입력 도우미 → 미입력 현황판·제출 전 검사 → 일괄 파일(심평원 확인 뒤) → 브라우저 확장(임시저장까지)</b>.</dd>
+        <dt>왜</dt>
+        <dd>현장 요구 그 자체("사이트에 자동 입력되면 쓰겠다")이고, 페인포인트 2위입니다. 해외에서도 차별점이 "기록 시스템 안으로 들어가기·옮겨 적기 대행"으로 옮겨 갔습니다.</dd>
+        <dt>입력 도우미</dt>
+        <dd>확정 기록 화면에 [심평원 입력] [공단 입력] 보기를 둡니다. 포털 화면과 같은 순서·이름으로 값을 늘어놓고 칸마다 복사 버튼을 두며, 다 넣으면 [포털 입력 완료]와 제출 메모를 남깁니다. 서식 정의에 "포털 칸 순서·이름"만 더하면 되므로 서식 엔진의 강점이 그대로 살아납니다.</dd>
+        <dt>판매 문구</dt>
+        <dd>지금: "확정 한 번이면 포털 입력은 붙여 넣기만." 나중: "임시저장까지 자동, 최종 제출만 누르세요."</dd>
+        <dt>확인할 것</dt>
+        <dd>심평원: 방문진료 점검서식 엑셀·Agent 가능 여부와 확장 방식 허용 여부. 공단: 키보드 보안이 확장 입력을 막는지(실험).</dd>
+      </dl>
+    </article>
+
+    <article class="idea">
+      <h3>③ 재택의료센터 팀 업무 <span class="pill warn">다음</span></h3>
+      <dl>
+        <dt>무엇</dt>
+        <dd><b>포괄평가(제5호)·케어플랜</b>: 세 직종이 함께 방문(30분 이상, 최초·1년마다)하는 기록과 다음 재평가 기한. <b>사례회의(월 2회 이상)</b>: 구술로 회의록 초안(참석자, 수급자별 논의·결정, 다음 할 일)을 만들고 횟수를 현황판에. <b>인수인계 한 장 요약</b>: 수급자별 최근 상태·케어플랜·다음 할 일.</dd>
+        <dt>왜</dt>
+        <dd>MINT도, 장기요양 프로그램도 약한 곳입니다. 행정이 사회복지사에게 쏠리고(페인포인트 8위), 인력이 그만둬 운영을 멈춘 센터가 21곳이며 1년 계약이 흔합니다(3위). 개발 지침의 <a href="/dev#assessment">포괄평가 절</a>에 이미 설계 제안이 있습니다.</dd>
+        <dt>판매 문구</dt>
+        <dd>"사람이 바뀌어도 센터는 멈추지 않는다."</dd>
+      </dl>
+    </article>
+
+    <article class="idea">
+      <h3>④ 원본·현지조사 대비 <span class="pill warn">다음</span></h3>
+      <dl>
+        <dt>무엇</dt>
+        <dd>확정할 때 <b>전자서명</b>을 해 케어노트 확정본을 원본으로 씁니다. 수급자·기간별 일괄 PDF, 접속기록(누가 언제 보고 고쳤나), 확정본 이력·hash를 "조사 나오면 바로 내는 묶음"으로.</dd>
+        <dt>왜</dt>
+        <dd>원본은 기관이 5년 보관해야 하고 포털 출력본은 원본이 아닙니다. 가정간호 부당청구 과징금 약 13억원 사례(2026.8), "현지조사의 핵심은 기록". 해외에서도 감사·컴플라이언스가 돈을 받는 기능 3위입니다. 확정본 이력·hash·원본 양식 PDF가 이미 있어 전자서명만 더하면 됩니다.</dd>
+        <dt>판매 문구</dt>
+        <dd>"종이 편철 없이 5년 보관, 조사 나와도 바로 낸다."</dd>
+      </dl>
+    </article>
+
+    <article class="idea">
+      <h3>⑤ 통합돌봄 연계 서류 <span class="pill plain">그다음</span></h3>
+      <dl>
+        <dt>무엇</dt>
+        <dd>의뢰를 받으면 제공 여부·내용 통보서(법 제14조③)와 변경 통보, 3개월 모니터링 자료를 확정 기록에서 초안으로 만들어 PDF·엑셀로 지자체에 보냅니다. 의뢰서에는 이동·식사·배설 상태, 보호자 여건, 다음 방문 일정을 담습니다.</dd>
+        <dt>왜</dt>
+        <dd>지금은 기관이 문서로 내고 공무원이 다시 입력합니다. 법에 민간 시스템 연계 조항이 없어 문서 품질이 곧 연계 품질이고, 보건의료 연계가 7.4%로 낮아 지자체도 의료 쪽 실적이 필요합니다. 기관용 기능이면서 지자체를 소개 통로로 쓰는 고리입니다.</dd>
+      </dl>
+    </article>
+
+    <h3 class="sub-h">AI 구술은 모든 요금제에 기본으로</h3>
+    <div class="prose">
+      <p>단독으로 돈을 받기보다 <b>"한 번 말하면 여러 결과물"</b>로 넓힙니다: 법정 서식, 진료기록부 초안(EMR에 붙여 넣기), 포털 입력값, 사례회의 안건, 보호자 안내문. 숫자 근거 대조와 빠진 항목 되묻기는 해외에서도 차별점(Apricot·WellSky WILA)으로 쓰는 방향이라 그대로 강점입니다.</p>
+    </div>
+
+    <h3 class="sub-h">그다음 후보</h3>
+    <ul class="bul">
+      <li><b>하루 동선·이동비 정산</b>: 이동시간·교통비가 수가에 없고 지방은 1시간 넘게 갑니다. 방문 순서 제안, 실제 시각으로 이동시간 추정, 월별 출장비 정산표. 같은 건물·세대 묶기(75%·50% 자동 체크)도 함께.</li>
+      <li><b>보호자 알림톡·본인부담 수납</b>: 본인부담 39,500원 때문에 이용을 고민하는 가족이 있고, MINT는 Mint Pay가 있습니다. 결제대행 계약이 필요해 뒤로 둡니다.</li>
+      <li><b>방문간호지시서 180일 만료 알림·평가 서류</b>: 무료 요금제로 방문간호 기관을 넓히는 용도.</li>
+      <li><b>확장 사업</b>: 장애인 건강주치의, 일차의료 혁신 시범, 거점 재택의료센터, 가정형 호스피스 — 서식 정의를 더하면 되는 곳부터.</li>
+    </ul>
+  </section>
+
+  <!-- 팔기 전에 -->
+  <section class="sec" id="blockers">
+    <div class="sec-label">팔기 전에</div>
+    <h2>지금 막힐 곳</h2>
+    <p class="lead">기능보다 먼저 이것이 걸립니다. 지금 상태로는 기관의 개인정보 담당자 단계에서 막힙니다.</p>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>항목</th><th>지금</th><th>할 일</th></tr></thead>
+        <tbody>
+          <tr><th><span class="pill bad">막힘</span> 이름</th><td data-label="지금">케어마인더가 2026.6 같은 이름·같은 간호 음성 기록 범주의 앱을 출시하고 언론 노출이 활발</td><td data-label="할 일">상표 확인, 이름 결정</td></tr>
+          <tr><th><span class="pill bad">막힘</span> LLM</th><td data-label="지금">Gemini 무료 API 약관: 무료 사용분은 제품 개선에 쓰고 사람이 볼 수 있으며 민감정보를 넣지 말라고 함(유료분은 개선에 쓰지 않음)</td><td data-label="할 일">유료·기업용 API 또는 국내 모델(CLOVA Studio 공공용, 업스테이지 Solar — GPU 1장 온프레미스도 가능)</td></tr>
+          <tr><th><span class="pill bad">막힘</span> 국외 이전</th><td data-label="지금">위탁계약서·처리방침·국외 이전 고지 없음. 개인정보위 생성형 AI 안내서는 학습하지 않는 기업용 API를 권고</td><td data-label="할 일">개인정보보호법 제28조의8에 맞는 동의 또는 처리방침 공개. 경쟁사는 "국내 처리"를 내세움</td></tr>
+          <tr><th><span class="pill bad">막힘</span> 음성인식 구간</th><td data-label="지금">개발용 STT가 인터넷에 평문 gRPC</td><td data-label="할 일">TLS, 국내 처리(클러스터 내부 주소)</td></tr>
+          <tr><th><span class="pill warn">필요</span> 안전성 확보조치</th><td data-label="지금">접속기록·권한 기록·외부 접속 추가 인증 아직</td><td data-label="할 일">접속기록 2년(민감정보), 권한 기록 3년, 외부 접속 OTP·VPN, 보안 설명서</td></tr>
+          <tr><th><span class="pill warn">검토</span> 전자의무기록 외부 보관</th><td data-label="지금">확정본을 5년 보관하면 해당될 수 있음</td><td data-label="할 일">인증 클라우드·이중화·국내 위치(시설·장비 고시), 전자서명 없이 의무기록으로 인정되는지 법률 검토</td></tr>
+          <tr><th><span class="pill good">괜찮음</span> 의료기기</th><td data-label="지금">식약처 가이드라인(2025.1): 음성 진료내용 → 텍스트 요약 SW는 의료기기 비해당 예시</td><td data-label="할 일">진단·처방 제안 기능은 넣지 않는다</td></tr>
+          <tr><th><span class="pill good">괜찮음</span> EMR 인증</th><td data-label="지금">자율 인증, 수수료 없음</td><td data-label="할 일">설계 체크리스트로 활용</td></tr>
+          <tr><th><span class="pill plain">나중</span> CSAP</th><td data-label="지금">보건소에 팔려면 디지털서비스 등록과 CSAP 인증 필요</td><td data-label="할 일">그전에는 협업형 의원이 계약하고 보건소 인력은 사용자로</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 가격·판매 -->
+  <section class="sec" id="sales">
+    <div class="sec-label">가격·판매</div>
+    <h2>얼마에, 누구에게, 어떻게 파나</h2>
+
+    <h3 class="sub-h">가격 기준선</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>제품</th><th>금액</th><th>단위</th></tr></thead>
+        <tbody>
+          <tr><th>케어포 가정방문(요양·목욕·간호)</th><td>월 11,000원(VAT 포함), 첫 달 무료</td><td>기관당(19인 이하)</td></tr>
+          <tr><th>케어포 시설·주야간</th><td>월 33,000원, 6·12개월 결제 시 1·2개월 추가</td><td>기관당</td></tr>
+          <tr><th>이지케어</th><td>월 1만원 + (수급자−10)×500원 + VAT, 셋팅비 5.5만원</td><td>기관당</td></tr>
+          <tr><th>모비닥 클라이언트</th><td>월 29,000원</td><td>의원당</td></tr>
+          <tr><th>의사랑 AI</th><td>정상가 월 70,000원 → 2026년 말까지 0원</td><td>월 구독</td></tr>
+          <tr><th>케어마인더 "케어노트"</th><td>0 · 9,900 · 39,000원</td><td>사용자당 월</td></tr>
+          <tr><th>MINT</th><td>기본료 + 방문진료 환자당(금액 비공개)</td><td>기관당</td></tr>
+          <tr><th>해외 참고</th><td>カイポケ ¥25,000/월 · Alora $295/월~ · Freed $39~119 · iBow AI 방문당 ¥20 · OASIS 검토 건당 $70</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend" style="margin-top:8px">장기요양 기관은 "만원 단위"에 익숙하고, 의원의 음성 기록은 무료가 상한입니다. 반면 재택의료센터는 수가 수입이 커서 기관당 10만원대를 감당할 수 있습니다.</p>
+
+    <h3 class="sub-h">제안 요금</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>대상</th><th>제안</th><th>기준</th></tr></thead>
+        <tbody>
+          <tr class="ours"><th>재택의료센터</th><td>기본 월 5만원 + 관리 수급자당 3천원(40명이면 17만원, 센터 월 수입의 약 1.5%) · 또는 기관당 월 15만원(사용자 5명 포함) · 12개월 선결제 시 2개월 무료</td><td>MINT와 같은 구조</td></tr>
+          <tr><th>방문진료만 하는 의원</th><td>의사당 월 3~5만원</td><td>의사랑 AI 정상가 7만원 아래</td></tr>
+          <tr><th>방문간호</th><td>무료 ~ 월 1.5만원</td><td>장기요양 프로그램 월 1~3만원</td></tr>
+          <tr><th>AI 구술</th><td>모든 요금제에 포함</td><td>국내외 모두 무료화</td></tr>
+          <tr><th>보증(선택)</th><td>케어노트가 경고하지 못해 놓친 기본료는 그달 요금에서 뺀다</td><td>Brellium 환수 보증 응용</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h">누가 사고 어떻게 결정하나</h3>
+    <ul class="bul">
+      <li><b>의원(방문진료·재택 전담형)</b>: 원장이 혼자 결정하고 월 구독. 비교 대상은 EMR 부가 기능(의사랑 AI 무료).</li>
+      <li><b>재택의료센터</b>: 지자체가 의료기관과 협약해 공단에 신청하고 공단이 선정. 운영 주체가 의료기관이라 소프트웨어는 원장·센터장이 고릅니다. 지자체가 센터용 기록 SW를 사 준 사례는 찾지 못했습니다.</li>
+      <li><b>보건소</b>: 공공 구매. 2천만원 이하면 견적 1장 수의계약(청년창업·여성·장애인기업 5천만원), 같은 업체와는 기초 지자체 기준 연 5회·연 2억원 상한(2026.8). 클라우드 SaaS는 디지털서비스 등록에 CSAP 필요.</li>
+      <li><b>방문간호 기관</b>: 기관장이 결정. 월 1만원대 프로그램 + 공단 무료 앱 환경.</li>
+      <li><b>지자체(통합돌봄)</b>: 직접 사지는 않지만 센터와 협약하는 주체. 산 사례는 AI 안부 확인 쪽(춘천, 경기도 AX-Sprint).</li>
+    </ul>
+
+    <h3 class="sub-h">정부 지원</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>사업</th><th>주관</th><th>금액</th><th>시기(2026 기준)</th><th>적합도</th></tr></thead>
+        <tbody>
+          <tr class="ours"><th>AI 바우처</th><td>과기정통부·NIPA</td><td>과제당 최대 2억원, 민간 매칭. <b>수요기업에 의료기관 포함</b></td><td>공고 2.27, 접수 3.16~3.30, 사업 5~11월</td><td><span class="pill good">높음</span> 공급기업 등록이 먼저</td></tr>
+          <tr><th>중기부 스마트서비스</th><td>중기부</td><td>개발 5천만원, 고도화 최대 1억원</td><td>2026년 175곳 선정</td><td><span class="pill warn">중간</span> 자체 개발비</td></tr>
+          <tr><th>보건의료 AX</th><td>복지부·보건의료정보원</td><td>과제당 약 14.1억원("일차의료 서비스 개선" 분야)</td><td>4.1~</td><td><span class="pill warn">중간</span> 큰 컨소시엄의 일원으로</td></tr>
+          <tr><th>의료 AI 테스트베드</th><td>복지부·보건의료정보원</td><td>"진료 과정 효율화 AI" 과제당 2억원, 정부 80%</td><td>3.31~5.4</td><td><span class="pill warn">중간</span> 의료데이터 중심병원 컨소시엄 필수</td></tr>
+          <tr><th>복지 AX-Sprint</th><td>복지부·사회보장정보원</td><td>총 280억원</td><td>3.26~4.24</td><td><span class="pill plain">낮음</span> 지자체 컨소시엄, 분야가 다름</td></tr>
+          <tr><th>클라우드 바우처</th><td>NIPA</td><td>수요기업당 최대 6,910만원</td><td>4.3~4.21</td><td><span class="pill plain">낮음</span> 수요기업이 중소기업</td></tr>
+          <tr><th>혁신제품(디지털서비스)</th><td>조달청·NIA</td><td>3년간 금액 제한 없는 수의계약</td><td>유형1 2.5~3.9</td><td><span class="pill plain">나중</span> 보건소 판매용, CSAP 먼저</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="qd">
+      <div class="fig">
+        <h3>판매 채널 순위</h3>
+        <ol>
+          <li><span><b>재택의료센터 직접 영업</b>. 공단이 대상 기관 명단을 공개(data.go.kr). 2026년 새로 지정된 센터는 아직 업무 체계가 없다</span></li>
+          <li><span><b>한국재택의료협회</b>(kahm.net). 수가표·공모 안내를 올리고, 『재택의료 실무매뉴얼』(2026.6, 서식·기록·청구 장 포함) 저자가 회원으로 활동</span></li>
+          <li><span><b>지자체 통합돌봄 부서</b>. 직접 사지는 않지만 센터와 협약하는 소개 통로</span></li>
+          <li><span><b>제약사 영업 대행</b>. 대웅·동아·유한이 디지털헬스 제품의 의료기관 영업을 맡은 사례</span></li>
+          <li><span>EMR 업체 제휴는 가능성 낮음(GC메디아이가 AI를 직접 무료로 풂). 방문간호 단체·의사회 경로는 제휴 사례 확인 못 함</span></li>
+        </ol>
+      </div>
+      <div class="fig">
+        <h3>첫 유료 고객 10곳까지</h3>
+        <ol>
+          <li><span>공개 명단에서 2026년 신규 지정 센터와 수도권 전담형 센터 30곳을 고른다</span></li>
+          <li><span>협회 쪽 오피니언 리더 1~2명을 함께 만드는 사용자로</span></li>
+          <li><span>5곳에서 3개월 무료 시범. 지표: 지킨 기본료 금액, 방문 1건당 기록·입력 시간, 공식 전산 미입력 0건. 유료 전환 조건은 계약서에 미리</span></li>
+          <li><span>전환한 3~5곳을 사례로 같은 지역·협회 경로로 5~7곳 더</span></li>
+          <li><span>2027 AI 바우처(2026 일정으로 보면 2~3월 공고)에 이 고객들을 수요기관으로 묶어 다음 해 비용을 정부 지원으로</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 다음 할 일 -->
+  <section class="sec" id="next">
+    <div class="sec-label">다음 할 일</div>
+    <h2>다음 2주, 그리고 만드는 순서</h2>
+    <div class="qd">
+      <div class="fig">
+        <h3>다음 2주 (결정에 필요한 확인)</h3>
+        <ol>
+          <li><span><b>심평원</b>: 방문진료 점검서식도 엑셀 업로드·Agent로 낼 수 있는지(양식·신청 절차), 브라우저 확장이 화면을 채우고 최종 제출은 사람이 누르는 방식이 허용되는지, Open API·개편 계획, 주민번호 대신 쓸 환자 식별 방법</span></li>
+          <li><span><b>공단</b>: 정보마당 제5~8호 일괄 등록·연계 API 계획, 확정본을 원본으로 인정받는 전자서명 요건, 인증서 기반 민간 연동에 대한 입장, 통합돌봄 민간 연계 계획</span></li>
+          <li><span><b>협력 기관 인터뷰</b>: 포털 입력 화면마다 걸리는 시간, 지난 1년 못 받은 기본료 사례, 사례회의·케어플랜 작성 방식, 지자체에 내는 통보 서류, 카톡·엑셀 사용, 사회복지사의 하루</span></li>
+          <li><span><b>MINT 데모 요청</b>: 자동입력을 실제로 어떻게 하는지(인증서 위치, 최종 제출 주체), 가격</span></li>
+          <li><span><b>이름 결정</b>, 실제 데이터용 LLM·음성인식 처리 위치 결정</span></li>
+        </ol>
+      </div>
+      <div class="fig">
+        <h3>만드는 순서 (제안)</h3>
+        <ol>
+          <li><span>① 재택의료 수입 지킴이</span></li>
+          <li><span>② 입력 도우미 · 미입력 현황판 · 제출 전 검사</span></li>
+          <li><span>판매 전 막힘 해소(이름·LLM·음성인식·서류)와 병행</span></li>
+          <li><span>④ 확정 때 전자서명 → 원본</span></li>
+          <li><span>③ 포괄평가·케어플랜·사례회의·인수인계</span></li>
+          <li><span>② 브라우저 확장(심평원 임시저장까지, 문의 답을 받은 뒤)</span></li>
+          <li><span>⑤ 통합돌봄 연계 서류</span></li>
+        </ol>
+      </div>
+    </div>
+    <details class="more">
+      <summary>조사 방법과 한계</summary>
+      <ul class="in">
+        <li>2026년 10월 1일, 여섯 갈래(정책·수가, 국내 경쟁사, 해외 사례, 현장의 불편, 심평원·공단 연동, 가격·판매)로 나눠 공식 문서·지침 원문·보도·업체 자료를 조사했습니다. 재택의료센터 지침 2026.2, 일차의료 방문진료 지침 2026.1, 보사연 보고서, 사회보장정보원 이슈&amp;트렌드, 2026 방문간호 평가매뉴얼은 원문을 직접 읽었습니다.</li>
+        <li>여섯 갈래 모두 웹 검색 한도에 걸려 커뮤니티 후기, MINT 가격, 의원 EMR의 방문진료 기능, 사회복지사 본인의 목소리, 카톡·엑셀 사용 실태, 센터 이직률은 확인하지 못했습니다. 위 인터뷰로 채웁니다.</li>
+        <li>업체 발표 수치는 업체 수치입니다. 추정·계산 값은 본문에 "추정"으로 적었습니다. 법률·규제 해석은 전문가 검토 전입니다.</li>
+        <li>재택의료센터 수는 같은 보도자료 안에서 본문 463곳, 표 413곳으로 다릅니다. 방문진료료는 2026.1 지침 기준(131,720원)이고, 2025년 자료에는 129,650원·2024년 128,960원으로 나옵니다.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 출처 -->
+  <section class="sec" id="sources">
+    <div class="sec-label">출처</div>
+    <h2>근거 자료</h2>
+    <div class="sources">
+      <details>
+        <summary>정책·수가·시장 규모</summary>
+        <ul>
+          <li>장기요양 재택의료센터 시범사업 지침 2026.2: <a href="https://koa.or.kr/bbs/download.php?code=insurance&amp;number=34934">koa.or.kr</a> · 일차의료 방문진료 지침 2026.1: <a href="https://www.mohw.go.kr/boardDownload.es?bid=0003&amp;list_no=1488520&amp;seq=3">mohw.go.kr</a></li>
+          <li>재택의료센터 50곳 추가 지정(복지부 2026.6.16): <a href="https://mohw.go.kr/board.es?act=view&amp;bid=0027&amp;list_no=1490869&amp;mid=a10503010100&amp;nPage=1&amp;tag=">mohw.go.kr</a> · 422곳(2026.2.13): <a href="https://www.korea.kr/news/policyNewsView.do?newsId=148959563">korea.kr</a> · 2025년 구성·이용자(후생신보 2026.1.8): <a href="http://www.whosaeng.com/sub_read.html?uid=167131&amp;section=sc1">whosaeng.com</a></li>
+          <li>재택의료센터 공모·수가(복지부 2025.10.28): <a href="https://files-scs.pstatic.net/2025/11/03/1jRBcsEBbJ/%5B10.+28.%ED%99%94+%EA%B3%B5%EB%AA%A8+%EC%8B%A4%EC%8B%9C(9%EC%8B%9C)+%EC%9D%B4%ED%9B%84%5D+%EC%9E%A5%EA%B8%B0%EC%9A%94%EC%96%91+%EC%9E%AC%ED%83%9D%EC%9D%98%EB%A3%8C%EC%84%BC%ED%84%B0+%EC%8B%9C%EB%B2%94%EC%82%AC%EC%97%85+%EC%B0%B8%EC%97%AC+%EC%A7%80%EB%B0%A9%EC%9E%90%EC%B9%98%EB%8B%A8%EC%B2%B4+%EB%B0%8F+%EC%9D%98%EB%A3%8C%EA%B8%B0%EA%B4%80+%EB%AA%A8%EC%A7%91.pdf">보도자료 PDF</a> · 본사업 판단(청년의사 2026.1.8): <a href="http://www.docdocdoc.co.kr/news/articleView.html?idxno=3035395">docdocdoc.co.kr</a></li>
+          <li>방문진료 실적(데일리팜 2026.1.9): <a href="https://dailypharm.com/user/news/334624">dailypharm.com</a> · 2024.7 누적(병원신문 2024.10.8): <a href="https://www.khanews.com/news/articleView.html?idxno=230575">khanews.com</a> · 연장(의협신문 2025.11.28): <a href="https://www.doctorsnews.co.kr/news/articleView.html?idxno=162304">doctorsnews.co.kr</a> · 의원 참여율(의학신문 2026.8.6): <a href="https://www.bosa.co.kr/news/articleView.html?idxno=3009765">bosa.co.kr</a></li>
+          <li>방문간호 기관 수(공단 자율공시): <a href="https://www.nhis.or.kr/announce/wbhaec11502m01.do">nhis.or.kr</a> · 급여이용자 현황(공공데이터): <a href="https://www.data.go.kr/data/15124619/fileData.do">data.go.kr</a></li>
+          <li>장애인 건강주치의(뉴시스 2026.8.20): <a href="https://www.newsis.com/view/NISX20260819_0003754860">newsis.com</a> · 방문 비중(후생신보 2026.9.1): <a href="http://www.whosaeng.com/173287">whosaeng.com</a> · 가정형 호스피스(헤럴드경제 2026.1.29): <a href="https://biz.heraldcorp.com/article/10665919">heraldcorp.com</a> · 일차의료 혁신 시범(의학신문 2026.9.28): <a href="https://www.bosa.co.kr/news/articleView.html?idxno=3012874">bosa.co.kr</a></li>
+          <li>돌봄통합지원법: <a href="https://www.law.go.kr/법령/의료ㆍ요양등지역돌봄의통합지원에관한법률">law.go.kr</a> · 2026 예산(복지부 2026.1.8): <a href="https://www.mohw.go.kr/board.es?mid=a10503000000&amp;bid=0027&amp;list_no=1488556&amp;act=view">mohw.go.kr</a> · 2027 정부안(세계일보 2026.9.4): <a href="https://www.segye.com/newsView/20260904508422">segye.com</a> · 6개월 실적(캐어유뉴스 2026.9.27): <a href="https://www.careyounews.org/news/articleView.html?idxno=11639">careyounews.org</a></li>
+          <li>지자체 지원: 안성(아주경제 2026.9.8): <a href="https://www.ajunews.com/view/20260908145442851">ajunews.com</a> · 영동(충청일보 2026.9.28): <a href="https://www.ccdailynews.com/news/articleView.html?idxno=2443214">ccdailynews.com</a> · 업무계획(더팩트 2026.7.16): <a href="https://news.tf.co.kr/read/life/2344304.htm">news.tf.co.kr</a></li>
+          <li>과징금 사례(의협신문 2026.8.23): <a href="http://www.doctorsnews.co.kr/news/articleView.html?idxno=165893">doctorsnews.co.kr</a> · 현지조사 기준(뉴스더보이스 2026.9.7): <a href="http://www.newsmp.com/news/articleView.html?idxno=257956">newsmp.com</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>현장의 불편</summary>
+        <ul>
+          <li>보사연 「주민참여형 지역건강돌봄체계」(2025.12): <a href="https://www.kihasa.re.kr/api/kihasa/file/download?seq=32713">kihasa.re.kr</a> · 사회보장정보원 이슈&amp;트렌드(2026.5.26): <a href="https://ssis.or.kr/lay1/bbs/S1T758C1128/A/362/view.do?article_seq=128302">ssis.or.kr</a></li>
+          <li>인력 부족 운영 중단(더팩트 2026.6.22): <a href="https://news.tf.co.kr/read/life/2334597.htm">news.tf.co.kr</a> · 1년 계약(세계일보 2026.2.9): <a href="https://v.daum.net/v/20260209210316587">daum.net</a> · 실제 방문 횟수(요양뉴스 2024.5.30): <a href="https://www.yoyangnews.co.kr/news/articleView.html?idxno=21428">yoyangnews.co.kr</a></li>
+          <li>방문진료 설문(의협신문 2023.11.1): <a href="https://www.doctorsnews.co.kr/news/articleView.html?idxno=151910">doctorsnews.co.kr</a> · (메디게이트 2023.11.1): <a href="https://medigatenews.com/news/1378400982">medigatenews.com</a> · 수가 미반영(청년의사 2025.1.6): <a href="http://www.docdocdoc.co.kr/news/articleView.html?idxno=3024755">docdocdoc.co.kr</a> · 재택의료특위 포럼(하이닥 2026.6.3): <a href="https://news.hidoc.co.kr/news/articleView.html?idxno=63034">hidoc.co.kr</a></li>
+          <li>심평원 한의 방문진료 효과평가(2024.12): <a href="https://repository.hira.or.kr/handle/2019.oak/3454">repository.hira.or.kr</a> · 2026 방문간호 평가매뉴얼: <a href="https://www.carefor.co.kr/ct_att/contents_article/0/202602/46102/iYTbLHmO4V.pdf">carefor.co.kr</a> · 방문간호 분절(라포르시안 2025.12.10): <a href="https://www.rapportian.com/news/articleView.html?idxno=230058">rapportian.com</a></li>
+          <li>통합돌봄 인력(서플 2026.8.26): <a href="https://supple.kr/news/cmt944qqp005iqo6bn4e421l6">supple.kr</a> · (헬스경향 2026.7.23): <a href="https://www.k-health.com/news/articleView.html?idxno=100223">k-health.com</a> · 의뢰 내용(쿠키뉴스 2026.9.9): <a href="https://www.kukinews.com/article/view/kuk202609080171">kukinews.com</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>국내 경쟁</summary>
+        <ul>
+          <li>MINT: <a href="https://mint.novogen.co.kr/">mint.novogen.co.kr</a> · <a href="https://www.novogen.kr/">novogen.kr</a> · 30여 센터(보건신문 2026.5.21): <a href="http://www.bokuennews.com/news/article.html?no=278587">bokuennews.com</a></li>
+          <li>의사랑 AI: <a href="https://ysrai-intro.gcmediai.com/intro1">gcmediai.com</a> · 무료 제공(헤럴드경제 2026.8.6): <a href="https://biz.heraldcorp.com/article/10832473">heraldcorp.com</a> · 니어닥(2026.8.5): <a href="https://www.unicornfactory.co.kr/article/2026073009362579452">unicornfactory.co.kr</a></li>
+          <li>이지케어: <a href="https://www.easyms.co.kr/new/ezCare_charge.html">easyms.co.kr</a> · 케어포 요금: <a href="https://carefor.co.kr/price/cost.php">carefor.co.kr</a> · 케어포 인증서 연동(2025.10.28): <a href="https://www.carefor.co.kr/cs/view_notice.php?calmgno=45974">carefor.co.kr</a> · 하이케어: <a href="https://support.highcare.kr/firstguide">highcare.kr</a> · 엔젤시스템: <a href="https://www.silverangel.kr/newSilverangel/service/extraService.do">silverangel.kr</a></li>
+          <li>모비닥 홈케어: <a href="https://play.google.com/store/apps/details?id=us.mobidoc.housecall">Google Play</a> · 케어허브(중부일보 2025.3.12): <a href="https://www.joongboo.com/news/articleView.html?idxno=363686891">joongboo.com</a> · 스마트장기요양 앱: <a href="https://apps.apple.com/kr/app/id6745545595">App Store</a></li>
+          <li>퍼즐에이아이: <a href="https://www.puzzle-ai.com/voiceenr">puzzle-ai.com</a> · 셀바스AI 메디보이스: <a href="https://medivoice.selvasai.com/">selvasai.com</a> · 케어마인더 케어노트: <a href="https://careminder.biz/ko/products/carenote">careminder.biz</a> · 공개(2026.8.21): <a href="https://digitalchosun.dizzo.com/site/data/html_dir/2026/08/21/2026082180187.html">digitalchosun.dizzo.com</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>해외</summary>
+        <ul>
+          <li>WellSky AI 포함(2026.8.5): <a href="https://wellsky.com/wellsky-scribe-solution-helps-home-health-clinicians-see-more-patients-spend-less-time-on-after-hours-documentation/">wellsky.com</a> · Axxess: <a href="https://www.axxess.com/ai">axxess.com</a> · HCHB Curate(2026.3.12): <a href="https://hchb.com/homecare-homebase-announces-curate-scribe-a-native-ai-documentation-solution-embedded-in-the-hchb-ehr-in-partnership-with-stenohealth/">hchb.com</a> · Netsmart(2026.9.16): <a href="https://healthtechinsiders.com/netsmart-highlights-ai-at-connections2026/">healthtechinsiders.com</a></li>
+          <li>Apricot: <a href="https://www.apricothealth.ai/">apricothealth.ai</a> · Brellium: <a href="https://www.healthcareittoday.com/2025/05/20/brellium-raises-16-7-million-to-build-healthcares-ai-powered-clinical-compliance-platform/">healthcareittoday.com</a> · OASIS 검토 요금: <a href="https://www.homecareanswers.com/FAQ">homecareanswers.com</a> · Alora: <a href="https://www.capterra.com/p/69030/Alora-Homecare-Software/pricing/">capterra.com</a></li>
+          <li>스크라이브 효과 연구(STAT 2026.4.1): <a href="https://www.statnews.com/2026/04/01/ai-ambient-scribes-modest-time-savings-clinical-documentation/">statnews.com</a> · Epic AI Charting(2026.2.4): <a href="https://www.statnews.com/2026/02/04/epic-ai-charting-ambient-scribe-abridge-microsoft/">statnews.com</a> · 범용화(Medical Economics 2026.3.30): <a href="https://www.medicaleconomics.com/view/take-note-the-ai-scribe-era-is-here">medicaleconomics.com</a> · Abridge 청구 전 검토(2026.9.14): <a href="https://hitconsultant.net/2026/09/14/abridge-launches-pre-bill-review-cdi-coding-teams-inpatient-claims-drg-integrity/">hitconsultant.net</a></li>
+          <li>カイポケ 요금: <a href="https://houkan.kaipoke.biz/price/">kaipoke.biz</a> · スタンドLM 연동(2026.9.29): <a href="https://www.joint-kaigo.com/articles/49062/">joint-kaigo.com</a> · iBow AI 요금: <a href="https://ewell.co.jp/news/ewellai_ai/index.html">ewell.co.jp</a> · homis: <a href="https://digi-mado.jp/products/67774/">digi-mado.jp</a> · 방문간호 기록 AI 비교(2026.9.10): <a href="https://lifeshift-inc.com/houkan-kiroku-ai-erabikata/">lifeshift-inc.com</a></li>
+          <li>Birdie 요금: <a href="https://www.birdie.care/pricing">birdie.care</a> · NHS 앰비언트 공급사 등록(2026.1.19): <a href="https://htn.co.uk/2026/01/19/nhs-england-lists-19-suppliers-meeting-criteria-for-ambient-voice-registry/">htn.co.uk</a> · 미국 EVV(2026.5.3): <a href="https://www.aveecare.com/resources/evv-requirements-by-state-2026">aveecare.com</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>전산 연동·법</summary>
+        <ul>
+          <li>심평원 자료제출 시스템 개통(메디칼업저버 2020.12.21): <a href="https://www.monews.co.kr/news/articleView.html?idxno=216654">monews.co.kr</a> · 재활환자 재택의료 지침 2024.1: <a href="https://www.hira.or.kr/bbs/157/2023/12/BZ202312049364563.pdf">hira.or.kr</a> · 일차의료 방문진료 지침(심평원 공지 2026.1.6): <a href="https://www.hira.or.kr/bbsDummy.do?pgmid=HIRAA020002000100&amp;brdScnBltNo=4&amp;brdBltNo=11905">hira.or.kr</a></li>
+          <li>공단 재택의료센터 전산매뉴얼 2025.1: <a href="https://kahm.net/data/1268">kahm.net</a> · RFID 전산 가이드북 2023.12: <a href="https://www.carefor.co.kr/ct_att/contents_article/0/202402/44604/D0BLtemMIF.pdf">carefor.co.kr</a> · 장기요양급여비용 청구 고시: <a href="https://www.nhis.or.kr/lm/lmxsrv/law/lawFullContent.do?SEQ=101&amp;SEQ_HISTORY=27031">nhis.or.kr</a></li>
+          <li>웰체크 심평원 연동(메디포뉴스 2024.3.19): <a href="https://www.medifonews.com/news/article.html?no=188982">medifonews.com</a> · 케어하자 확장: <a href="https://chromewebstore.google.com/detail/jonhgmmcldlcemdnmmaapokikonidkja">Chrome 웹 스토어</a></li>
+          <li>청구방법·작성요령 2024.7: <a href="https://www.hira.or.kr/ebooksc/2024/09/BZ202409090480881.pdf">hira.or.kr</a> · 청구오류 사전점검(2024.4.26): <a href="https://www.hira.or.kr/bbs/157/2024/04/BZ202404269916335.pdf">hira.or.kr</a></li>
+          <li>전자서명법: <a href="https://casenote.kr/법령/전자서명법">casenote.kr</a> · 정보통신망법 제48조: <a href="https://casenote.kr/법령/정보통신망_이용촉진_및_정보보호_등에_관한_법률/제48조">casenote.kr</a> · 의료법 제23조: <a href="https://casenote.kr/법령/의료법/제23조">casenote.kr</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>가격·지원·규제</summary>
+        <ul>
+          <li>재택의료센터 기관 명단(공단 공공데이터): <a href="https://www.data.go.kr/data/15149306/fileData.do">data.go.kr</a> · 한국재택의료협회: <a href="https://kahm.net">kahm.net</a> · 『재택의료 실무매뉴얼』(청년의사): <a href="http://www.docdocdoc.co.kr/news/articleView.html?idxno=3040233">docdocdoc.co.kr</a></li>
+          <li>AI 바우처(NIPA): <a href="https://www.nipa.kr/home/2-2/16592">nipa.kr</a> · 클라우드 바우처: <a href="https://www.nipa.kr/home/2-2/16518">nipa.kr</a> · 보건의료 AX(아시아경제 2026.4.9): <a href="https://view.asiae.co.kr/article/2026040911462871939">asiae.co.kr</a> · 중기부 스마트서비스(2026.8.18): <a href="https://zdnet.co.kr/view/?no=20260818215137">zdnet.co.kr</a></li>
+          <li>수의계약 상한(아주경제 2026.8.13): <a href="https://www.ajunews.com/view/20260813142859371">ajunews.com</a> · 디지털서비스 등록 안내: <a href="https://www.digitalmarket.kr/kor/introduction/ompIntro/registGuide.jsp">digitalmarket.kr</a> · 제약사 영업 대행(2025.12.30): <a href="https://zdnet.co.kr/view/?no=20251229171234">zdnet.co.kr</a></li>
+          <li>Gemini API 약관: <a href="https://ai.google.dev/gemini-api/terms">ai.google.dev</a> · 개인정보보호법 제28조의8: <a href="https://casenote.kr/법령/개인정보_보호법/제28조의8">casenote.kr</a> · 개인정보위 생성형 AI 안내서: <a href="https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&amp;bbscttNo=20836">privacy.go.kr</a> · 식약처 가이드라인 해설: <a href="https://www.shinkim.com/kor/media/newsletter/2739">shinkim.com</a></li>
+          <li>CLOVA Studio 공공용: <a href="https://api-gov.ncloud-docs.com/docs/clovastudio-overview">ncloud-docs.com</a> · Solar 의무기록 어시스턴트(AI타임스 2026.8.19): <a href="https://www.aitimes.com/news/articleView.html?idxno=214127">aitimes.com</a> · EMR 인증 수수료: <a href="https://www.khis.kr/board.es?mid=a10515000000&amp;bid=0050&amp;tag=&amp;act=view&amp;list_no=2189">khis.kr</a></li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <p>조사 2026년 10월 1일 · 개발 지침은 <a href="/dev">/dev</a> · 업체 발표 수치는 업체 수치, 추정은 본문에 표시했습니다.</p>
+    <p>법률·규제 해석은 전문가 검토 전 내용입니다.</p>
+  </footer>
+</main>
+</body>
+</html>

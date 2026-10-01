@@ -119,7 +119,7 @@
   .toc a { flex: none; padding: 5px 12px; border-radius: 999px; font-size: 14px; color: var(--ink-2); text-decoration: none; }
   .toc a:hover { background: var(--surface); }
 
-  .hero { padding-block: 44px 0; display: grid; gap: 12px; }
+  .hero { padding-block: 44px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
   .hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.25; }
   .hero .lead { font-size: 17.5px; color: var(--ink-2); max-width: 60ch; }
@@ -288,6 +288,9 @@
   .crumbs li:not(:last-child)::after { content: "›"; margin: 0 5px; color: var(--muted); font-size: 13px; }
   .dcard dd b { font-weight: 600; color: var(--ink); }
   .sub-h { margin-top: 36px; font-size: 18px; font-weight: 700; }
+  .golink { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; }
+  .golink a { font-weight: 700; font-size: 16px; }
+  .golink span { font-size: 13.5px; color: var(--ink-2); }
   @media (max-width: 760px) {
     .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .tiles.t3 { grid-template-columns: 1fr; }
@@ -321,6 +324,7 @@
     <a href="#voice">녹음</a>
     <a href="#ai">AI 초안</a>
     <a href="#industry">현장 앱</a>
+    <a href="#market">시장</a>
     <a href="#todo">남은 일</a>
     <a href="#confirm">확인·결정</a>
     <a href="#sources">출처</a>
@@ -329,7 +333,7 @@
 
 <main class="wrap">
   <header class="hero" id="top">
-    <div class="eyebrow">개발 지침 · 2026년 9월 29일 기준</div>
+    <div class="eyebrow">개발 지침 · 2026년 10월 1일 기준</div>
     <h1>케어노트 개발 지침</h1>
     <p class="lead">케어노트를 올바르게 만들기 위해 알아야 할 사실을 그림으로 정리했습니다. 근거(지침 쪽수)와 세부 내용은 각 그림 아래 "근거와 자세히"에 있습니다.</p>
 
@@ -387,6 +391,8 @@
       <li><span>AI 초안은 기록이 아니다. <b>숫자는 코드로 재대조</b>, 확정은 사람</span></li>
       <li><span>기관 원본이 되려면 <b>전자서명·수정 이력·접속기록</b></span></li>
       <li><span>실제 대상자 데이터 전에 <b>AI·음성 처리 위치와 보안</b>을 갖춘다</span></li>
+      <li><span>AI 구술은 기본 기능. 돈은 <b>수입 지키기·입력 줄이기</b>에서 받는다</span></li>
+      <li><span>첫 유료 고객은 <b>재택의료센터</b></span></li>
     </ol>
   </header>
 
@@ -1469,34 +1475,49 @@
     </details>
   </section>
 
+  <!-- 시장조사 (전체는 /dev/market) -->
+  <section class="sec" id="market">
+    <div class="sec-label">시장조사 · 2026년 10월 1일</div>
+    <h2>돈을 내고 쓰게 하려면: 수입을 지키고 입력을 줄인다</h2>
+    <p class="lead">"음성으로 기록을 써 준다"만으로는 돈을 받기 어렵습니다. 공식 전산에 다시 입력하는 일이 그대로 남고, 음성 기록 AI는 국내외 모두 무료가 되는 중이며, AI가 아닌 기능은 경쟁사(MINT)에 이미 있습니다. 파는 가치를 <b>재택의료센터의 수입을 지켜 주는 것</b>과 <b>공식 전산 입력을 줄여 주는 것</b>으로 옮깁니다.</p>
+    <div class="tiles t3">
+      <div class="tile"><span class="pill">첫 유료 고객</span><b>재택의료센터 463곳</b><span class="s">수급자 1명 월 약 28만원. 수가·규칙·세 직종 서식이 가장 많이 몰려 있다</span></div>
+      <div class="tile"><span class="pill bad">수입 지키기</span><b>기본료 14만원은 요건 하나만 빠져도 0원</b><span class="s">요건·기한·한도를 금액으로 미리 경고하는 기능이 첫 유료 기능</span></div>
+      <div class="tile"><span class="pill warn">입력 줄이기</span><b>"사이트에 자동 입력되면 쓰겠다"</b><span class="s">입력 도우미 → 제출 전 검사 → 일괄 파일 → 브라우저 확장 순서로</span></div>
+    </div>
+    <p class="golink"><a href="/dev/market">시장조사 전체 보기 →</a><span>왜 어려운가 · 시장과 돈의 흐름 · 현장의 불편 · 국내 경쟁 · 해외 · 전산 연동 · 아이디어 5개 · 팔기 전에 · 가격·판매 · 다음 할 일 · 출처</span></p>
+  </section>
+
   <!-- 남은 일 -->
   <section class="sec" id="todo">
     <div class="sec-label">남은 일</div>
-    <h2>지침에서 나온 개발 과제</h2>
+    <h2>지침과 시장조사에서 나온 개발 과제</h2>
     <div class="lanes">
       <div class="lane">
         <h3><span class="pill bad">높음</span></h3>
         <ul style="display:grid; gap:8px">
-          <li>심평원·공단 사이트 입력 지원 (공식 경로 확인 → 크롬 확장)</li>
-          <li>원본 방식 결정 (종이·전자서명) · PDF 출력은 됨</li>
-          <li>파일럿 전 보안·보존 요건</li>
+          <li>재택의료 수입 지킴이: 산정 요건·기한·한도를 금액으로 (같은 날 겹침 확대, 60/140회·주 3회·추가 3회 포함)</li>
+          <li>공식 전산 입력 도우미 · 미입력 현황판 · 제출 전 검사</li>
+          <li>심평원·공단 문의(엑셀·Agent·확장 허용) → 브라우저 확장(심평원 임시저장까지)</li>
+          <li>판매 전 막힘: 이름, 유료·국내 LLM, 음성인식 암호화, 처리방침·위탁계약</li>
         </ul>
       </div>
       <div class="lane">
         <h3><span class="pill warn">중간</span></h3>
         <ul style="display:grid; gap:8px">
-          <li>같은 날 겹침 확인 확대 (가정간호·주야간보호 등)</li>
-          <li>횟수 한도 경고 (60/140회, 주 3회, 추가 3회)</li>
-          <li>포괄평가(제5호)와 "함께 방문" 묶기</li>
+          <li>포괄평가(제5호)·케어플랜과 "함께 방문" 묶기</li>
+          <li>사례회의 기록(구술 → 회의록) · 인수인계 요약</li>
+          <li>원본 방식 결정 · 확정 때 전자서명 (PDF 출력은 됨)</li>
           <li>연속 방문 묶기 (동일 세대 자동 체크)</li>
         </ul>
       </div>
       <div class="lane">
         <h3><span class="pill plain">나중</span></h3>
         <ul style="display:grid; gap:8px">
+          <li>통합돌봄 통보·모니터링 서류</li>
+          <li>하루 동선·이동비 정산 · 보호자 알림톡·본인부담 수납</li>
           <li>방문간호지시서 만료 알림 (180일)</li>
-          <li>오프라인 기록 저장</li>
-          <li>직종 추가 (한의사 등)</li>
+          <li>오프라인 기록 저장 · 직종 추가 (한의사 등)</li>
         </ul>
       </div>
     </div>
@@ -1523,19 +1544,20 @@
       <div class="fig">
         <h3>정해야 할 것</h3>
         <ol>
-          <li><span>다음 우선순위 <span class="pill">추천: 사이트 입력 확인부터</span></span></li>
+          <li><span>다음 우선순위 <span class="pill">추천: 수입 지킴이 + 입력 도우미</span> (<a href="/dev/market">시장조사</a>)</span></li>
+          <li><span>가격·첫 고객 <span class="pill">추천: 재택의료센터</span></span></li>
           <li><span>협력 기관·현장 사용자 확보</span></li>
           <li><span>실제 데이터용 AI·음성 처리 위치</span></li>
           <li><span>배포 환경 <span class="pill good">정함: cn.clickcns.com</span></span></li>
           <li><span>로그인 추가 인증 여부</span></li>
-          <li><span>제품명 <span class="pill warn">같은 이름 앱 있음</span></span></li>
+          <li><span>제품명 <span class="pill warn">같은 범주·같은 이름 앱 있음</span></span></li>
         </ol>
       </div>
     </div>
     <details class="more">
       <summary>근거와 자세히</summary>
       <ul class="in">
-        <li>제품명: 케어마인더가 간호사 음성으로 간호기록·인수인계를 만드는 앱을 "케어노트(CareNote)"라는 이름으로 2026년 8월 공개했습니다. 상표·명칭 확인이 필요합니다.</li>
+        <li>제품명: 케어마인더가 간호사 음성으로 간호기록·인수인계를 만드는 앱을 "케어노트(CareNote)"라는 이름으로 2026년 6월 출시하고 8월 공개 행사를 했습니다(병원 간호사 대상, 사용자당 월 0·9,900·39,000원). 같은 음성 기록 범주라 팔기 전에 상표를 확인하고 이름을 정합니다.</li>
         <li>협력 기관 답을 받으면 서식 규칙(<code>programs.ts</code>)과 서식 정의만 고칩니다.</li>
         <li>배포: 음성인식 서버가 있는 클러스터에 함께 올렸습니다. 현장 웹 <code>cn.clickcns.com</code>, 관리 웹 <code>/admin</code>, 서버 <code>/api</code>, 이 문서 <code>/dev</code>. HTTPS라 현장 웹 마이크가 켜집니다. 실제 대상자 데이터 전에는 AI·음성 처리 위치를 다시 정합니다.</li>
       </ul>
@@ -1546,6 +1568,7 @@
   <section class="sec" id="sources">
     <div class="sec-label">출처</div>
     <h2>근거 자료</h2>
+    <p class="lead">시장조사의 출처는 <a href="/dev/market#sources">시장조사 페이지</a>에 따로 모았습니다.</p>
     <div class="sources">
       <details>
         <summary>지침·법령</summary>
@@ -1583,7 +1606,7 @@
   </section>
 
   <footer>
-    <p>작성 2026년 9월 24일 · 최신화 2026년 9월 29일 · 지침 쪽수는 지침 본문에 인쇄된 쪽 번호입니다.</p>
+    <p>작성 2026년 9월 24일 · 최신화 2026년 10월 1일(시장조사 절) · 지침 쪽수는 지침 본문에 인쇄된 쪽 번호입니다.</p>
     <p>법률·규제 해석은 전문가 검토 전 내용입니다. 케어노트 반영 상태는 커밋 7d7c1e4와 작업 중 변경 기준입니다.</p>
   </footer>
 </main>
