@@ -1,4 +1,5 @@
 import type {
+  PortalQueueQuery,
   RecipientListQuery,
   SameDayWarningQuery,
   UserListQuery,
@@ -57,6 +58,13 @@ export const queryKeys = {
     /** 확정본 한 벌. 상세 아래라 상세와 함께 무효화된다. */
     version: (id: string, version: number) =>
       ["visits", "detail", id, "version", version] as const,
+    /** 포털 미입력 목록 전부. `lists` 아래라 확정·[수정] 뒤 목록과 함께 다시 받는다. */
+    portalQueues: ["visits", "list", "portal-queue"] as const,
+    portalQueue: (query: PortalQueueQuery) =>
+      ["visits", "list", "portal-queue", query] as const,
+    /** 방문 서식의 포털 입력 표시. 상세 아래라 상세와 함께 무효화된다. */
+    portalEntries: (id: string) =>
+      ["visits", "detail", id, "portal-entries"] as const,
     sameDayWarningsAll: ["visits", "same-day-warnings"] as const,
     sameDayWarnings: (query: SameDayWarningQuery) =>
       ["visits", "same-day-warnings", query] as const,

@@ -121,10 +121,12 @@ export function useVisitCalendar(query: VisitCalendarQuery) {
   });
 }
 
-export function useVisit(id: string) {
+/** 방문 상세. id가 없으면(고르기 전) 묻지 않는다. */
+export function useVisit(id: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.visits.detail(id),
-    queryFn: () => api.visits.get(id),
+    queryKey: queryKeys.visits.detail(id ?? ""),
+    queryFn: () => api.visits.get(id!),
+    enabled: !!id,
   });
 }
 

@@ -99,7 +99,7 @@ export function visitScope(actor: AuthenticatedUser): Prisma.VisitWhereInput {
  * 목록과 달력이 함께 쓰는 조회 조건: 보이는 범위(visitScope) + 필터.
  * 현장 직원은 staffId 필터와 상관없이 본인 방문만 본다.
  */
-function filterWhere(
+export function filterWhere(
   actor: AuthenticatedUser,
   filter: {
     organizationId?: string;
@@ -843,7 +843,7 @@ export class VisitService {
  * 날짜 조건(한국 날짜: 하루 date, 또는 기간 from~to)을 scheduledAt 범위로 바꾼다. `to`는 그날을 포함한다.
  * 목록·달력·같은 날 경고가 함께 쓴다. from ≤ to 검사는 각 스키마가 한다.
  */
-function scheduledRange(query: {
+export function scheduledRange(query: {
   date?: string;
   from?: string;
   to?: string;

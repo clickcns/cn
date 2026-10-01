@@ -20,7 +20,7 @@ export const LTC_NURSING_FORM = {
   code: "별지 제14호",
   title: "장기요양급여 제공기록지(방문간호)",
   shortTitle: "방문간호 제공기록지",
-  submitTo: "공단 스마트장기요양 앱",
+  portal: "NHIS_LTC_APP",
   sttTerms: ["혈압", "맥박", "체온", "욕창", "드레싱", "삼출물", "투약"],
   numberPairs: [BLOOD_PRESSURE_PAIR],
   followUps: [

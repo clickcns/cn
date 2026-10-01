@@ -49,6 +49,10 @@ export const router = createBrowserRouter(
                   lazy: page(() => import("@/pages/visit-detail")),
                 },
                 {
+                  path: ROUTES.portal,
+                  lazy: page(() => import("@/pages/portal")),
+                },
+                {
                   path: ROUTES.homeCare,
                   lazy: page(() => import("@/pages/home-care")),
                 },

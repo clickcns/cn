@@ -84,6 +84,7 @@ model User {
   /// 확정한 확정본·[수정]으로 되돌린 확정본(이력에 이름을 적는다)
   confirmedVersions     VisitRecordVersion[]   @relation("VersionConfirmedBy")
   reopenedVersions      VisitRecordVersion[]   @relation("VersionReopenedBy")
+  portalEntries         VisitPortalEntry[]
   /// 저장한 원본 서식 조정
   formLayoutAdjustments FormLayoutAdjustment[]
 
@@ -165,12 +166,13 @@ model Visit {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  organization Organization         @relation(fields: [organizationId], references: [id])
-  recipient    Recipient            @relation(fields: [recipientId], references: [id])
-  staff        User                 @relation(fields: [staffId], references: [id])
-  forms        VisitForm[]
-  dictation    VisitDictation?
-  versions     VisitRecordVersion[]
+  organization  Organization         @relation(fields: [organizationId], references: [id])
+  recipient     Recipient            @relation(fields: [recipientId], references: [id])
+  staff         User                 @relation(fields: [staffId], references: [id])
+  forms         VisitForm[]
+  dictation     VisitDictation?
+  versions      VisitRecordVersion[]
+  portalEntries VisitPortalEntry[]
 
   @@index([organizationId, scheduledAt])
   /// 현황판의 "확정 안 된 지난 방문"(상태 + 어제까지)
@@ -219,6 +221,27 @@ model VisitForm {
 
   @@unique([visitId, formId])
   @@map("visit_forms")
+}
+
+/// 확정한 서식을 공식 전산(심평원 자료제출 시스템·공단 정보마당·스마트장기요양 앱)에 옮겨 적었다는 표시.
+/// 서식마다 하나다. 케어노트는 공식 전산과 연결되지 않아 담당자·관리자가 [입력 완료]로 직접 표시하고,
+/// 표시를 지우면 행을 지운다(미입력 목록, shared-types portal-entry.ts).
+model VisitPortalEntry {
+  id          String   @id @default(uuid())
+  visitId     String
+  formId      String
+  enteredAt   DateTime
+  enteredById String
+  /// 접수번호 등 메모
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  visit     Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  enteredBy User  @relation(fields: [enteredById], references: [id])
+
+  @@unique([visitId, formId])
+  @@map("visit_portal_entries")
 }
 
 /// 방문 직후 음성 구술과 그로부터 만든 기록 초안. 방문당 하나이며, 다시 녹음하면 바꾸고

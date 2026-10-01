@@ -141,6 +141,16 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
   - 불러오기는 `mergeFormValues`(`features/forms/lib/merge-form-values.ts`)로 합친다. 지난 기록은 여러 개 고르는 칸을 그 기록대로 바꾸고(replace), 음성 초안(`mergeDraft`)은 이미 고른 항목에 더한다(union). 둘 다 빈 값으로 지우지 않고, 이미 입력한 값이 바뀌면 먼저 묻는다. 채운 뒤 그 서식을 열어 첫 채운 칸으로 가고 알림의 [되돌리기]로 되돌린다. 저장은 기존 [임시 저장].
   - 쿼리 키는 `visitKeys.pastRecords`(`lists` 아래 — 저장·확정·삭제 뒤 함께 다시 받는다). 칸마다 지난 값은 같은 쿼리의 모듈 수준 `select`라 녹음 중 다시 그려도 다시 계산하지 않는다.
 
+## 포털 입력 도우미 (공식 전산에 옮겨 적기)
+
+케어노트는 심평원·공단 전산과 연결되지 않는다(공개 쓰기 API 없음, 인증서를 다루지 않음). 확정한 기록을 담당자가 옮겨 적도록 포털 화면 순서대로 늘어놓고, 서식마다 한 번 [입력 완료]로 표시한다. 칸마다 체크하지 않는다(포털에서 한 번, 여기서 또 한 번 누르는 일이 되므로).
+
+- 옮겨 적을 곳은 서식 정의의 `FormDef.portal`(제4호 `HIRA` 심평원 자료제출 시스템, 제6~8호 `NHIS_HOME_CARE` 공단 정보마당, 제14호 `NHIS_LTC_APP` 스마트장기요양 앱)이다. 서식 머리의 "작성 후 … 입력합니다"도 이 값의 이름(`PORTAL_INFO[form.portal].label`)이다.
+- 나머지 규칙은 shared-types `portal-entry.ts` 한 곳이고, 두 웹은 `portalGuide(visit, formId, entry)` 하나를 그린다: 포털 안내(`PORTAL_INFO`: 주소·로그인 안내·앞뒤 단계·늘 보이는 주의, 칸 순서 근거 `orderNote` — 정보마당 화면 순서는 확인 전이라 서식 순서), 머리 칸(심평원은 작성의사·면허번호·실시일·수진자 — 주민번호는 저장하지 않아 [재진 불러오기] 안내), 서식 칸(고른 항목은 이름(제공 시간은 "· 15분"), 괄호 글·메모·숫자·글 칸은 붙여 넣을 값, 빈 칸은 "비워 둠" — 괄호 이름·증감은 엔진의 `optionDetailText`·`signedChange`를 화면·PDF와 함께 쓴다), 제출 전 확인(면허번호 없음, 시작 시각 없음, 포털에 넣은 뒤 다시 확정).
+- 표시는 `VisitPortalEntry`(방문·서식마다 한 행, 표시를 지우면 행 삭제). 서식 저장과 따로라 [수정]·다시 확정해도 남고, 화면이 "넣은 뒤 다시 확정"을 알린다. API(`PortalEntryService`, 권한은 방문 조회 `visitScope`와 같음): `GET /visits/portal-queue`(확정 방문 중 표시 없는 서식, 기간은 지난달 1일~오늘 `defaultPortalQueueFrom` — 지난달분 청구 마감이 이달 10일이고, 기능 전 오래된 확정 방문이 쌓이지 않게. 범위는 방문 목록과 같은 `filterWhere`, 1000건 넘으면 `truncated`), `GET /visits/:id/portal-entries`, `PUT /visits/:id/portal-entries/:formId`(확정한 방문만 409, 방문에 없는 서식 404, 메모 200자), `DELETE …`(표시 지우기).
+- 관리 웹 `/portal`(포털 입력): 왼쪽 미입력 목록(포털별, 오래된 것부터), 오른쪽 도우미(방문 정보·포털 바로가기, 제출 전 확인, 화면 순서대로 칸, 메모와 [입력 완료 · 다음으로] — 누르면 다음 서식이 열린다). 고른 서식은 주소 `?visit=&form=`. 쿼리 키는 `visits.portalQueue`(`lists` 아래)·`visits.portalEntries`(상세 아래). [입력 완료]는 그 서식만 목록 캐시에서 빼고(목록 전체를 다시 받지 않음), [되돌리기]만 목록을 다시 받는다.
+- 현장 웹: 확정된 기록 화면의 "공식 전산 입력" 카드(서식별 입력 완료 여부, [옮겨 적기] → 전체 화면 창 `PortalEntryDialog`, 휴대폰은 메모 없이 [입력 완료]만).
+
 ## 서식 PDF (`apps/server/src/form-pdf/`)
 
 - 확정본 한 벌을 PDF로 준다: `GET /visits/:id/versions/:version/pdf?style=original|standard`(권한은 방문 조회와 같은 `visitScope`). 방문의 서식을 서식 순서대로 한 파일에 담고, 파일 이름은 서버가 정한다(`수급자_방문일_N차.pdf`, `inline`; api-client가 `Content-Disposition`에서 읽어 `{ blob, filename }`으로 준다). 쪽 아래 출력 표시에 몇 차 확정본인지 적고, 보관 값이 hash와 다르면(`hashMatches`) "보관 값이 원본과 다릅니다"를 붙인다.

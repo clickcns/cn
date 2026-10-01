@@ -27,6 +27,9 @@ export const visitKeys = {
   pastRecords: (recipientId: string, query: RecipientRecordQuery) =>
     [...VISITS, "list", "records", recipientId, query] as const,
   detail: (id: string) => [...VISITS, "detail", id] as const,
+  /** 방문 서식의 포털 입력 표시. 상세 아래라 확정·[수정] 뒤 상세와 함께 다시 받는다. */
+  portalEntries: (id: string) =>
+    [...VISITS, "detail", id, "portal-entries"] as const,
   sameDayWarnings: (query: SameDayWarningQuery) =>
     [...VISITS, "same-day-warnings", query] as const,
 };

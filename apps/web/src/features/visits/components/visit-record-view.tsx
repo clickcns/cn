@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormHeading, FormView } from "@/features/forms/components/form-view";
 import { PastRecordDialog } from "@/features/past-records/components/past-record-dialog";
+import { PortalEntriesCard } from "@/features/portal/components/portal-entries-card";
 import { FormPdfButton } from "@/features/visits/components/form-pdf-button";
 import { useReopenVisit } from "@/features/visits/hooks/use-visit-mutations";
 import { formatDateTimeLabel, visitTimeRange } from "@/lib/date";
@@ -110,6 +111,8 @@ export function VisitRecordView({
         )}
         {canReopen && <ReopenVisitButton visitId={visit.id} />}
       </div>
+
+      {isConfirmed && <PortalEntriesCard visit={visit} />}
 
       <Card>
         <CardHeader>

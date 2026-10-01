@@ -23,6 +23,11 @@ export const FORM_IDS = [
 ] as const;
 export type FormId = (typeof FORM_IDS)[number];
 
+/** 주소·요청에서 온 글이 서식 ID인지. */
+export function isFormId(value: unknown): value is FormId {
+  return (FORM_IDS as readonly unknown[]).includes(value);
+}
+
 export const FORMS: Record<FormId, FormDef> = {
   PRIMARY_CARE_CHECK: PRIMARY_CARE_CHECK_FORM,
   HOME_CARE_DOCTOR: HOME_CARE_DOCTOR_FORM,

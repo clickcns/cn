@@ -1,6 +1,7 @@
 import {
   FORMS,
   formatFieldValue,
+  PORTAL_INFO,
   withParticle,
   type FormData,
   type FormDef,
@@ -46,7 +47,7 @@ function FormCard({ form, data }: { form: FormDef; data: FormData }) {
           </section>
         ))}
         <p className="text-muted-foreground text-[12px]">
-          작성 후 {form.submitTo}에 입력합니다.
+          작성 후 {PORTAL_INFO[form.portal].label}에 입력합니다.
         </p>
       </CardContent>
     </Card>

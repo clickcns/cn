@@ -101,6 +101,14 @@ export interface FormSection {
   fields: readonly FieldDef[];
 }
 
+/**
+ * 작성한 서식을 옮겨 적는 공식 전산. 이름·주소·순서 안내는 portal-entry.ts의 PORTAL_INFO.
+ * HIRA: 심평원 시범사업 자료제출 시스템, NHIS_HOME_CARE: 공단 요양기관정보마당(재택의료센터 전산),
+ * NHIS_LTC_APP: 공단 스마트장기요양 앱.
+ */
+export const PORTALS = ["HIRA", "NHIS_HOME_CARE", "NHIS_LTC_APP"] as const;
+export type Portal = (typeof PORTALS)[number];
+
 export interface FormDef {
   id: string;
   /** 예: "별지 제4호" */
@@ -108,8 +116,8 @@ export interface FormDef {
   title: string;
   /** 탭·목록에 쓰는 짧은 이름 */
   shortTitle: string;
-  /** 작성한 뒤 입력·제출하는 곳 */
-  submitTo: string;
+  /** 작성한 뒤 입력·제출하는 곳(포털 입력 도우미) */
+  portal: Portal;
   sections: readonly FormSection[];
   /** 여러 칸이 모두 비었을 때만 묻는 질문(예: 건강관리·간호관리 중 하나라도) */
   followUps?: readonly { anyOf: readonly string[]; question: string }[];
@@ -328,12 +336,29 @@ export function isEmptyValue(value: unknown): boolean {
 
 /* ---------- 표시 ---------- */
 
+/** 증감 칸 값을 방향과 크기로. 0은 "변화 없음"(크기 0). */
+export function signedChange(value: number): {
+  direction: "변화 없음" | "증" | "감";
+  amount: number;
+} {
+  if (value === 0) return { direction: "변화 없음", amount: 0 };
+  return { direction: value > 0 ? "증" : "감", amount: Math.abs(value) };
+}
+
 function formatNumber(field: NumberFieldDef, value: number): string {
   if (field.signed) {
-    if (value === 0) return `변화 없음`;
-    return `${value > 0 ? "증" : "감"} ${Math.abs(value)} ${field.unit}`;
+    const { direction, amount } = signedChange(value);
+    return amount === 0 ? direction : `${direction} ${amount} ${field.unit}`;
   }
   return `${value} ${field.unit}`;
+}
+
+/** 고른 항목 괄호 안 내용의 표시 글: 선택이면 그 선택지 이름, 글이면 그대로. */
+export function optionDetailText(option: FieldOption, detail: string): string {
+  return option.detail?.kind === "choice"
+    ? (option.detail.options.find((choice) => choice.value === detail)?.label ??
+        detail)
+    : detail;
 }
 
 /** 고른 항목 하나를 글로: "기타(야간 흡인)", "욕창 관리 15분" */
@@ -345,12 +370,7 @@ export function formatSelectedOption(
   if (!option) return selected.value;
   const parts = [option.label];
   if (selected.detail) {
-    const detail =
-      option.detail?.kind === "choice"
-        ? (option.detail.options.find((c) => c.value === selected.detail)
-            ?.label ?? selected.detail)
-        : selected.detail;
-    parts[0] = `${option.label}(${detail})`;
+    parts[0] = `${option.label}(${optionDetailText(option, selected.detail)})`;
   }
   if (selected.minutes != null) parts.push(`${selected.minutes}분`);
   if (selected.note) parts.push(`— ${selected.note}`);

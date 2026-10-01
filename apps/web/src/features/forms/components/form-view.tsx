@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   formatFieldValue,
+  PORTAL_INFO,
   type FormData,
   type FormDef,
   type FormSection,
@@ -21,7 +22,7 @@ export function FormHeading({ form }: { form: FormDef }) {
           {form.title}
         </p>
         <p className="text-muted-foreground text-sm">
-          작성 후 {form.submitTo}에 입력합니다
+          작성 후 {PORTAL_INFO[form.portal].label}에 입력합니다
         </p>
       </div>
     </div>

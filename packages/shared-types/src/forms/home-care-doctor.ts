@@ -21,7 +21,7 @@ export const HOME_CARE_DOCTOR_FORM = {
   code: "별지 제6호",
   title: "장기요양 재택의료센터 방문점검 기록지(의사)",
   shortTitle: "방문점검 기록지(의사)",
-  submitTo: "공단 요양기관정보마당(재택의료센터 시범사업)",
+  portal: "NHIS_HOME_CARE",
   sttTerms: ["진찰", "간호지시", "전원", "낙상", "약물 부작용"],
   sections: [
     {

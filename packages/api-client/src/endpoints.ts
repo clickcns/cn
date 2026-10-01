@@ -4,8 +4,13 @@ import type {
   ChangePasswordInput,
   FormLayoutDetail,
   FormLayoutSummary,
+  FormId,
   FormPdfQuery,
+  MarkPortalEntryInput,
   NurseMonthPdfQuery,
+  PortalEntry,
+  PortalQueueQuery,
+  PortalQueueResponse,
   PreviewFormLayoutInput,
   SaveFormLayoutInput,
   CreateOrganizationInput,
@@ -211,6 +216,28 @@ export function createCarenoteApi(http: KyInstance) {
         ),
       /** 예정 상태의 방문만 지울 수 있다. */
       remove: (id: string) => http.delete(`visits/${id}`).json<{ ok: true }>(),
+      /** 확정했지만 포털에 넣었다고 표시하지 않은 서식(기본: 지난달 1일부터 오늘까지) */
+      portalQueue: (query?: PortalQueueQuery) =>
+        http
+          .get("visits/portal-queue", { searchParams: toSearchParams(query) })
+          .json<PortalQueueResponse>(),
+      /** 방문 서식의 포털 입력 표시 */
+      portalEntries: (id: string) =>
+        http.get(`visits/${id}/portal-entries`).json<PortalEntry[]>(),
+      /** 확정한 서식을 포털에 넣었다고 표시(다시 누르면 시각·메모를 새로) */
+      markPortalEntry: (
+        id: string,
+        formId: FormId,
+        input: MarkPortalEntryInput,
+      ) =>
+        http
+          .put(`visits/${id}/portal-entries/${formId}`, { json: input })
+          .json<PortalEntry[]>(),
+      /** 포털 입력 표시 지우기 */
+      unmarkPortalEntry: (id: string, formId: FormId) =>
+        http
+          .delete(`visits/${id}/portal-entries/${formId}`)
+          .json<PortalEntry[]>(),
     },
 
     /** 방문 직후 음성 구술 → 기록 초안. 담당 간호사만, 확정 전까지. */

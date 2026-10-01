@@ -11,7 +11,7 @@ export const PRIMARY_CARE_CHECK_FORM = {
   code: "별지 제4호",
   title: "일차의료 방문진료 점검서식",
   shortTitle: "방문진료 점검서식",
-  submitTo: "심평원 시범사업 자료제출 시스템",
+  portal: "HIRA",
   sttTerms: ["방문진료", "처방전", "수액", "침습적 처치", "응급실"],
   sections: [
     {

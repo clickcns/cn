@@ -15,6 +15,8 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CreateVisitSchema,
+  MarkPortalEntrySchema,
+  PortalQueueQuerySchema,
   SameDayWarningQuerySchema,
   SaveVisitRecordSchema,
   UpdateVisitFormsSchema,
@@ -26,6 +28,7 @@ import { createZodDto } from "nestjs-zod";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
+import { PortalEntryService } from "./portal-entry.service.js";
 import { VisitService } from "./visit.service.js";
 
 class CreateVisitDto extends createZodDto(CreateVisitSchema) {}
@@ -35,12 +38,17 @@ class UpdateVisitDto extends createZodDto(UpdateVisitSchema) {}
 class VisitListQueryDto extends createZodDto(VisitListQuerySchema) {}
 class SameDayWarningQueryDto extends createZodDto(SameDayWarningQuerySchema) {}
 class VisitCalendarQueryDto extends createZodDto(VisitCalendarQuerySchema) {}
+class PortalQueueQueryDto extends createZodDto(PortalQueueQuerySchema) {}
+class MarkPortalEntryDto extends createZodDto(MarkPortalEntrySchema) {}
 
 @ApiTags("visits")
 @ApiBearerAuth()
 @Controller("visits")
 export class VisitController {
-  constructor(private readonly visitService: VisitService) {}
+  constructor(
+    private readonly visitService: VisitService,
+    private readonly portalEntryService: PortalEntryService,
+  ) {}
 
   @Get()
   list(
@@ -66,6 +74,18 @@ export class VisitController {
     @Query() query: SameDayWarningQueryDto,
   ) {
     return this.visitService.sameDayWarnings(actor, query);
+  }
+
+  /**
+   * 확정했지만 심평원·공단에 넣었다고 표시하지 않은 서식(포털 미입력 목록). 기본 기간은 지난달 1일부터
+   * 오늘까지. ":id"보다 먼저 둔다.
+   */
+  @Get("portal-queue")
+  portalQueue(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Query() query: PortalQueueQueryDto,
+  ) {
+    return this.portalEntryService.queue(actor, query);
   }
 
   @Get(":id")
@@ -122,6 +142,36 @@ export class VisitController {
   @HttpCode(HttpStatus.OK)
   reopen(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.visitService.reopen(actor, id);
+  }
+
+  /** 방문 서식의 포털 입력 표시. 방문을 볼 수 있으면 본다. */
+  @Get(":id/portal-entries")
+  portalEntries(
+    @CurrentUser() actor: AuthenticatedUser,
+    @UuidParam() id: string,
+  ) {
+    return this.portalEntryService.entries(actor, id);
+  }
+
+  /** 확정한 서식을 포털에 넣었다고 표시한다(담당자 본인·관리자, 방문을 볼 수 있는 사람). */
+  @Put(":id/portal-entries/:formId")
+  markPortalEntry(
+    @CurrentUser() actor: AuthenticatedUser,
+    @UuidParam() id: string,
+    @Param("formId") formId: string,
+    @Body() dto: MarkPortalEntryDto,
+  ) {
+    return this.portalEntryService.mark(actor, id, formId, dto);
+  }
+
+  /** 포털 입력 표시를 지운다. */
+  @Delete(":id/portal-entries/:formId")
+  unmarkPortalEntry(
+    @CurrentUser() actor: AuthenticatedUser,
+    @UuidParam() id: string,
+    @Param("formId") formId: string,
+  ) {
+    return this.portalEntryService.unmark(actor, id, formId);
   }
 
   /** 확정본 이력(1차, 2차 …, 요약만). 방문을 볼 수 있으면 본다. */

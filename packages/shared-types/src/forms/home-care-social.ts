@@ -10,7 +10,7 @@ export const HOME_CARE_SOCIAL_FORM = {
   code: "별지 제8호",
   title: "장기요양 재택의료센터 업무 기록지(사회복지사)",
   shortTitle: "업무 기록지(사회복지사)",
-  submitTo: "공단 요양기관정보마당(재택의료센터 시범사업)",
+  portal: "NHIS_HOME_CARE",
   sttTerms: ["상담", "유선", "자원연계", "주민센터", "치매안심센터"],
   sections: [
     {

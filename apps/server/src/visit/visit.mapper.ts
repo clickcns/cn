@@ -26,7 +26,7 @@ import {
 } from "../recipient/recipient.mapper.js";
 import { recordVersionHash } from "./record-version.js";
 
-const staffSelect = {
+export const staffSelect = {
   select: { id: true, name: true, profession: true },
 } as const;
 
@@ -38,7 +38,7 @@ export const visitSummaryArgs = {
   },
 } as const satisfies Prisma.VisitDefaultArgs;
 
-const actorSelect = { select: { id: true, name: true } } as const;
+export const actorSelect = { select: { id: true, name: true } } as const;
 
 /** 확정본의 확정자·되돌린 사람 이름 */
 export const versionActorsArgs = {
