@@ -14,7 +14,7 @@ export function visibleRecordWhere(actorId: string): Prisma.VisitWhereInput {
 }
 
 /**
- * 한 수급자의 지난 기록 조회 조건(지난 기록 목록과 이월 값이 함께 쓴다).
+ * 한 수급자의 지난 기록 조회 조건.
  * - 기관 범위: 운영자는 모든 기관, 그 외는 자기 기관
  * - anchor: 그 방문보다 앞선 기록(같은 시각의 다른 방문 포함 — 의사·간호사 동행 방문)
  * - cursor: 최신순(방문 일시 → id 내림차순)으로 그 다음부터

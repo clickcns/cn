@@ -32,7 +32,6 @@ export const HOME_CARE_DOCTOR_FORM = {
           label: "동행자",
           type: "multi",
           dictation: true,
-          carryOver: true,
           options: [
             { value: "NURSE", label: "간호사" },
             { value: "SOCIAL_WORKER", label: "사회복지사" },
@@ -73,7 +72,6 @@ export const HOME_CARE_DOCTOR_FORM = {
           label: "신체기능 자립성(수준)",
           type: "single",
           dictation: true,
-          carryOver: true,
           options: [
             { value: "INDEPENDENT", label: "정상독립" },
             { value: "INDOOR_INDEPENDENT", label: "실내독립" },
@@ -96,7 +94,6 @@ export const HOME_CARE_DOCTOR_FORM = {
           label: "인지기능 자립성(수준)",
           type: "single",
           dictation: true,
-          carryOver: true,
           options: [
             { value: "INDEPENDENT", label: "정상독립" },
             { value: "WEEKLY_1_2", label: "주 1~2회 관찰요" },

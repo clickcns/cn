@@ -117,7 +117,7 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
   };
 
   /**
-   * 서식 바꾸기. 더한 서식은 서버가 준 이월 값으로 채워 "저장 안 됨"으로 표시한다(확정 전에 저장해야 한다).
+   * 서식 바꾸기. 더한 서식은 빈 서식으로 넣어 "저장 안 됨"으로 표시한다(확정 전에 저장해야 한다).
    * 뺀 서식은 서버가 저장 값을 지우고, 폼에서는 기본값으로 되돌려 저장 요청·"저장 안 됨"에서 빠진다.
    */
   const handleChangeForms = (formIds: FormId[]) => {
@@ -272,7 +272,6 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
               past={{
                 values: showPast ? pastValues?.[formId] : undefined,
                 fills: pastFills.fills[formId] ?? {},
-                onFill: (entries) => pastFills.mark(formId, entries),
               }}
             />
           </section>

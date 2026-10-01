@@ -15,10 +15,8 @@ export type PastFills = Record<string, PastFill>;
 
 /** 서식 한 장의 입력 화면에 넘기는 지난 기록 정보. */
 export interface FormPast {
-  /** 칸마다 지난 값(빈 칸 옆에 보여 준다). 끄면 없다 */
+  /** 칸마다 지난 값(입력 부품에 나란히 표시한다). 끄면 없다 */
   values?: PastFieldValues;
-  /** 지난 기록으로 채운 칸(표시를 단다) */
+  /** 지난 기록으로 채운 칸(왼쪽 강조선) */
   fills: PastFills;
-  /** 칸 옆 "지난 값"을 눌러 채웠을 때 */
-  onFill: (entries: PastFills) => void;
 }

@@ -117,7 +117,7 @@ describe("초안에서 빠진 항목", () => {
     assert.ok(!labels.includes("혈압") && !labels.includes("방문사유"));
   });
 
-  it("기록에 이미 있는 값(저장·이월)은 빠진 것으로 보지 않는다", () => {
+  it("기록에 이미 저장한 값은 빠진 것으로 보지 않는다", () => {
     const items = missingDictationItems(
       dictationOf("HOME_CARE_NURSE", {}, [
         {

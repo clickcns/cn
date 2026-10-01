@@ -22,7 +22,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "대상자 구분(장기요양 등급)",
           type: "single",
           dictation: false,
-          carryOver: true,
           description:
             "장기요양 1·2등급 와상·요양비에 해당하지 않으면 '해당없음'",
           options: [
@@ -36,7 +35,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "와상 여부",
           type: "single",
           dictation: false,
-          carryOver: true,
           options: YES_NO_OPTIONS,
         },
         {
@@ -44,7 +42,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "요양비",
           type: "multi",
           dictation: false,
-          carryOver: true,
           options: [
             { value: "OXYGEN", label: "산소치료" },
             { value: "VENTILATOR", label: "인공호흡기" },
@@ -73,7 +70,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "방문진료료 본인부담",
           type: "single",
           dictation: false,
-          carryOver: true,
           description: "거동 불편 환자는 일부 본인부담",
           options: [
             { value: "PARTIAL", label: "일부 본인부담" },
@@ -85,7 +81,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "거동불편 유형",
           type: "multi",
           dictation: false,
-          carryOver: true,
           options: [
             { value: "PARALYSIS", label: "마비(하지·사지·편마비 등)" },
             { value: "POST_SURGERY", label: "수술 직후(한 달 이내)" },
@@ -106,7 +101,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "산정횟수 예외적용",
           type: "multi",
           dictation: false,
-          carryOver: true,
           description: "주 3회를 넘겨 방문하는 경우 사유",
           options: [
             { value: "NONE", label: "해당없음" },
@@ -129,7 +123,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           type: "single",
           required: true,
           dictation: true,
-          carryOver: true,
           hint: "미리 잡은 방문이면 예약, 당일 요청·호출이면 비예약",
           options: [
             { value: "SCHEDULED", label: "예약" },
@@ -141,7 +134,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "방문진료 동반인력",
           type: "multi",
           dictation: true,
-          carryOver: true,
           options: [
             { value: "NONE", label: "없음" },
             { value: "HOME_CARE_NURSE", label: "가정전문간호사" },
@@ -156,7 +148,6 @@ export const PRIMARY_CARE_CHECK_FORM = {
           label: "이동방법",
           type: "single",
           dictation: false,
-          carryOver: true,
           description: "주요 이동방법 한 가지",
           options: [
             { value: "PUBLIC", label: "대중교통" },
@@ -173,14 +164,12 @@ export const PRIMARY_CARE_CHECK_FORM = {
           max: 500,
           decimals: 0,
           dictation: false,
-          carryOver: true,
         },
         {
           key: "travelTime",
           label: "이동 소요시간(편도)",
           type: "single",
           dictation: false,
-          carryOver: true,
           options: [
             { value: "UNDER_10", label: "10분 미만" },
             { value: "FROM_10_TO_20", label: "10~20분 미만" },

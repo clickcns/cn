@@ -253,13 +253,3 @@ describe("칸마다 지난 값", () => {
     assert.deepEqual(latestFieldValues([], "LTC_NURSING"), {});
   });
 });
-
-describe("서식 정의: 방문마다 새로 정하는 칸", () => {
-  it("이월 칸과 함께 쓰지 않는다", () => {
-    for (const form of Object.values(FORMS)) {
-      for (const f of formFields(form)) {
-        assert.ok(!(f.carryOver && f.visitSpecific), `${form.id} ${f.key}`);
-      }
-    }
-  });
-});

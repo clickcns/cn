@@ -62,7 +62,7 @@ const isoToDate = (iso: string | null) =>
 
 /**
  * 서식 한 장의 시작 상태: 저장한 값(없으면 빈 서식). 지난 기록 값은 저절로 채우지 않고 사용자가
- * [이월 칸 채우기]·"지난 값"·지난 기록 불러오기로 채운다.
+ * [지난 값 모두 적용]·지난 기록 불러오기로 채운다.
  */
 export function toFormInitialState(
   visit: VisitDetail,

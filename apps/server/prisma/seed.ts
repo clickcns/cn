@@ -435,7 +435,7 @@ async function seedHomeCareClinic(passwordHash: string) {
     },
   ]);
 
-  // 어제 확정한 의사 방문: 오늘 방문의 이월 값(대상자 구분·거동불편 유형·이동 정보 등)이 여기서 온다.
+  // 어제 확정한 의사 방문: 오늘 방문의 지난 기록 값(대상자 구분·거동불편 유형·이동 정보 등)이 여기서 온다.
   const doctorYesterday = {
     PRIMARY_CARE_CHECK: form("PRIMARY_CARE_CHECK", {
       ltcGrade: { value: "GRADE_1" },

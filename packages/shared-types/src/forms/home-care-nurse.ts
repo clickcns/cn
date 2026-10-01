@@ -50,7 +50,6 @@ export const HOME_CARE_NURSE_FORM = {
           label: "동행자",
           type: "multi",
           dictation: true,
-          carryOver: true,
           options: [
             { value: "DOCTOR", label: "의사" },
             { value: "SOCIAL_WORKER", label: "사회복지사" },

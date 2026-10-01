@@ -32,10 +32,11 @@ import {
   usePastRecords,
   type PastRecordsAnchor,
 } from "@/features/past-records/hooks/use-past-records";
+import { recordDateLabel } from "@/features/past-records/lib/record-labels";
 import type { RecordForm } from "@/features/visits/lib/record-form";
 
-/** 이월 칸(수급자 상태처럼 자주 바뀌지 않는 칸) 가운데 지난 값이 있는 칸. */
-function carryOverTargets(
+/** 지난 값으로 채울 수 있는 칸(방문마다 새로 정하는 칸 제외, 지금 정의에 맞는 지난 값이 있는 칸). */
+function reusableTargets(
   formIds: readonly FormId[],
   pastValues: Partial<Record<FormId, PastFieldValues>> | undefined,
 ) {
@@ -43,7 +44,7 @@ function carryOverTargets(
     formFields(FORMS[formId]).flatMap((field) => {
       const past = pastValues?.[formId]?.[field.key];
       const value = past && reusableFieldValue(field, past.value);
-      return field.carryOver && past && value
+      return past && value
         ? [{ formId, key: field.key, value, date: past.date }]
         : [];
     }),
@@ -58,10 +59,10 @@ interface FilledField {
 }
 
 /**
- * 기록 화면의 지난 기록 도구(지난 기록이 있을 때만): [지난 기록 보기]·[이월 칸 채우기]·"칸마다 지난 값"
+ * 기록 화면의 지난 기록 도구(지난 기록이 있을 때만): [지난 기록 보기]·[지난 값 모두 적용]·"지난 값 표시"
  * 스위치와 기록 보기 창. 지난 기록 값은 사용자가 누를 때만 채운다(저절로 채우지 않는다).
- * - 이월 칸 채우기: 비어 있는 이월 칸을 칸마다 가장 최근 값으로. 채운 뒤에는 [이월 취소]가 되어, 채운 값
- *   그대로인 칸을 다시 비운다(그사이 고친 칸은 그대로)
+ * - 지난 값 모두 적용: 비어 있는 칸을 칸마다 가장 최근 값으로(방문마다 새로 정하는 칸·제공 시간 제외).
+ *   채운 뒤에는 [적용 취소]가 되어, 채운 값 그대로인 칸을 다시 비운다(그사이 고친 칸은 그대로)
  * - 보기 창: 고른 서식·구분 값으로(여러 개 고르는 칸은 그 기록대로 바꾼다). 이미 입력한 값이 바뀌면 먼저 묻는다
  * 채운 칸은 onFilled 로 알려 "지난 기록" 표시를 달게 하고, 알림에 [되돌리기]를 준다.
  */
@@ -94,8 +95,8 @@ export function PastRecordsTools({
   // 창을 닫은 뒤 포커스를 옮길 칸(채운 첫 칸). 이벤트 처리에서만 읽고 쓴다.
   const focusAfterCloseRef = useRef<string | null>(null);
   const switchId = useId();
-  // [이월 칸 채우기]로 채운 칸. 있으면 버튼이 [이월 취소]가 된다.
-  const [carried, setCarried] = useState<FilledField[] | null>(null);
+  // [지난 값 모두 적용]으로 채운 칸. 있으면 버튼이 [적용 취소]가 된다.
+  const [applied, setApplied] = useState<FilledField[] | null>(null);
 
   /**
    * 값을 채우고 표시를 달며 알림에 [되돌리기]를 준다(undo 가 없으면 채우기 전 서식으로 되돌린다).
@@ -186,10 +187,10 @@ export function PastRecordsTools({
     close();
   };
 
-  const targets = carryOverTargets(visit.formIds, pastValues);
+  const targets = reusableTargets(visit.formIds, pastValues);
 
-  /** 이월로 채운 칸 가운데 채운 값 그대로인 칸을 다시 비운다(그사이 고친 칸은 그대로 둔다). */
-  const cancelCarryOver = (filled: FilledField[] | null = carried) => {
+  /** 모두 적용으로 채운 칸 가운데 채운 값 그대로인 칸을 다시 비운다(그사이 고친 칸은 그대로 둔다). */
+  const cancelApplyAll = (filled: FilledField[] | null = applied) => {
     let cleared = 0;
     for (const { formId, key, state } of filled ?? []) {
       const path = `forms.${formId}.${key}` as const;
@@ -200,13 +201,14 @@ export function PastRecordsTools({
       });
       cleared += 1;
     }
-    setCarried(null);
-    if (cleared > 0) toast.info(`이월한 칸 ${cleared}개를 다시 비웠습니다`);
-    else toast.info("되돌릴 이월 칸이 없습니다(이미 고친 칸은 그대로 둡니다)");
+    setApplied(null);
+    if (cleared > 0)
+      toast.info(`지난 값으로 채운 칸 ${cleared}개를 다시 비웠습니다`);
+    else toast.info("되돌릴 칸이 없습니다(이미 고친 칸은 그대로 둡니다)");
   };
 
-  /** 비어 있는 이월 칸을 칸마다 가장 최근 값으로 채운다(이미 입력한 칸은 그대로). */
-  const fillCarryOver = () => {
+  /** 비어 있는 칸을 칸마다 가장 최근 지난 값으로 채운다(이미 입력한 칸은 그대로). */
+  const applyAll = () => {
     const current = form.getValues("forms");
     const incoming: Partial<Record<FormId, FormData>> = {};
     for (const target of targets) {
@@ -220,18 +222,18 @@ export function PastRecordsTools({
       incoming,
       (formId, key) =>
         targets.find((t) => t.formId === formId && t.key === key)!.date,
-      "지난 기록에서 이월 칸을 채웠습니다. 확인하고 [임시 저장]을 눌러 주세요",
-      cancelCarryOver,
+      "비어 있는 칸을 지난 값으로 채웠습니다. 확인하고 [임시 저장]을 눌러 주세요",
+      cancelApplyAll,
     );
-    if (filled) setCarried(filled);
-    else toast.info("비어 있는 이월 칸이 없습니다");
+    if (filled) setApplied(filled);
+    else toast.info("지난 값을 채울 빈 칸이 없습니다");
   };
 
-  // 지금 보고 있는 서식이 있는 가장 최근 기록부터 연다.
-  const latest =
-    records.find(
-      (record) => activeFormId && record.formIds.includes(activeFormId),
-    ) ?? records[0];
+  // 지금 보고 있는 서식이 있는 가장 최근 기록(없으면 가장 최근 기록)부터 연다.
+  const latestOfForm = records.find(
+    (record) => activeFormId && record.formIds.includes(activeFormId),
+  );
+  const latest = latestOfForm ?? records[0];
 
   return (
     <>
@@ -242,27 +244,27 @@ export function PastRecordsTools({
               <History />
               지난 기록 보기
             </Button>
-            {carried ? (
+            {applied ? (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => cancelCarryOver()}
+                onClick={() => cancelApplyAll()}
               >
                 <Undo2 />
-                이월 취소
+                적용 취소
               </Button>
             ) : (
               targets.length > 0 && (
-                <Button variant="soft" size="sm" onClick={fillCarryOver}>
+                <Button variant="soft" size="sm" onClick={applyAll}>
                   <CopyCheck />
-                  이월 칸 채우기
+                  지난 값 모두 적용
                 </Button>
               )
             )}
           </div>
           <div className="flex items-center gap-2">
             <Label htmlFor={switchId} className="text-muted-foreground">
-              칸마다 지난 값
+              지난 값 표시
             </Label>
             <Switch
               id={switchId}
@@ -270,6 +272,16 @@ export function PastRecordsTools({
               onCheckedChange={onToggleShowPast}
             />
           </div>
+          {showPast && latestOfForm && (
+            <p className="text-muted-foreground w-full text-sm">
+              <History
+                className="text-primary mr-1 inline size-4 align-[-3px]"
+                aria-hidden
+              />
+              지난 기록 값 · 점선 칩은 지난번에만 고른 항목 · 이 서식의 최근
+              기록 {recordDateLabel(latestOfForm)}
+            </p>
+          )}
         </div>
       )}
       <PastRecordDialog
