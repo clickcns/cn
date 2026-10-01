@@ -3,7 +3,7 @@ import type { VisitDictationPoint } from "@repo/shared-types";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * 녹음 전·녹음 중 안내: 이 방문(사업 × 직종)에서 말할 내용의 핵심만 짚는다.
+ * 녹음 중 안내(저장 버튼 바 위 시트): 이 방문(사업 × 직종)에서 말할 내용의 핵심만 짚는다.
  * 문장을 따라 읽게 하지 않고, 무엇을 말하면 되는지만 보여 준다.
  */
 export function DictationPoints({

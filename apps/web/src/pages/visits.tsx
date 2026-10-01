@@ -1,32 +1,13 @@
 import { formatKstDate, isIsoDate } from "@repo/shared-types";
 import { Plus } from "lucide-react";
-import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { DayVisits } from "@/features/visits/components/day-visits";
 import { ScheduleCalendar } from "@/features/visits/components/schedule-calendar";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useStoredFlag } from "@/hooks/use-stored-flag";
 import { newVisitPath } from "@/lib/routes";
-
-const EXPANDED_STORAGE_KEY = "carenote:visits-calendar-expanded";
-
-/** 좁은 화면에서 한 달 달력을 펼쳐 둘지(마지막 선택). */
-function storedExpanded(): boolean {
-  try {
-    return localStorage.getItem(EXPANDED_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function storeExpanded(expanded: boolean) {
-  try {
-    localStorage.setItem(EXPANDED_STORAGE_KEY, String(expanded));
-  } catch {
-    // 저장소를 못 쓰면(사생활 보호 모드 등) 기억하지 않는다.
-  }
-}
 
 /**
  * 방문 일정: 달력과 고른 날의 방문을 한 화면에 둔다.
@@ -39,7 +20,11 @@ export default function VisitsPage() {
   const dateParam = searchParams.get("date");
   const date = isIsoDate(dateParam) ? dateParam : today;
   const isWide = useMediaQuery("(min-width: 64rem)");
-  const [expandedChoice, setExpandedChoice] = useState(storedExpanded);
+  // 좁은 화면에서 한 달 달력을 펼쳐 둘지(마지막 선택).
+  const [expandedChoice, toggleExpanded] = useStoredFlag(
+    "carenote:visits-calendar-expanded",
+    false,
+  );
   const expanded = isWide || expandedChoice;
 
   const selectDate = (next: string) => {
@@ -67,10 +52,7 @@ export default function VisitsPage() {
             today={today}
             expanded={expanded}
             collapsible={!isWide}
-            onToggleExpanded={() => {
-              setExpandedChoice(!expandedChoice);
-              storeExpanded(!expandedChoice);
-            }}
+            onToggleExpanded={toggleExpanded}
             onSelect={selectDate}
           />
         </div>

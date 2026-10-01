@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
+  dictationPoints,
   findMissingRequired,
   FORMS,
   hasOptionalForms,
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DictationPanel } from "@/features/dictation/components/dictation-panel";
+import { DictationSheet } from "@/features/dictation/components/dictation-sheet";
 import { DictationBarControl } from "@/features/dictation/components/recording-controls";
 import { useDictationSession } from "@/features/dictation/hooks/use-dictation-session";
 import { FormFields } from "@/features/forms/components/form-fields";
@@ -63,7 +65,7 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
     resetField,
   } = useForm({ defaultValues: toRecordFormValues(visit) });
   const { isDirty } = useFormState({ control });
-  // 녹음 상태는 위 패널과 아래 저장 버튼 바([녹음])가 함께 쓴다.
+  // 녹음 상태는 위 초안 카드와 아래 저장 버튼 바([녹음]·녹음 시트)가 함께 쓴다.
   const dictationPanelRef = useRef<HTMLElement>(null);
   const dictation = useDictationSession(visit.id, dictationPanelRef);
 
@@ -255,6 +257,16 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
           onSave={() => void handleSave()}
           onConfirm={handleConfirmClick}
           dictation={<DictationBarControl session={dictation} />}
+          dictationSheet={
+            <DictationSheet
+              session={dictation}
+              points={dictationPoints(
+                visit.program,
+                visit.profession,
+                visit.formIds,
+              )}
+            />
+          }
           dictationActive={dictation.isRecording}
         />
       </form>

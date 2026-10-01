@@ -1,7 +1,6 @@
-import { useState, type ReactNode, type RefObject } from "react";
+import { useState, type RefObject } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
-  dictationPoints,
   filledDraftFields,
   filledItemCount,
   formLabel,
@@ -20,7 +19,6 @@ import {
   RotateCcw,
   RotateCw,
   TriangleAlert,
-  type LucideIcon,
 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
@@ -33,30 +31,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DictationPoints } from "@/features/dictation/components/dictation-points";
+import { Notice } from "@/components/ui/notice";
 import {
   DraftReview,
   TranscriptDetails,
 } from "@/features/dictation/components/draft-review";
 import { MissingItems } from "@/features/dictation/components/missing-items";
-import { RecordingControls } from "@/features/dictation/components/recording-controls";
 import type { DictationSession } from "@/features/dictation/hooks/use-dictation-session";
 import { mergeDraft } from "@/features/dictation/lib/merge-draft";
 import {
   formStartValues,
   type RecordFormValues,
 } from "@/features/visits/lib/record-form";
-import { cn } from "@/lib/utils";
 
 type RecordForm = Pick<
   UseFormReturn<RecordFormValues>,
   "getValues" | "setValue"
 >;
 
-type PanelVisit = Pick<
-  VisitDetail,
-  "formIds" | "program" | "profession" | "forms" | "carryOver"
->;
+type PanelVisit = Pick<VisitDetail, "formIds" | "forms" | "carryOver">;
 
 /** 녹음 길이(초) → "2분 15초" */
 const formatDuration = (seconds: number) => {
@@ -66,97 +59,6 @@ const formatDuration = (seconds: number) => {
   if (minutes === 0) return `${rest}초`;
   return rest === 0 ? `${minutes}분` : `${minutes}분 ${rest}초`;
 };
-
-/** 패널 틀: 마이크 표시·제목·한 줄 설명, 마이크 오류, 그 아래 내용. */
-function PanelCard({
-  panelRef,
-  title,
-  description,
-  error,
-  children,
-}: {
-  panelRef: RefObject<HTMLElement | null>;
-  title: string;
-  description: string;
-  error: string | null;
-  children: ReactNode;
-}) {
-  return (
-    <Card ref={panelRef} className="scroll-mt-20 gap-5">
-      <div className="flex items-center gap-3">
-        <span className="bg-primary-soft text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
-          <Mic className="size-5" />
-        </span>
-        <CardHeader className="min-w-0 gap-0">
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-      </div>
-      {error && (
-        <p
-          role="alert"
-          className="text-destructive flex items-start gap-2 font-semibold"
-        >
-          <TriangleAlert className="mt-0.5 size-5 shrink-0" />
-          {error}
-        </p>
-      )}
-      {children}
-    </Card>
-  );
-}
-
-const NOTICE_TONES = {
-  primary: "border-primary/20 bg-primary-soft/60 text-primary",
-  warning: "border-warning/20 bg-warning-soft text-warning",
-  destructive: "border-destructive/20 bg-destructive-soft text-destructive",
-};
-
-/** 색 있는 안내 상자(초안 실패·서식 추가·보내기 실패). */
-function Notice({
-  tone,
-  icon: Icon,
-  message,
-  children,
-}: {
-  tone: keyof typeof NOTICE_TONES;
-  icon: LucideIcon;
-  message: string;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      role={tone === "primary" ? "status" : "alert"}
-      className={cn(
-        "flex flex-col gap-3 rounded-xl border p-4",
-        NOTICE_TONES[tone],
-      )}
-    >
-      <p className="flex items-start gap-2 font-semibold">
-        <Icon className="mt-0.5 size-5 shrink-0" />
-        {message}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function Processing() {
-  return (
-    <div
-      role="status"
-      className="bg-primary-soft/70 flex items-center gap-4 rounded-2xl px-4 py-5"
-    >
-      <LoaderCircle className="text-primary size-7 shrink-0 animate-spin" />
-      <div>
-        <p className="font-bold">기록 초안을 만드는 중입니다</p>
-        <p className="text-muted-foreground text-sm">
-          음성을 글로 옮겨 서식 항목을 채웁니다. 보통 10~30초 걸립니다.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /** 초안 한눈에: 채운 항목 수와 빠진 필수 항목 수. */
 function DraftSummary({
@@ -220,11 +122,11 @@ function DraftBody({
 }
 
 /**
- * 방문 직후 음성 구술 → 서식 초안. 기록 화면 맨 위에 둔다.
+ * 음성 구술 초안 카드. 구술이 생기면 기록 화면 맨 위에 나타난다(그 전에는 서식만 보인다).
  * 한 번 말하면 이 방문의 서식 모두(재택의료 의사: 별지 제4·6호)를 함께 채운다.
- * 녹음 전에는 말할 내용의 핵심을, 초안 뒤에는 채운 값·빠진 항목을 보여 준다.
  * 초안은 "서식에 채우기"를 눌러야 폼에 들어가고, 저장은 기존 [임시 저장]·[확정]이 한다.
- * 녹음 상태(session)는 기록 화면이 갖고 저장 버튼 바의 [녹음]과 함께 쓴다.
+ * 녹음 상태(session)는 기록 화면이 갖는다. 녹음 조작·말할 내용·처리 중·보내기 실패는 저장 버튼 바와
+ * 그 위 시트(DictationSheet)가 보여 주고, 이 카드의 [이어서 말하기]도 같은 녹음을 시작한다.
  */
 export function DictationPanel({
   session,
@@ -238,64 +140,12 @@ export function DictationPanel({
   visit: PanelVisit;
   form: RecordForm;
 }) {
-  const { dictation, recorder, failed, isBusy, redraft, removeDictation } =
-    session;
+  const { dictation, isBusy, redraft, removeDictation } = session;
   const { formIds } = visit;
   const [overwritten, setOverwritten] = useState<string[] | null>(null);
   const [restartOpen, setRestartOpen] = useState(false);
   const [appliedAt, setAppliedAt] = useState<string | null>(null);
-  const startRecording = () => session.start("panel");
-
-  /** 녹음 중·처리 중·보내기 실패 표시. 없으면 null(평소 버튼을 보여 준다). */
-  const controls = (() => {
-    if (session.isRecording) return <RecordingControls recorder={recorder} />;
-    if (session.isProcessing) return <Processing />;
-    if (failed) {
-      return (
-        <Notice tone="destructive" icon={CircleAlert} message={failed.message}>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={session.retry}>
-              <RotateCw />
-              다시 보내기
-            </Button>
-            <Button variant="outline" onClick={session.discardFailed}>
-              녹음 버리기
-            </Button>
-          </div>
-        </Notice>
-      );
-    }
-    return null;
-  })();
-
-  if (session.isLoading) return null;
-
-  if (!dictation) {
-    return (
-      <PanelCard
-        panelRef={panelRef}
-        title="음성으로 기록"
-        description="방문 내용을 2~3분 말하면 서식 초안을 만들어 드립니다"
-        error={recorder.error}
-      >
-        {/* 녹음을 누른 뒤에도 아래 말할 내용을 보며 말하도록 조작을 위에 둔다. */}
-        {controls ?? (
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={startRecording}
-            disabled={isBusy}
-          >
-            <Mic />
-            녹음 시작
-          </Button>
-        )}
-        <DictationPoints
-          points={dictationPoints(visit.program, visit.profession, formIds)}
-        />
-      </PanelCard>
-    );
-  }
+  if (!dictation) return null;
 
   // 초안을 만든 뒤 방문에 더한 서식(초안에는 만들 때 쓴 서식마다 키가 있다). 초안 다시 만들기로 채운다.
   const addedAfterDraft = formIds.filter(
@@ -353,12 +203,19 @@ export function DictationPanel({
   );
 
   return (
-    <PanelCard
-      panelRef={panelRef}
-      title="음성 초안"
-      description={`녹음 ${dictation.takes}회 · ${formatDuration(dictation.audioSeconds)}`}
-      error={recorder.error}
-    >
+    <Card ref={panelRef} className="scroll-mt-20 gap-5">
+      <div className="flex items-center gap-3">
+        <span className="bg-primary-soft text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+          <Mic className="size-5" />
+        </span>
+        <CardHeader className="min-w-0 gap-0">
+          <CardTitle>음성 초안</CardTitle>
+          <CardDescription>
+            녹음 {dictation.takes}회 · {formatDuration(dictation.audioSeconds)}
+          </CardDescription>
+        </CardHeader>
+      </div>
+
       {dictation.draftError ? (
         <Notice
           tone="warning"
@@ -385,44 +242,40 @@ export function DictationPanel({
       <DraftBody dictation={dictation} visit={visit} />
 
       <div className="flex flex-col gap-3">
-        {controls ?? (
-          <>
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={() => applyDraft()}
-              disabled={isBusy}
-            >
-              <ClipboardCheck />
-              서식에 채우기
-            </Button>
-            {appliedAt === dictation.updatedAt && (
-              <p className="text-success flex items-center justify-center gap-2 font-semibold">
-                <CircleCheck className="size-5 shrink-0" />
-                서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
-              </p>
-            )}
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={startRecording}
-                disabled={isBusy}
-              >
-                <Mic />
-                이어서 말하기
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setRestartOpen(true)}
-                disabled={isBusy}
-              >
-                <RotateCcw />
-                처음부터
-              </Button>
-            </div>
-          </>
+        <Button
+          size="lg"
+          className="w-full"
+          onClick={() => applyDraft()}
+          disabled={isBusy}
+        >
+          <ClipboardCheck />
+          서식에 채우기
+        </Button>
+        {appliedAt === dictation.updatedAt && (
+          <p className="text-success flex items-center justify-center gap-2 font-semibold">
+            <CircleCheck className="size-5 shrink-0" />
+            서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
+          </p>
         )}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => session.start("panel")}
+            disabled={!session.canStart}
+          >
+            <Mic />
+            이어서 말하기
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setRestartOpen(true)}
+            disabled={isBusy}
+          >
+            <RotateCcw />
+            처음부터
+          </Button>
+        </div>
       </div>
 
       <TranscriptDetails dictation={dictation} />
@@ -447,6 +300,6 @@ export function DictationPanel({
         confirmText="지우기"
         variant="destructive"
       />
-    </PanelCard>
+    </Card>
   );
 }

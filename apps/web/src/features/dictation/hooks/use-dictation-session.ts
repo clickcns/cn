@@ -10,6 +10,7 @@ import {
   useRemoveDictation,
 } from "@/features/dictation/hooks/use-dictation";
 import { useRecorder } from "@/features/dictation/hooks/use-recorder";
+import { useStoredFlag } from "@/hooks/use-stored-flag";
 
 /** 보내지 못한 녹음. 다시 녹음하지 않고 그대로 다시 보낼 수 있게 남겨 둔다. */
 interface FailedRecording {
@@ -18,7 +19,7 @@ interface FailedRecording {
   message: string;
 }
 
-/** 녹음을 어디서 시작했는지: 기록 화면 위 패널 또는 아래 저장 버튼 바. */
+/** 녹음을 어디서 시작했는지: 기록 화면 위 초안 카드 또는 아래 저장 버튼 바. */
 export type DictationSource = "panel" | "bar";
 
 function uploadErrorMessage(error: unknown): string {
@@ -28,22 +29,27 @@ function uploadErrorMessage(error: unknown): string {
 }
 
 /**
- * 방문 한 건의 구술 상태: 구술(초안), 녹음기, 녹음 보내기·다시 보내기, 초안 다시 만들기·지우기.
- * 기록 화면이 한 번 만들어 위 패널(초안 확인)과 아래 저장 버튼 바(어디서나 녹음)가 함께 쓴다.
- * 저장 버튼 바에서 시작한 녹음은 패널이 안 보일 수 있으므로 결과·오류를 알림으로도 띄운다
- * (알림의 [확인하기]는 panelRef 의 패널로 올라간다. ref 는 돌려주는 값에 넣지 않는다 — React Compiler 가
+ * 방문 한 건의 구술 상태: 구술(초안), 녹음기, 녹음 보내기·다시 보내기, 초안 다시 만들기·지우기,
+ * 녹음할 때 말할 내용을 펼쳐 둘지. 기록 화면이 한 번 만들어 위 초안 카드와 아래 저장 버튼 바(녹음 막대와
+ * 그 위로 올라오는 시트)가 함께 쓴다. 초안 카드는 아래로 내려가 있으면 안 보이므로 저장 버튼 바에서 시작한
+ * 녹음은 결과를 알림으로도 띄우고, 마이크를 켜지 못하면 늘 알림으로 알린다
+ * (알림의 [확인하기]는 panelRef 의 카드로 올라간다. ref 는 돌려주는 값에 넣지 않는다 — React Compiler 가
  * 세션 전체를 ref 로 보고 그리는 중 읽기를 막는다).
  */
 export function useDictationSession(
   visitId: string,
   panelRef: RefObject<HTMLElement | null>,
 ) {
-  const dictationQuery = useDictation(visitId);
-  const dictation = dictationQuery.data ?? null;
+  const dictation = useDictation(visitId).data ?? null;
   const recordDictation = useRecordDictation(visitId);
   const redraft = useRedraftDictation(visitId);
   const removeDictation = useRemoveDictation(visitId);
   const [failed, setFailed] = useState<FailedRecording | null>(null);
+  // 녹음할 때 말할 내용을 펼쳐 둘지(마지막 선택, 처음에는 펼침).
+  const [pointsOpen, togglePoints] = useStoredFlag(
+    "carenote:dictation-points-open",
+    true,
+  );
   const sourceRef = useRef<DictationSource>("panel");
 
   const showPanel = () =>
@@ -70,29 +76,28 @@ export function useDictationSession(
     maxSeconds: DICTATION_MAX_SECONDS,
     // 구술이 이미 있으면 이어 붙인다(되묻기 답·추가 설명).
     onRecorded: (recording) => submit(recording, dictation !== null),
-    onError: (message) => {
-      if (sourceRef.current === "bar") toast.error(message);
-    },
+    onError: (message) => toast.error(message),
   });
 
   const isRecording = recorder.status !== "idle";
   const isProcessing = recordDictation.isPending;
+  const isBusy =
+    isRecording ||
+    isProcessing ||
+    redraft.isPending ||
+    removeDictation.isPending;
 
   return {
     dictation,
-    isLoading: dictationQuery.isPending,
     recorder,
     isRecording,
     isProcessing,
-    isBusy:
-      isRecording ||
-      isProcessing ||
-      redraft.isPending ||
-      removeDictation.isPending,
+    isBusy,
+    /** 새 녹음을 시작할 수 있다(보내지 못한 녹음이 있으면 먼저 다시 보내거나 버린다) */
+    canStart: !isBusy && failed === null,
     failed,
     redraft,
     removeDictation,
-    showPanel,
     start: (source: DictationSource) => {
       sourceRef.current = source;
       void recorder.start();
@@ -101,6 +106,8 @@ export function useDictationSession(
       if (failed) submit(failed.recording, failed.append);
     },
     discardFailed: () => setFailed(null),
+    pointsOpen,
+    togglePoints,
   };
 }
 
