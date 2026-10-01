@@ -6,6 +6,7 @@ import {
   type FieldDef,
   type FormDef,
   type NumberPair,
+  selectedOptions,
 } from "@repo/shared-types";
 import { rgb, type PDFDocument, type PDFPage } from "pdf-lib";
 import {
@@ -26,7 +27,6 @@ import {
   footerText,
   numberValue,
   recordTexts,
-  selectedOptions,
   textValue,
   type PdfVisitRecord,
 } from "../pdf-record.js";

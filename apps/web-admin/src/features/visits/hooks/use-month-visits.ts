@@ -4,7 +4,7 @@ import { useRecipients } from "@/features/recipients/hooks/use-recipients";
 import { useVisitCalendar } from "@/features/visits/hooks/use-visits";
 
 /**
- * 한 달의 방문 달력(날짜별 건수 + 방문 항목)과 활성 수급자. 현황판과 재택의료 기본료가 쓴다.
+ * 한 달의 방문 달력(날짜별 건수 + 방문 항목)과 활성 수급자. 현황판이 쓴다.
  * 요청 범위를 방문 달력과 같게(monthGridDates) 두어 캐시를 함께 쓴다. 달·기관을 바꾸는 동안
  * 남아 있는 이전 응답(placeholder)은 내주지 않는다(이전 달 방문으로 이번 달을 판정하지 않게).
  */

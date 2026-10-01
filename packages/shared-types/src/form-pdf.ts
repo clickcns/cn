@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { isIsoMonth } from "./date.js";
 import type { FormId } from "./forms/index.js";
+import { isoMonthSchema } from "./schema.js";
 
 /**
  * 서식 PDF 모양.
@@ -34,6 +34,6 @@ export type FormPdfQuery = z.input<typeof FormPdfQuerySchema>;
 
 /** GET /recipients/:id/home-care-nurse-pdf — 제7호 월간 기록지(원본 서식). */
 export const NurseMonthPdfQuerySchema = z.object({
-  month: z.string().refine(isIsoMonth, "달은 YYYY-MM 형식으로 보내 주세요"),
+  month: isoMonthSchema,
 });
 export type NurseMonthPdfQuery = z.input<typeof NurseMonthPdfQuerySchema>;

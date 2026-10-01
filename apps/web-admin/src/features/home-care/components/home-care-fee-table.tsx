@@ -2,10 +2,13 @@ import {
   CARE_GRADE_LABELS,
   HOME_CARE_FEE_VERDICT_LABELS,
   HOME_CARE_MONTHLY_VISITS,
+  HOME_CARE_REVENUE_PART_INFO,
+  HOME_CARE_REVENUE_PARTS,
   PROFESSION_LABELS,
   PROFESSIONS,
   type HomeCareFeeStatus,
   type HomeCareFeeVerdict,
+  type HomeCareRevenue,
   type HomeCareTally,
   type Profession,
   type Recipient,
@@ -22,11 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WarningList } from "@/components/ui/warning-list";
 import { OrganizationGroupedRows } from "@/features/organizations/components/organization-grouped-rows";
 import { visitsHref } from "@/features/visits/lib/visits-href";
+import { formatNumber, formatWon, wonToManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const COLUMN_COUNT = 2 + PROFESSIONS.length + 1;
+const COLUMN_COUNT = 1 + PROFESSIONS.length + 3;
 
 const VERDICT_BADGE: Record<HomeCareFeeVerdict, BadgeVariant> = {
   SHORT: "destructive",
@@ -37,18 +42,21 @@ const VERDICT_BADGE: Record<HomeCareFeeVerdict, BadgeVariant> = {
 type Status = HomeCareFeeStatus<Recipient>;
 
 /**
- * 재택의료센터 수급자별 그달 기본료 판정 표. 직종 칸은 "확정/요건"과 지난 미확정·예정 건수,
- * 할 일 칸은 모자란 직종마다 [방문 잡기] 버튼(지난달이면 글로만)과 확정·남은 방문 안내다.
- * 운영자의 전체 기관 보기면 기관별로 묶는다.
+ * 재택의료센터 수급자별 그달 기본료 판정과 예상 금액 표. 직종 칸은 "확정/요건"과 지난 미확정·예정
+ * 건수, 할 일 칸은 모자란 직종마다 [방문 잡기] 버튼(지난달이면 글로만)과 확정·남은 방문 안내,
+ * 놓치기 쉬운 산정 조건이다. 운영자의 전체 기관 보기면 기관별로 묶는다.
  */
 export function HomeCareFeeTable({
   statuses,
+  revenues,
   month,
   closed,
   organizationNames,
   onSchedule,
 }: {
   statuses: readonly Status[];
+  /** 수급자 id → 예상 수입 */
+  revenues: ReadonlyMap<string, HomeCareRevenue>;
   month: string;
   /** 지난달: 방문을 더 잡을 수 없다 */
   closed: boolean;
@@ -59,6 +67,7 @@ export function HomeCareFeeTable({
     <FeeRow
       key={status.recipient.id}
       status={status}
+      revenue={revenues.get(status.recipient.id)}
       month={month}
       closed={closed}
       onSchedule={onSchedule}
@@ -79,6 +88,7 @@ export function HomeCareFeeTable({
             </TableHead>
           ))}
           <TableHead>판정</TableHead>
+          <TableHead>예상 금액</TableHead>
           <TableHead>할 일</TableHead>
         </TableRow>
       </TableHeader>
@@ -94,9 +104,15 @@ export function HomeCareFeeTable({
             })}
             colSpan={COLUMN_COUNT}
             renderRow={renderRow}
-            detail={(rows) =>
-              `${rows.length}명 · 방문 부족 ${rows.filter((row) => row.verdict === "SHORT").length}명`
-            }
+            detail={(rows) => {
+              const short = rows.filter((row) => row.verdict === "SHORT");
+              const total = rows.reduce(
+                (sum, row) =>
+                  sum + (revenues.get(row.recipient.id)?.total ?? 0),
+                0,
+              );
+              return `${rows.length}명 · 방문 부족 ${short.length}명 · 예상 ${formatWon(total)}`;
+            }}
           />
         ) : (
           statuses.map(renderRow)
@@ -108,11 +124,13 @@ export function HomeCareFeeTable({
 
 function FeeRow({
   status,
+  revenue,
   month,
   closed,
   onSchedule,
 }: {
   status: Status;
+  revenue: HomeCareRevenue | undefined;
   month: string;
   closed: boolean;
   onSchedule: (recipient: Recipient, profession: Profession) => void;
@@ -147,8 +165,14 @@ function FeeRow({
           {HOME_CARE_FEE_VERDICT_LABELS[verdict]}
         </Badge>
       </TableCell>
+      <TableCell>{revenue && <AmountCell revenue={revenue} />}</TableCell>
       <TableCell>
-        <TodoCell status={status} closed={closed} onSchedule={onSchedule} />
+        <TodoCell
+          status={status}
+          issues={revenue?.issues ?? []}
+          closed={closed}
+          onSchedule={onSchedule}
+        />
       </TableCell>
     </TableRow>
   );
@@ -175,7 +199,7 @@ function TallyCell({
   ].filter(Boolean);
   return (
     <div className="flex flex-col gap-0.5 tabular-nums">
-      <span className={cn("text-sm font-semibold", tone)}>
+      <span className={cn("text-sm font-semibold whitespace-nowrap", tone)}>
         확정 {confirmed}/{required}
       </span>
       {rest.length > 0 && (
@@ -187,7 +211,67 @@ function TallyCell({
   );
 }
 
+/** "331,490원", 그 아래 항목별 만원("기본 14 · 진료 13.2")과 기본료 연속 개월. */
+function AmountCell({ revenue }: { revenue: HomeCareRevenue }) {
+  const parts = HOME_CARE_REVENUE_PARTS.filter(
+    (part) => revenue.parts[part].amount > 0,
+  );
+  return (
+    <div className="flex flex-col gap-0.5 whitespace-nowrap tabular-nums">
+      <span
+        className={cn(
+          "text-sm font-semibold",
+          revenue.total === 0 && "text-muted-foreground",
+        )}
+      >
+        {formatWon(revenue.total)}
+      </span>
+      {parts.length > 0 && (
+        <span className="text-muted-foreground text-xs">
+          {parts
+            .map(
+              (part) =>
+                `${HOME_CARE_REVENUE_PART_INFO[part].short} ${formatNumber(wonToManwon(revenue.parts[part].amount))}`,
+            )
+            .join(" · ")}
+          만
+        </span>
+      )}
+      {revenue.streak > 0 && (
+        <span className="text-muted-foreground text-xs">
+          연속 {revenue.streak}개월
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** 판정의 할 일(방문 잡기·확정 안내)과 그 아래 놓치기 쉬운 산정 조건. 둘 다 없으면 "—". */
 function TodoCell({
+  status,
+  issues,
+  closed,
+  onSchedule,
+}: {
+  status: Status;
+  issues: readonly string[];
+  closed: boolean;
+  onSchedule: (recipient: Recipient, profession: Profession) => void;
+}) {
+  if (status.verdict === "SECURED" && issues.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {status.verdict !== "SECURED" && (
+        <VerdictTodo status={status} closed={closed} onSchedule={onSchedule} />
+      )}
+      <WarningList warnings={issues} compact />
+    </div>
+  );
+}
+
+function VerdictTodo({
   status,
   closed,
   onSchedule,
@@ -197,9 +281,6 @@ function TodoCell({
   onSchedule: (recipient: Recipient, profession: Profession) => void;
 }) {
   const { recipient, missing, toConfirm, toVisit } = status;
-  if (status.verdict === "SECURED") {
-    return <span className="text-muted-foreground">—</span>;
-  }
   const lacking = PROFESSIONS.filter((profession) => missing[profession] > 0);
   /** "간호사 1회" */
   const need = (profession: Profession) =>

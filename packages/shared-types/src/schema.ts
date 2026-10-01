@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isIsoMonth } from "./date.js";
 
 /**
  * 선택 입력. 폼의 빈 문자열("", 공백만)은 null("값 없음")로 받는다.
@@ -22,3 +23,8 @@ export function optionalText(max: number, label: string) {
 /** 시간대가 붙은 ISO 일시(예: 2026-09-22T10:00:00+09:00). 형식이 틀리면 message 로 알린다. */
 export const isoDateTime = (message: string) =>
   z.iso.datetime({ offset: true, message });
+
+/** 달 쿼리(YYYY-MM, 한국 달). */
+export const isoMonthSchema = z
+  .string()
+  .refine(isIsoMonth, "달은 YYYY-MM 형식으로 보내 주세요");

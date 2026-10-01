@@ -28,7 +28,7 @@ import { Select } from "@/components/ui/select";
 import { useVisitStaff } from "@/features/users/hooks/use-users";
 import { staffLabel } from "@/features/users/lib/staff-label";
 import { FormRuleCheckboxes } from "@/features/visits/components/form-rule-checkboxes";
-import { SameDayWarnings } from "@/features/visits/components/same-day-warnings";
+import { WarningList } from "@/components/ui/warning-list";
 import {
   useSameDayWarnings,
   useUpdateVisit,
@@ -230,7 +230,7 @@ export function VisitEditForm({ visit, onDone, onCancel }: VisitEditFormProps) {
             이상 저장·녹음할 수 없습니다.
           </p>
         )}
-        <SameDayWarnings warnings={sameDayWarnings} />
+        <WarningList warnings={sameDayWarnings} />
         {submitError && (
           <p role="alert" className="text-destructive text-sm">
             {submitError}

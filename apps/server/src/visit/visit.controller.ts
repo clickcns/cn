@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CreateVisitSchema,
+  HomeCareMonthQuerySchema,
   MarkPortalEntrySchema,
   PortalQueueQuerySchema,
   SameDayWarningQuerySchema,
@@ -28,6 +29,7 @@ import { createZodDto } from "nestjs-zod";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
+import { HomeCareService } from "./home-care.service.js";
 import { PortalEntryService } from "./portal-entry.service.js";
 import { VisitService } from "./visit.service.js";
 
@@ -40,6 +42,7 @@ class SameDayWarningQueryDto extends createZodDto(SameDayWarningQuerySchema) {}
 class VisitCalendarQueryDto extends createZodDto(VisitCalendarQuerySchema) {}
 class PortalQueueQueryDto extends createZodDto(PortalQueueQuerySchema) {}
 class MarkPortalEntryDto extends createZodDto(MarkPortalEntrySchema) {}
+class HomeCareMonthQueryDto extends createZodDto(HomeCareMonthQuerySchema) {}
 
 @ApiTags("visits")
 @ApiBearerAuth()
@@ -48,6 +51,7 @@ export class VisitController {
   constructor(
     private readonly visitService: VisitService,
     private readonly portalEntryService: PortalEntryService,
+    private readonly homeCareService: HomeCareService,
   ) {}
 
   @Get()
@@ -86,6 +90,19 @@ export class VisitController {
     @Query() query: PortalQueueQueryDto,
   ) {
     return this.portalEntryService.queue(actor, query);
+  }
+
+  /**
+   * 재택의료 수입: 그달 재택의료센터 방문(금액 셈에 쓰는 사실만)과 수급자별 직전 연속 개월.
+   * 기관 관리자·운영자. ":id"보다 먼저 둔다.
+   */
+  @Get("home-care-month")
+  @Roles("ADMIN", "MANAGER")
+  homeCareMonth(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Query() query: HomeCareMonthQueryDto,
+  ) {
+    return this.homeCareService.month(actor, query);
   }
 
   @Get(":id")

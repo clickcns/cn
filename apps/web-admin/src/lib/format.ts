@@ -9,9 +9,24 @@ import {
   type Gender,
 } from "@repo/shared-types";
 
-/** 원 → 만원(재택의료 기본료처럼 만원 단위 금액을 크게 보일 때). */
+/** 원 → 만원(재택의료 수입처럼 만원 단위 금액을 크게 보일 때). */
 export function wonToManwon(won: number): number {
   return won / 10_000;
+}
+
+/** 숫자: 천 단위 쉼표, 소수는 한 자리까지(1,234.5). */
+export function formatNumber(value: number): string {
+  return value.toLocaleString("ko-KR", { maximumFractionDigits: 1 });
+}
+
+/** 131,720원 */
+export function formatWon(won: number): string {
+  return `${formatNumber(won)}원`;
+}
+
+/** 13.2만원(소수 한 자리) */
+export function formatManwon(won: number): string {
+  return `${formatNumber(wonToManwon(won))}만원`;
 }
 
 /** 화면 표시는 모두 한국 시간 기준이다. 값이 없으면 대시로 표시한다. */

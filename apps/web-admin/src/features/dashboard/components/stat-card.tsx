@@ -2,9 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { MoreLink } from "@/features/dashboard/components/dashboard-card";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/** 현황판 맨 위의 숫자 한 칸. value가 undefined면(받는 중·받지 못함) "—"를 보여 준다. */
+/**
+ * 현황판 맨 위의 숫자 한 칸(천 단위 쉼표, 소수 한 자리). value가 undefined면(받는 중·받지 못함)
+ * "—"를 보여 준다.
+ */
 export function StatCard({
   label,
   icon: Icon,
@@ -37,7 +41,7 @@ export function StatCard({
             value !== undefined && tone === "success" && "text-success",
           )}
         >
-          {value ?? "—"}
+          {value === undefined ? "—" : formatNumber(value)}
         </span>
         {value !== undefined && (
           <span className="text-muted-foreground text-sm">{unit}</span>

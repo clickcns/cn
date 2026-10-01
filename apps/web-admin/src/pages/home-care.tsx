@@ -5,11 +5,14 @@ import {
   formatDateLabel,
   formatKstDate,
   HOME_CARE_BASE_FEE,
+  HOME_CARE_EXTRA_NURSING_MIN_MINUTES,
   HOME_CARE_FEE_VERDICTS,
   HOME_CARE_MONTHLY_VISITS,
+  HOME_CARE_VISIT_FEE_RATES,
   homeCareClaimDeadline,
   homeCareFeeStatuses,
   homeCareFeeTotals,
+  homeCareMonthRevenue,
   isIsoMonth,
   monthOf,
   type HomeCareFeeVerdict,
@@ -30,18 +33,22 @@ import { MonthNav } from "@/components/month-nav";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/data-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { WarningList } from "@/components/ui/warning-list";
 import { MonthFallback } from "@/features/dashboard/components/month-fallback";
 import { StatCard } from "@/features/dashboard/components/stat-card";
 import { HomeCareFeeTable } from "@/features/home-care/components/home-care-fee-table";
+import { RevenueSummary } from "@/features/home-care/components/revenue-summary";
+import { useHomeCareMonth } from "@/features/home-care/hooks/use-home-care-month";
 import { lastStaffId } from "@/features/home-care/lib/last-staff";
 import { useOrganizationColumnNames } from "@/features/organizations/hooks/use-organization-scope";
 import {
   CreateVisitDialog,
   type CreateVisitDefaults,
 } from "@/features/visits/components/create-visit-dialog";
-import { useMonthVisits } from "@/features/visits/hooks/use-month-visits";
 import { useSearchParamsUpdater } from "@/hooks/use-search-params-updater";
-import { wonToManwon } from "@/lib/format";
+import { formatManwon, wonToManwon } from "@/lib/format";
+
+const percent = (rate: number) => `${rate * 100}%`;
 
 /** 판정별 금액 칸. 지난달(closed)이면 이름·설명이 "못 받음·청구"로 바뀐다. */
 const VERDICT_CARDS: Record<
@@ -77,9 +84,9 @@ const VERDICT_CARDS: Record<
 };
 
 /**
- * 재택의료 기본료 점검: 재택의료센터 수급자마다 그달 재택의료기본료 요건(의사·간호사·사회복지사
- * 방문)을 확정 기록으로 판정하고, 판정별 금액과 모자란 방문을 보여 준다. 모자란 직종은 바로
- * 방문 등록 창으로 잡는다. 방문 달력과 같은 달력 API·범위라 캐시를 함께 쓴다.
+ * 재택의료 수입: 재택의료센터 수급자마다 그달 재택의료기본료 요건(의사·간호사·사회복지사 방문)을
+ * 확정 기록으로 판정하고, 기본료·방문진료료·추가간호료·지속관리료 예상 금액과 놓치기 쉬운 산정
+ * 조건을 보여 준다. 모자란 직종은 바로 방문 등록 창으로 잡는다.
  */
 export default function HomeCarePage() {
   const today = formatKstDate();
@@ -92,16 +99,23 @@ export default function HomeCarePage() {
   const organizationNames = useOrganizationColumnNames();
   const [create, setCreate] = useState<CreateVisitDefaults | null>(null);
 
-  const { visits, recipients, error, retry, isFetching } =
-    useMonthVisits(month);
-  const statuses = useMemo(
-    () =>
-      visits == null
-        ? visits
-        : recipients && homeCareFeeStatuses(recipients, visits, month, today),
-    [visits, recipients, month, today],
-  );
-  const totals = statuses ? homeCareFeeTotals(statuses) : undefined;
+  const { data, recipients, error, retry, isFetching } =
+    useHomeCareMonth(month);
+  const visits = data?.visits;
+  // 판정·판정별 금액·예상 수입. null은 방문이 너무 많아 목록 없음(운영자의 전체 기관 보기),
+  // undefined는 받는 중.
+  const judged = useMemo(() => {
+    if (!data || !visits || !recipients)
+      return visits === null ? null : undefined;
+    const statuses = homeCareFeeStatuses(recipients, visits, month, today);
+    return {
+      statuses,
+      totals: homeCareFeeTotals(statuses),
+      revenue: homeCareMonthRevenue(statuses, visits, data.priorStreaks),
+    };
+  }, [data, visits, recipients, month, today]);
+  const revenue = judged?.revenue;
+  const totals = judged?.totals;
 
   const closed = month < thisMonth;
   const deadline = homeCareClaimDeadline(month);
@@ -125,11 +139,12 @@ export default function HomeCarePage() {
   return (
     <>
       <PageHeader
-        title="재택의료 기본료"
-        description={`재택의료센터 수급자마다 그달 재택의료기본료(월 ${wonToManwon(HOME_CARE_BASE_FEE)}만원) 요건을 확정 기록으로 판정합니다. 모자란 방문은 바로 일정으로 잡습니다.`}
+        title="재택의료 수입"
+        description={`재택의료센터 수급자마다 그달 재택의료기본료(월 ${formatManwon(HOME_CARE_BASE_FEE)}) 요건을 확정 기록으로 판정하고, 방문진료료·추가간호료·지속관리료까지 받을 수 있는 금액을 셉니다. 모자란 방문은 바로 일정으로 잡습니다.`}
       />
 
       <div className="grid gap-4">
+        <RevenueSummary totals={revenue?.totals} closed={closed} />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {HOME_CARE_FEE_VERDICTS.map((verdict) => {
             const card = VERDICT_CARDS[verdict];
@@ -160,6 +175,12 @@ export default function HomeCarePage() {
           />
         </div>
 
+        {revenue && revenue.warnings.length > 0 && (
+          <div className="grid gap-2">
+            <WarningList warnings={revenue.warnings} />
+          </div>
+        )}
+
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
             <MonthNav
@@ -178,13 +199,13 @@ export default function HomeCarePage() {
             </p>
           </div>
 
-          {statuses == null ? (
+          {judged == null ? (
             <MonthFallback
-              tooMany={statuses === null}
+              tooMany={judged === null}
               error={error}
               onRetry={retry}
             />
-          ) : statuses.length === 0 ? (
+          ) : judged.statuses.length === 0 ? (
             <EmptyState
               icon={HeartHandshakeIcon}
               title="재택의료센터에 등록한 수급자가 없습니다"
@@ -192,7 +213,8 @@ export default function HomeCarePage() {
             />
           ) : (
             <HomeCareFeeTable
-              statuses={statuses}
+              statuses={judged.statuses}
+              revenues={judged.revenue.byRecipient}
               month={month}
               closed={closed}
               organizationNames={organizationNames}
@@ -201,10 +223,18 @@ export default function HomeCarePage() {
           )}
 
           <p className="text-muted-foreground border-t px-5 py-3 text-xs">
-            장기요양 재택의료센터 시범사업 지침(2026.2) 기준입니다. 직종 칸은
-            방문한 직종으로 세고, 의사·간호사가 함께 방문하면 각각 셉니다. 아직
-            보지 않는 규칙: 첫 포괄평가 달의 산정 기간, 케어플랜 없는 긴급왕진,
-            의사 1인당 140명, 사망 종결 50%, 다른 기관 서비스와 같은 날 겹침.
+            장기요양 재택의료센터 시범사업 지침(2026.2)과 일차의료 방문진료
+            수가(의원)로 셉니다. 금액은 본인부담금을 포함한 수가이고
+            동반인력·야간 가산은 넣지 않습니다. 직종 칸은 방문한 직종으로 세고,
+            의사·간호사가 함께 방문하면 각각 셉니다. 방문진료료는 제4호를 쓴
+            의사 방문(동일 건물{" "}
+            {percent(HOME_CARE_VISIT_FEE_RATES.SAME_BUILDING)}
+            ·동일 세대 {percent(HOME_CARE_VISIT_FEE_RATES.SAME_HOUSEHOLD)}),
+            추가간호료는 간호사 기본 {HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘고
+            정기로 적지 않은 {HOME_CARE_EXTRA_NURSING_MIN_MINUTES}분 이상·의사
+            동행 아닌 방문, 지속관리료의 연속 개월은 케어노트에 확정한 기록으로
+            셉니다. 아직 보지 않는 규칙: 첫 포괄평가 달의 산정 기간, 케어플랜
+            없는 긴급왕진, 사망 종결 50%, 다른 기관 서비스와 같은 날 겹침.
           </p>
         </Card>
       </div>

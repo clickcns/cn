@@ -59,8 +59,8 @@ export default function DashboardPage() {
   // 운영자가 "전체 기관"을 볼 때만 있다. 표를 기관별로 묶거나 기관 칸을 더한다.
   const organizationNames = useOrganizationColumnNames();
 
-  // 이달 방문(날짜별 건수 + 가벼운 목록)과 수급자. [방문 달력]·[기본료 점검]으로 가면 받은 것을
-  // 그대로 쓴다. 요약은 모두 이달 안만 센다.
+  // 이달 방문(날짜별 건수 + 가벼운 목록)과 수급자. [방문 달력]으로 가면 받은 것을 그대로 쓴다
+  // ([재택의료 수입]은 금액 셈에 서식 값이 필요해 따로 받는다). 요약은 모두 이달 안만 센다.
   const { calendar, visits, recipients, calendarError, error, retry } =
     useMonthVisits(month);
   // 어제까지의 미확정 방문: 오래된 앞의 몇 건과 상태별 건수(statusCounts).
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             unit="만원"
             tone={checks?.feeTotals.SHORT.count ? "warning" : "success"}
             detail={feeDetail}
-            link={{ to: ROUTES.homeCare, label: "기본료 점검" }}
+            link={{ to: ROUTES.homeCare, label: "재택의료 수입" }}
           />
         </div>
 

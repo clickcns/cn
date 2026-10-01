@@ -41,7 +41,7 @@ import { useRecipients } from "@/features/recipients/hooks/use-recipients";
 import { useVisitStaff } from "@/features/users/hooks/use-users";
 import { staffLabel } from "@/features/users/lib/staff-label";
 import { FormRuleCheckboxes } from "@/features/visits/components/form-rule-checkboxes";
-import { SameDayWarnings } from "@/features/visits/components/same-day-warnings";
+import { WarningList } from "@/components/ui/warning-list";
 import {
   useCreateVisit,
   useSameDayWarnings,
@@ -433,7 +433,7 @@ function CreateVisitForm({
             />
           </FormField>
         </div>
-        <SameDayWarnings warnings={sameDayWarnings} />
+        <WarningList warnings={sameDayWarnings} />
       </DialogBody>
       <FormDialogFooter
         submitText="등록"

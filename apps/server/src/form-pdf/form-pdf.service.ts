@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import {
-  addMonths,
   formatMonthLabel,
-  kstStartOfDay,
+  kstMonthRange,
   recordDate,
   type FormPdfStyle,
   type VisitRecordVersionDetail,
@@ -116,10 +115,7 @@ export class FormPdfService {
         recipientId,
         status: "CONFIRMED",
         formIds: { has: "HOME_CARE_NURSE" },
-        scheduledAt: {
-          gte: kstStartOfDay(`${month}-01`),
-          lt: kstStartOfDay(`${addMonths(month, 1)}-01`),
-        },
+        scheduledAt: kstMonthRange(month),
       },
       select: {
         scheduledAt: true,

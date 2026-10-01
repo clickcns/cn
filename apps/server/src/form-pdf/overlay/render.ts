@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { FormData, FormId, LayoutTextStyle } from "@repo/shared-types";
+import {
+  selectedOptions,
+  type FormData,
+  type FormId,
+  type LayoutTextStyle,
+} from "@repo/shared-types";
 import { PDFDocument, type PDFPage } from "pdf-lib";
 import {
   ASSETS_DIR,
@@ -21,7 +26,6 @@ import {
   footerText,
   numberValue,
   recordTexts,
-  selectedOptions,
   textValue,
   type PdfVisitRecord,
   type RecordTexts,

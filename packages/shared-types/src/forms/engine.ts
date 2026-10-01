@@ -141,6 +141,17 @@ export type FieldValue =
 /** 서식 한 장의 값. 키는 칸 키다. */
 export type FormData = Record<string, FieldValue>;
 
+/** 고른 항목 목록(하나 고르기·여러 개 고르기 모두). 서식 값이 없거나 고르지 않았으면 빈 목록. */
+export function selectedOptions(
+  data: FormData | undefined,
+  key: string,
+): SelectedOption[] {
+  const value = data?.[key];
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return [value];
+  return [];
+}
+
 export function formFields(form: FormDef): FieldDef[] {
   return form.sections.flatMap((section) => section.fields);
 }

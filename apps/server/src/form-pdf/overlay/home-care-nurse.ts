@@ -1,4 +1,4 @@
-import { roundPt, type FormData } from "@repo/shared-types";
+import { roundPt, selectedOptions, type FormData } from "@repo/shared-types";
 import {
   popGraphicsState,
   pushGraphicsState,
@@ -11,7 +11,6 @@ import {
   footerText,
   numberValue,
   recordTexts,
-  selectedOptions,
   type PdfVisitRecord,
   type RecordTexts,
 } from "../pdf-record.js";

@@ -62,6 +62,20 @@ export function monthOf(date: string): string {
 }
 
 /** YYYY-MM에 달 수를 더한다. 예: addMonths("2026-12", 1) → "2027-01" */
+/** ISO 시각 두 개 사이의 실제 경과 시간(분). 자정을 넘겨도 맞다. 순서가 거꾸로면 null. */
+export function minutesBetween(start: string, end: string): number | null {
+  const diff = new Date(end).getTime() - new Date(start).getTime();
+  return diff >= 0 ? Math.round(diff / 60_000) : null;
+}
+
+/** 한국 달(YYYY-MM)의 시각 범위: 그달 1일 0시 ≤ t < 다음 달 1일 0시. */
+export function kstMonthRange(month: string): { gte: Date; lt: Date } {
+  return {
+    gte: kstStartOfDay(`${month}-01`),
+    lt: kstStartOfDay(`${addMonths(month, 1)}-01`),
+  };
+}
+
 export function addMonths(month: string, months: number): string {
   const [year, monthNumber] = month.split("-").map(Number);
   const index = year! * 12 + (monthNumber! - 1) + months;

@@ -6,6 +6,8 @@ import type {
   FormLayoutSummary,
   FormId,
   FormPdfQuery,
+  HomeCareMonthQuery,
+  HomeCareMonthResponse,
   MarkPortalEntryInput,
   NurseMonthPdfQuery,
   PortalEntry,
@@ -216,6 +218,13 @@ export function createCarenoteApi(http: KyInstance) {
         ),
       /** 예정 상태의 방문만 지울 수 있다. */
       remove: (id: string) => http.delete(`visits/${id}`).json<{ ok: true }>(),
+      /** 재택의료 수입: 그달 재택의료센터 방문(금액 셈에 쓰는 사실)과 수급자별 직전 연속 개월 */
+      homeCareMonth: (query: HomeCareMonthQuery) =>
+        http
+          .get("visits/home-care-month", {
+            searchParams: toSearchParams(query),
+          })
+          .json<HomeCareMonthResponse>(),
       /** 확정했지만 포털에 넣었다고 표시하지 않은 서식(기본: 지난달 1일부터 오늘까지) */
       portalQueue: (query?: PortalQueueQuery) =>
         http

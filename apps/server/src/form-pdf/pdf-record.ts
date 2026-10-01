@@ -6,7 +6,6 @@ import {
   type FormData,
   type FormId,
   type Profession,
-  type SelectedOption,
   type VisitRecordHeader,
 } from "@repo/shared-types";
 
@@ -25,14 +24,6 @@ export interface PdfVisitRecord {
   confirmedByName: string;
   /** 보관한 값이 확정 때 남긴 hash와 맞는지(확정본 이력의 "원본 그대로입니다") */
   hashMatches: boolean;
-}
-
-/** 고른 항목 목록(하나 고르기·여러 개 고르기 모두). */
-export function selectedOptions(data: FormData, key: string): SelectedOption[] {
-  const value = data[key];
-  if (Array.isArray(value)) return value;
-  if (value && typeof value === "object") return [value];
-  return [];
 }
 
 export function textValue(data: FormData, key: string): string {

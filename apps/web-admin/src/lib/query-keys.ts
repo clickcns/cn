@@ -1,4 +1,5 @@
 import type {
+  HomeCareMonthQuery,
   PortalQueueQuery,
   RecipientListQuery,
   SameDayWarningQuery,
@@ -49,6 +50,9 @@ export const queryKeys = {
     /** 달력(날짜별 건수). `lists` 접두어 아래라 등록·삭제 뒤 목록과 함께 다시 받는다. */
     calendar: (query: VisitCalendarQuery) =>
       ["visits", "list", "calendar", query] as const,
+    /** 재택의료 수입(그달 재택의료센터 방문 + 연속 개월). `lists` 아래라 저장·확정·삭제 뒤 다시 받는다. */
+    homeCareMonth: (query: HomeCareMonthQuery) =>
+      ["visits", "list", "home-care", query] as const,
     /** calendar()로 만든 키에서 조건을 꺼낸다(캐시를 고칠 때). */
     calendarQueryOf: (key: readonly unknown[]) =>
       key[3] as VisitCalendarQuery | undefined,
