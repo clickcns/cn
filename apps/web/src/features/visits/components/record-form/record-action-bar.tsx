@@ -17,8 +17,10 @@ interface RecordActionBarProps {
 
 /**
  * 기록 저장 버튼 바. 앞에 녹음 조작이 있고, 녹음할 때는 바 위로 시트가 올라온다.
+ * 바탕은 불투명하고 화면 아래 끝에 붙어, 스크롤하는 서식이 바 아래나 바 너머로 비치지 않는다.
  * - 좁은 화면: 하단 탭 바 바로 위에 고정
- * - 넓은 화면: 폼 아래에 붙어 따라오는 막대(오른쪽 정렬)
+ * - 넓은 화면: 서식 칸 아래 끝에 붙어 따라오는 막대(위만 둥글게, 오른쪽 정렬). 본문 아래 여백(pb-bottom-stack 의
+ *   2rem)만큼 아래로 내려 페이지 끝에서도 화면 아래에 붙는다.
  */
 export function RecordActionBar({
   isDirty,
@@ -33,7 +35,7 @@ export function RecordActionBar({
     <div
       data-slot="action-bar"
       // 녹음 시트가 올라오면 좁은 화면에서도 위가 둥근 시트처럼 보이게 한다.
-      className="bottom-above-tab-bar border-border bg-card/95 fixed inset-x-0 z-30 border-t px-4 py-3 backdrop-blur has-[[data-slot=dictation-sheet]]:rounded-t-2xl has-[[data-slot=dictation-sheet]]:pt-4 has-[[data-slot=dictation-sheet]]:shadow-[0_-8px_24px_rgb(0_0_0/0.08)] md:sticky md:bottom-4 md:mt-2 md:rounded-2xl md:border md:px-5 md:shadow-lg"
+      className="bottom-above-tab-bar border-border bg-card fixed inset-x-0 z-30 border-t px-4 py-3 has-[[data-slot=dictation-sheet]]:rounded-t-2xl has-[[data-slot=dictation-sheet]]:pt-4 has-[[data-slot=dictation-sheet]]:shadow-[0_-8px_24px_rgb(0_0_0/0.08)] md:sticky md:bottom-0 md:mt-2 md:-mb-8 md:rounded-t-2xl md:border md:border-b-0 md:px-5 md:shadow-[0_-8px_24px_rgb(0_0_0/0.08)]"
     >
       <div className="mx-auto max-w-[640px] md:max-w-none">
         {dictationSheet}
