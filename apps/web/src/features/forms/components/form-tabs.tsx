@@ -1,15 +1,21 @@
 import { FORMS, type FormId } from "@repo/shared-types";
+import { formPanelId } from "@/features/forms/lib/field-ids";
 import { cn } from "@/lib/utils";
 
-/** 방문 한 건의 서식이 여럿일 때 고르는 탭(재택의료 의사: 별지 제4·6호). */
+/**
+ * 방문 한 건의 서식이 여럿일 때 고르는 탭(재택의료 의사: 별지 제4·6호).
+ * 탭 패널 id 는 formPanelId(panelIdPrefix, formId) 다.
+ */
 export function FormTabs({
   formIds,
   value,
   onChange,
+  panelIdPrefix = "form-panel",
 }: {
   formIds: readonly FormId[];
   value: FormId | undefined;
   onChange: (formId: FormId) => void;
+  panelIdPrefix?: string;
 }) {
   return (
     <div
@@ -29,7 +35,7 @@ export function FormTabs({
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-controls={`form-panel-${formId}`}
+            aria-controls={formPanelId(panelIdPrefix, formId)}
             onClick={() => onChange(formId)}
             className={cn(
               "focus-visible:ring-ring/30 flex min-h-14 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-colors outline-none focus-visible:ring-4",

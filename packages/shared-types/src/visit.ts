@@ -322,7 +322,8 @@ export interface VisitStaff {
   profession: Profession | null;
 }
 
-interface VisitBase {
+/** 방문 목록·상세·지난 기록이 함께 쓰는 방문 정보. */
+export interface VisitBase {
   id: string;
   organizationId: string;
   program: Program;
@@ -355,10 +356,6 @@ export interface VisitDetail extends VisitBase {
   staff: VisitStaff & { licenseNumber: string | null };
   /** 저장한 서식 값. 아직 저장하지 않은 서식은 없다. */
   forms: VisitForms;
-  /**
-   * 같은 수급자의 지난 서식에서 가져온 기본값(이월 칸만). 아직 저장하지 않은 서식을 처음 열 때 쓴다.
-   */
-  carryOver: VisitForms;
   /** 보관한 확정본 수(1차, 2차 …). 목록은 GET /visits/:id/versions */
   versionCount: number;
 }

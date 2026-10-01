@@ -41,6 +41,7 @@ export const LTC_NURSING_FORM = {
         {
           key: "respiration",
           label: "호흡",
+          visitSpecific: true,
           type: "number",
           unit: "회/분",
           min: 4,

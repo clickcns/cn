@@ -6,11 +6,10 @@ import {
   FORMS,
   isEmptyValue,
   MINUTES_FIELD,
+  normalizeOptionDetail,
   numberSchema,
-  OPTION_DETAIL_MAX_LENGTH,
   OPTION_NOTE_MAX_LENGTH,
   withParticle,
-  type ChoiceFieldDef,
   type DictationSentence,
   type DraftIssue,
   type FieldEvidence,
@@ -159,26 +158,6 @@ class DraftChecker {
   }
 }
 
-/** 괄호 안 내용: 글 칸은 다듬어서, 선택 칸은 선택지 안의 값만. 괄호가 없는 항목은 버린다. */
-function normalizeDetail(
-  field: ChoiceFieldDef,
-  value: string,
-  detail: string | null | undefined,
-): string | null {
-  const option = findOption(field, value);
-  const text = detail?.trim();
-  if (!option?.detail || !text) return null;
-  if (option.detail.kind === "text") {
-    return text.slice(0, OPTION_DETAIL_MAX_LENGTH);
-  }
-  if (option.detail.kind === "choice") {
-    return option.detail.options.some((choice) => choice.value === text)
-      ? text
-      : null;
-  }
-  return null;
-}
-
 function checkForm(
   checker: DraftChecker,
   formId: FormId,
@@ -228,7 +207,7 @@ function checkForm(
         if (!ids) break;
         values[field.key] = {
           value: single.value,
-          detail: normalizeDetail(field, single.value, single.detail),
+          detail: normalizeOptionDetail(field, single.value, single.detail),
         };
         evidence[field.key] = { ids, quotes: [] };
         break;
@@ -267,7 +246,7 @@ function checkForm(
 
           const entry: SelectedOption = {
             value: item.value,
-            detail: normalizeDetail(field, item.value, item.detail),
+            detail: normalizeOptionDetail(field, item.value, item.detail),
           };
           if (item.minutes !== undefined)
             entry.minutes = minutes?.value ?? null;

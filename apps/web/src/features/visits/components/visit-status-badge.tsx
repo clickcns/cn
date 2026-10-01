@@ -9,13 +9,15 @@ const STATUS_VARIANTS: Record<VisitStatus, BadgeVariant> = {
 
 export function VisitStatusBadge({
   status,
+  size,
   className,
 }: {
   status: VisitStatus;
+  size?: "default" | "sm";
   className?: string;
 }) {
   return (
-    <Badge variant={STATUS_VARIANTS[status]} className={className}>
+    <Badge variant={STATUS_VARIANTS[status]} size={size} className={className}>
       {VISIT_STATUS_LABELS[status]}
     </Badge>
   );

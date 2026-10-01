@@ -34,6 +34,7 @@ export const HOME_CARE_SOCIAL_FORM = {
         {
           key: "method",
           label: "상담방법",
+          visitSpecific: true,
           type: "single",
           required: true,
           dictation: true,
@@ -46,6 +47,7 @@ export const HOME_CARE_SOCIAL_FORM = {
         {
           key: "counselType",
           label: "상담구분",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           options: [

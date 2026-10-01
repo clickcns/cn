@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
 import {
   formatFieldValue,
   type FormData,
   type FormDef,
+  type FormSection,
 } from "@repo/shared-types";
 import { FileText } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,13 +28,15 @@ export function FormHeading({ form }: { form: FormDef }) {
   );
 }
 
-/** 읽기 전용 서식. 빈 칸은 "—". */
+/** 읽기 전용 서식. 빈 칸은 "—". sectionAction 을 주면 구분 카드 머리 오른쪽에 둔다(지난 기록 불러오기). */
 export function FormView({
   form,
   data,
+  sectionAction,
 }: {
   form: FormDef;
   data: FormData | undefined;
+  sectionAction?: (section: FormSection) => ReactNode;
 }) {
   if (!data) {
     return (
@@ -46,8 +50,9 @@ export function FormView({
     <div className="flex flex-col gap-4">
       {form.sections.map((section) => (
         <Card key={section.title}>
-          <CardHeader>
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>{section.title}</CardTitle>
+            {sectionAction?.(section)}
           </CardHeader>
           <dl className="divide-border divide-y">
             {section.fields.map((field) => {

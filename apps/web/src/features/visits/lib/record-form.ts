@@ -1,3 +1,4 @@
+import type { UseFormReturn } from "react-hook-form";
 import {
   addKstDays,
   formatKstDate,
@@ -7,7 +8,6 @@ import {
   isIsoDate,
   SaveVisitRecordSchema,
   toKstIsoDateTime,
-  type FormData,
   type FormId,
   type SaveVisitRecordInput,
   type VisitDetail,
@@ -44,6 +44,12 @@ export interface RecordFormValues {
  * 방문 예정 시각의 한국 날짜(YYYY-MM-DD). 기록된 시각이 없을 때 방문 날짜의 기본값이다.
  * 실제 방문 날짜는 예정일과 다를 수 있다(`RecordFormValues.visitDate`).
  */
+/** 기록 폼에서 값을 읽고 바꾸는 부분(음성 초안·지난 기록 채우기가 쓴다). */
+export type RecordForm = Pick<
+  UseFormReturn<RecordFormValues>,
+  "getValues" | "setValue"
+>;
+
 export function getVisitDate(visit: Pick<VisitDetail, "scheduledAt">): string {
   return formatKstDate(new Date(visit.scheduledAt));
 }
@@ -54,24 +60,19 @@ const isoToTime = (iso: string | null) =>
 const isoToDate = (iso: string | null) =>
   iso ? formatKstDate(new Date(iso)) : null;
 
-/** 서식 한 장의 기록 값: 저장한 값, 없으면 지난 방문에서 가져온 이월 값. */
-export function formStartValues(
-  visit: Pick<VisitDetail, "forms" | "carryOver">,
-  formId: FormId,
-): FormData | undefined {
-  return visit.forms[formId] ?? visit.carryOver[formId];
-}
-
-/** 서식 한 장의 시작 상태(formStartValues 를 입력 폼 모양으로). */
+/**
+ * 서식 한 장의 시작 상태: 저장한 값(없으면 빈 서식). 지난 기록 값은 저절로 채우지 않고 사용자가
+ * [이월 칸 채우기]·"지난 값"·지난 기록 불러오기로 채운다.
+ */
 export function toFormInitialState(
   visit: VisitDetail,
   formId: FormId,
 ): FormState {
-  return toFormState(FORMS[formId], formStartValues(visit, formId));
+  return toFormState(FORMS[formId], visit.forms[formId]);
 }
 
 /**
- * 방문의 서식은 저장한 값이나 이월 값으로 시작한다. 켜지 않은 선택 서식도 빈 상태로 넣어 두어
+ * 방문의 서식은 저장한 값으로 시작한다. 켜지 않은 선택 서식도 빈 상태로 넣어 두어
  * 서식을 더하고 뺄 때 폼의 기본값이 있게 한다(뺀 서식을 기본값으로 되돌려 "저장 안 됨"이 남지 않게).
  */
 export function toRecordFormValues(visit: VisitDetail): RecordFormValues {

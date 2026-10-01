@@ -53,6 +53,7 @@ export const PRIMARY_CARE_CHECK_FORM = {
         {
           key: "sameBuilding",
           label: "동일 건물 및 동일 세대 방문 여부",
+          visitSpecific: true,
           type: "single",
           dictation: false,
           description: "동일 세대는 두 번째 환자부터 체크",

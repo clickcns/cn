@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import {
   addMonths,
-  formatKstDate,
   formatMonthLabel,
   kstStartOfDay,
+  recordDate,
   type FormPdfStyle,
   type VisitRecordVersionDetail,
 } from "@repo/shared-types";
@@ -30,9 +30,11 @@ function toPdfRecords(
   scheduledAt: Date,
 ): PdfVisitRecord[] {
   const { snapshot } = version;
-  const visitDate = formatKstDate(
-    snapshot.startedAt ? new Date(snapshot.startedAt) : scheduledAt,
-  );
+  // 지난 기록과 같은 방문 날짜 규칙(실제 시작, 없으면 예정).
+  const visitDate = recordDate({
+    startedAt: snapshot.startedAt,
+    scheduledAt: scheduledAt.toISOString(),
+  });
   return snapshot.formIds.map((formId) => ({
     formId,
     data: snapshot.forms[formId] ?? {},

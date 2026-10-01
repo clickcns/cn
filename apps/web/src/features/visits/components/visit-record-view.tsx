@@ -1,56 +1,35 @@
 import { useState } from "react";
 import { getErrorMessage } from "@repo/api-client";
-import { formatKstDate, FORMS, type VisitDetail } from "@repo/shared-types";
+import { FORMS, type VisitDetail } from "@repo/shared-types";
 import { Lock, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormHeading, FormView } from "@/features/forms/components/form-view";
+import { PastRecordDialog } from "@/features/past-records/components/past-record-dialog";
 import { FormPdfButton } from "@/features/visits/components/form-pdf-button";
 import { useReopenVisit } from "@/features/visits/hooks/use-visit-mutations";
-import { getVisitDate } from "@/features/visits/lib/record-form";
-import {
-  formatDateTimeLabel,
-  formatTimeLabel,
-  minutesBetween,
-} from "@/lib/date";
-
-const EMPTY = "—";
+import { formatDateTimeLabel, visitTimeRange } from "@/lib/date";
 
 /**
  * 방문 시간. 예정일과 다른 날 시작했거나 자정을 넘겨 끝났으면 날짜까지 보여 준다.
  * 예: "9월 23일 (수) 23:40 ~ 9월 24일 (목) 00:20 · 40분"
  */
 function VisitTimeText({ visit }: { visit: VisitDetail }) {
-  const { startedAt, endedAt } = visit;
-  if (!startedAt && !endedAt) {
+  const range = visitTimeRange(visit);
+  if (!range) {
     return <p className="text-muted-foreground">기록된 시각이 없습니다</p>;
   }
-  const scheduledDate = getVisitDate(visit);
-  const startDate = startedAt ? formatKstDate(new Date(startedAt)) : null;
-  const endDate = endedAt ? formatKstDate(new Date(endedAt)) : null;
-  // 시작 시각이 없으면 예정일을 기준으로 삼는다.
-  const baseDate = startDate ?? scheduledDate;
-  const withDate =
-    baseDate !== scheduledDate || (endDate !== null && endDate !== baseDate);
-
-  const format = (iso: string | null) => {
-    if (!iso) return EMPTY;
-    return withDate ? formatDateTimeLabel(iso) : formatTimeLabel(iso);
-  };
-  const duration =
-    startedAt && endedAt ? minutesBetween(startedAt, endedAt) : null;
-
   return (
     <p className="text-lg font-semibold tabular-nums">
-      <span className="whitespace-nowrap">{format(startedAt)}</span>
+      <span className="whitespace-nowrap">{range.start}</span>
       {" ~ "}
-      <span className="whitespace-nowrap">{format(endedAt)}</span>
-      {duration !== null && (
+      <span className="whitespace-nowrap">{range.end}</span>
+      {range.minutes !== null && (
         <span className="text-muted-foreground font-normal whitespace-nowrap">
           {" · "}
-          {duration}분
+          {range.minutes}분
         </span>
       )}
     </p>
@@ -145,6 +124,9 @@ export function VisitRecordView({
           <FormView form={FORMS[formId]} data={visit.forms[formId]} />
         </section>
       ))}
+
+      {/* 옆 "지난 기록" 카드가 여는 보기 창(읽기 전용). */}
+      <PastRecordDialog visit={visit} />
     </div>
   );
 }

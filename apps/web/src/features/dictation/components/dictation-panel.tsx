@@ -8,7 +8,6 @@ import {
   withParticle,
   type VisitDetail,
   type VisitDictation,
-  type VisitForms,
 } from "@repo/shared-types";
 import {
   CircleAlert,
@@ -20,7 +19,6 @@ import {
   RotateCw,
   TriangleAlert,
 } from "lucide-react";
-import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,17 +37,9 @@ import {
 import { MissingItems } from "@/features/dictation/components/missing-items";
 import type { DictationSession } from "@/features/dictation/hooks/use-dictation-session";
 import { mergeDraft } from "@/features/dictation/lib/merge-draft";
-import {
-  formStartValues,
-  type RecordFormValues,
-} from "@/features/visits/lib/record-form";
+import type { RecordForm } from "@/features/visits/lib/record-form";
 
-type RecordForm = Pick<
-  UseFormReturn<RecordFormValues>,
-  "getValues" | "setValue"
->;
-
-type PanelVisit = Pick<VisitDetail, "formIds" | "forms" | "carryOver">;
+type PanelVisit = Pick<VisitDetail, "formIds" | "forms">;
 
 /** 녹음 길이(초) → "2분 15초" */
 const formatDuration = (seconds: number) => {
@@ -97,11 +87,8 @@ function DraftBody({
 }) {
   const { formIds } = visit;
   const filled = filledDraftFields(dictation, formIds);
-  // 빠진 항목은 기록에 이미 있는 값(저장한 값, 없으면 이월 값)을 빼고 센다.
-  const record: VisitForms = Object.fromEntries(
-    formIds.map((formId) => [formId, formStartValues(visit, formId)]),
-  );
-  const missing = missingDictationItems(dictation, formIds, record);
+  // 빠진 항목은 기록에 이미 저장한 값을 빼고 센다.
+  const missing = missingDictationItems(dictation, formIds, visit.forms);
 
   return (
     <>

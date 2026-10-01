@@ -1,12 +1,17 @@
+import type { ReactNode } from "react";
 import {
   findOption,
+  formatFieldValue,
+  isEmptyValue,
   OPTION_DETAIL_MAX_LENGTH,
+  reusableFieldValue,
   withParticle,
   type ChoiceFieldDef,
   type FieldDef,
   type FormDef,
   type NumberFieldDef,
   type NumberPair,
+  type PastFieldValues,
   type TextFieldDef,
 } from "@repo/shared-types";
 import { TriangleAlert } from "lucide-react";
@@ -20,13 +25,23 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckChips, RadioChips } from "@/components/ui/choice-chips";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  PastChangedBadge,
+  PastDiffLine,
+  PastFillBadge,
+  PastValueHint,
+} from "@/features/forms/components/past-value-hint";
 import { fieldElementId, inputId } from "@/features/forms/lib/field-ids";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  sameFieldState,
+  sameFieldValue,
+  toFieldState,
   toOptionState,
   type FieldState,
   type OptionState,
 } from "@/features/forms/lib/form-state";
+import type { FormPast, PastFill } from "@/features/forms/lib/past-fill";
 import { cn } from "@/lib/utils";
 
 /*
@@ -38,7 +53,16 @@ import { cn } from "@/lib/utils";
 
 const emptyOption = (value: string) => toOptionState({ value });
 
-function FieldLabel({ field, htmlFor }: { field: FieldDef; htmlFor?: string }) {
+function FieldLabel({
+  field,
+  htmlFor,
+  badge,
+}: {
+  field: FieldDef;
+  htmlFor?: string;
+  /** 라벨 옆 표시(지난 기록에서 채움) */
+  badge?: ReactNode;
+}) {
   // 확정 전에 반드시 채울 칸
   const mark = field.required && (
     <span className="text-destructive ml-1" aria-label="필수">
@@ -47,17 +71,20 @@ function FieldLabel({ field, htmlFor }: { field: FieldDef; htmlFor?: string }) {
   );
   return (
     <div className="flex flex-col gap-0.5">
-      {htmlFor ? (
-        <Label htmlFor={htmlFor} className="text-base font-semibold">
-          {field.label}
-          {mark}
-        </Label>
-      ) : (
-        <span className="text-base font-semibold">
-          {field.label}
-          {mark}
-        </span>
-      )}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {htmlFor ? (
+          <Label htmlFor={htmlFor} className="text-base font-semibold">
+            {field.label}
+            {mark}
+          </Label>
+        ) : (
+          <span className="text-base font-semibold">
+            {field.label}
+            {mark}
+          </span>
+        )}
+        {badge}
+      </div>
       {field.description && (
         <span className="text-muted-foreground text-sm">
           {field.description}
@@ -256,7 +283,7 @@ function NumberInput({
         enterKeyHint="next"
         autoComplete="off"
         placeholder={field.signed ? "감소는 -" : undefined}
-        className="pr-18 text-lg tabular-nums"
+        className={cn("text-lg tabular-nums", field.unit && "pr-18")}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -331,15 +358,32 @@ function TextInput({
   );
 }
 
-/** 칸 하나: 폼 상태와 연결하고 종류에 맞는 입력을 그린다. */
+/** 칸의 지금 값이 지난 기록에서 채운 값 그대로인지(고치면 표시를 뗀다). */
+const isPastFill = (value: FieldState, fill: PastFill | undefined) =>
+  fill !== undefined &&
+  !isEmptyValue(value) &&
+  sameFieldState(value, fill.state);
+
+/** 지난 기록에서 채운 칸의 테두리(왼쪽 강조선). */
+const PAST_FILL_FRAME = "border-primary/50 border-l-4 pl-3";
+
+/**
+ * 칸 하나: 폼 상태와 연결하고 종류에 맞는 입력을 그린다.
+ * past 를 주면:
+ * - 지난 기록에서 채운 값 그대로면 "지난 기록" 표시
+ * - 지난 값(past.values)이 있으면: 칸이 비었을 때 라벨 아래 지난 값(누르면 채움), 지난 값과 다르면 "바뀜"과
+ *   지난 값 한 줄·[되돌리기]. 방문마다 새로 정하는 칸은 지난 값을 참고로만 보여 준다(채우기·바뀜·되돌리기 없음).
+ */
 function FieldControl<T extends FieldValues>({
   field,
   control,
   basePath,
+  past,
 }: {
   field: FieldDef;
   control: Control<T>;
   basePath: string;
+  past?: FormPast;
 }) {
   const { field: controller } = useController({
     control,
@@ -395,17 +439,105 @@ function FieldControl<T extends FieldValues>({
 
   // 칩 묶음에는 라벨로 가리킬 입력 하나가 없으므로 숫자·글 칸만 htmlFor를 단다.
   const labelled = field.type === "number" || field.type === "text";
+  const elementId = fieldElementId(basePath, field.key);
+  const pastValue = past?.values?.[field.key];
+  const filled = past?.fills[field.key];
+  const fromPast = isPastFill(value, filled);
+  let hint = null;
+  let changed = false;
+  if (past && pastValue && !fromPast) {
+    const fill = reusableFieldValue(field, pastValue.value);
+    const fillWithPast =
+      fill === null
+        ? undefined
+        : () => {
+            const state = toFieldState(field, fill);
+            onChange(state);
+            past.onFill({ [field.key]: { state, date: pastValue.date } });
+            // 채운 뒤 버튼이 사라지므로 입력(칩 묶음은 칸)으로 포커스를 옮긴다.
+            document.getElementById(labelled ? id : elementId)?.focus();
+          };
+    if (isEmptyValue(value)) {
+      hint = (
+        <PastValueHint
+          label={field.label}
+          text={formatFieldValue(field, fill ?? pastValue.value)}
+          past={pastValue}
+          onFill={fillWithPast}
+        />
+      );
+    } else if (!sameFieldValue(value, toFieldState(field, pastValue.value))) {
+      changed = !field.visitSpecific;
+      hint = (
+        <PastDiffLine
+          label={field.label}
+          text={formatFieldValue(field, pastValue.value)}
+          past={pastValue}
+          onRestore={fillWithPast}
+        />
+      );
+    }
+  }
   return (
     <div
-      id={fieldElementId(basePath, field.key)}
+      id={elementId}
+      tabIndex={-1}
       className={cn(
-        "flex scroll-mt-24 flex-col gap-2",
+        "flex scroll-mt-24 flex-col gap-2 outline-none",
         field.type === "number" && "min-w-0",
+        fromPast && PAST_FILL_FRAME,
       )}
     >
-      <FieldLabel field={field} htmlFor={labelled ? id : undefined} />
+      <FieldLabel
+        field={field}
+        htmlFor={labelled ? id : undefined}
+        badge={
+          fromPast && filled ? (
+            <PastFillBadge date={filled.date} />
+          ) : (
+            changed && <PastChangedBadge />
+          )
+        }
+      />
+      {hint}
       {input}
     </div>
+  );
+}
+
+/** 숫자 짝의 지난 값: 두 칸이 모두 비었을 때만, 같은 기록의 두 값을 함께. */
+function PairPastHint({
+  label,
+  first,
+  second,
+  past,
+  onFill,
+}: {
+  label: string;
+  first: NumberFieldDef;
+  second: NumberFieldDef;
+  past: PastFieldValues;
+  onFill: (first: string, second: string, date: string) => void;
+}) {
+  const a = past[first.key];
+  const b = past[second.key];
+  const source = a ?? b;
+  if (!source) return null;
+  const text = `${a ? String(a.value) : "—"} / ${b ? String(b.value) : "—"} ${first.unit}`;
+  // 방문마다 새로 재는 칸(혈압 등)이면 참고로만 보여 준다.
+  const fillA = a ? reusableFieldValue(first, a.value) : null;
+  const fillB = b ? reusableFieldValue(second, b.value) : null;
+  return (
+    <PastValueHint
+      label={label}
+      text={text}
+      past={source}
+      onFill={
+        fillA === null && fillB === null
+          ? undefined
+          : () => onFill(String(fillA ?? ""), String(fillB ?? ""), source.date)
+      }
+    />
   );
 }
 
@@ -416,12 +548,14 @@ function NumberPairControl<T extends FieldValues>({
   second,
   control,
   basePath,
+  past,
 }: {
   label: string;
   first: NumberFieldDef;
   second: NumberFieldDef;
   control: Control<T>;
   basePath: string;
+  past?: FormPast;
 }) {
   const firstField = useController({
     control,
@@ -432,9 +566,65 @@ function NumberPairControl<T extends FieldValues>({
     name: `${basePath}.${second.key}` as Path<T>,
   }).field;
 
+  const values = [firstField.value, secondField.value] as FieldState[];
+  const fills = [past?.fills[first.key], past?.fills[second.key]];
+  // 채운 칸이 있고, 채운 칸이 모두 그 값 그대로일 때.
+  const fromPast =
+    fills.some(Boolean) &&
+    fills.every((fill, index) => !fill || isPastFill(values[index]!, fill));
+  const filledDate = (fills[0] ?? fills[1])?.date;
+  // 지난 값과 다른지(두 칸 중 하나라도 입력했을 때). 방문마다 새로 재는 짝(혈압)은 지난 값만 보여 준다.
+  const pastA = past?.values?.[first.key];
+  const pastB = past?.values?.[second.key];
+  const pairPast = pastA ?? pastB;
+  const pairChanged =
+    !fromPast &&
+    pairPast !== undefined &&
+    values.some((value) => !isEmptyValue(value)) &&
+    [pastA, pastB].some(
+      (pastValue, index) =>
+        !sameFieldValue(
+          values[index],
+          pastValue ? String(pastValue.value) : "",
+        ),
+    );
+
   return (
-    <fieldset className="col-span-2 flex flex-col gap-2">
-      <legend className="mb-2 text-base font-semibold">{label}</legend>
+    <fieldset
+      className={cn(
+        "col-span-2 flex flex-col gap-2",
+        fromPast && PAST_FILL_FRAME,
+      )}
+    >
+      <legend className="mb-2 flex flex-wrap items-center gap-2 text-base font-semibold">
+        {label}
+        {fromPast && filledDate && <PastFillBadge date={filledDate} />}
+        {pairChanged && !first.visitSpecific && <PastChangedBadge />}
+      </legend>
+      {pairChanged && pairPast && (
+        <PastDiffLine
+          label={label}
+          text={`${pastA ? String(pastA.value) : "—"} / ${pastB ? String(pastB.value) : "—"} ${first.unit}`}
+          past={pairPast}
+        />
+      )}
+      {past?.values && values.every((value) => isEmptyValue(value)) && (
+        <PairPastHint
+          label={label}
+          first={first}
+          second={second}
+          past={past.values}
+          onFill={(a, b, date) => {
+            firstField.onChange(a);
+            secondField.onChange(b);
+            past.onFill({
+              ...(a && { [first.key]: { state: a, date } }),
+              ...(b && { [second.key]: { state: b, date } }),
+            });
+            document.getElementById(inputId(basePath, first.key))?.focus();
+          }}
+        />
+      )}
       <div className="flex items-center gap-2">
         <NumberInput
           field={{ ...first, unit: "" }}
@@ -498,11 +688,13 @@ function NumberGrid<T extends FieldValues>({
   pairs,
   control,
   basePath,
+  past,
 }: {
   fields: NumberFieldDef[];
   pairs: readonly NumberPair[];
   control: Control<T>;
   basePath: string;
+  past?: FormPast;
 }) {
   const paired = pairsIn(pairs, fields);
   const rest = fields.filter(
@@ -518,6 +710,7 @@ function NumberGrid<T extends FieldValues>({
           {...pair}
           control={control}
           basePath={basePath}
+          past={past}
         />
       ))}
       {rest.map((field) => (
@@ -526,6 +719,7 @@ function NumberGrid<T extends FieldValues>({
           field={field}
           control={control}
           basePath={basePath}
+          past={past}
         />
       ))}
     </div>
@@ -534,15 +728,18 @@ function NumberGrid<T extends FieldValues>({
 
 /**
  * 서식 한 장의 입력 화면. basePath는 폼 상태에서 이 서식이 있는 경로(예: "forms.HOME_CARE_NURSE").
+ * past(지난 기록 정보)를 주면 빈 칸 옆에 지난 값을, 지난 기록에서 채운 칸에는 표시를 단다.
  */
 export function FormFields<T extends FieldValues>({
   form,
   control,
   basePath,
+  past,
 }: {
   form: FormDef;
   control: Control<T>;
   basePath: string;
+  past?: FormPast;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -560,6 +757,7 @@ export function FormFields<T extends FieldValues>({
                   pairs={form.numberPairs ?? []}
                   control={control}
                   basePath={basePath}
+                  past={past}
                 />
               ) : (
                 <FieldControl
@@ -567,6 +765,7 @@ export function FormFields<T extends FieldValues>({
                   field={block.field}
                   control={control}
                   basePath={basePath}
+                  past={past}
                 />
               ),
             )}

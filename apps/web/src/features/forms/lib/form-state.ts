@@ -107,3 +107,23 @@ export function sameFieldState(
 ): boolean {
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
+
+/**
+ * 칸 값이 같은 내용인지: 여러 개 고르는 칸은 고른 순서를 보지 않고, 글·숫자는 앞뒤 공백을 보지 않는다
+ * (지난 값과 비교하거나 합칠 때).
+ */
+export function sameFieldValue(
+  a: FieldState | undefined,
+  b: FieldState | undefined,
+): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return (
+      a.length === b.length &&
+      a.every((item) => b.some((other) => sameFieldState(item, other)))
+    );
+  }
+  if (typeof a === "string" && typeof b === "string") {
+    return a.trim() === b.trim();
+  }
+  return sameFieldState(a, b);
+}

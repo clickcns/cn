@@ -37,8 +37,16 @@ interface FieldCommon {
   label: string;
   /** 구술에서 채우는 칸. false면 사람이 고르거나 지난 기록에서 가져온다. */
   dictation: boolean;
-  /** 같은 수급자의 지난 서식 값을 기본값으로 쓴다(자주 바뀌지 않는 칸). */
+  /**
+   * 이월 칸: 수급자 상태처럼 자주 바뀌지 않는 칸. 저절로 채우지 않고, 기록 화면의 [이월 칸 채우기]가
+   * 같은 수급자의 지난 기록 값으로 한 번에 채운다(칸마다 "지난 값"도 그대로 쓸 수 있다).
+   */
   carryOver?: boolean;
+  /**
+   * 방문마다 새로 재거나 정하는 칸(활력징후 측정값, 방문사유 정기·추가, 지난번 대비 변화 등).
+   * 지난 기록 불러오기(서식·구분·칸)로 채우지 않고 지난 값을 참고로만 보여 준다. carryOver 와 함께 쓰지 않는다.
+   */
+  visitSpecific?: boolean;
   /** 구술 초안에서 비어 있으면 되묻는 질문. 같은 질문은 한 번만 묻는다. */
   question?: string;
   /** 구술 초안(LLM)에 주는 설명 */
@@ -164,6 +172,29 @@ export function findOption(
   return field.options.find((option) => option.value === value);
 }
 
+/**
+ * 고른 항목의 괄호 안 내용을 지금 서식 정의에 맞게: 글은 다듬어 최대 글자 수까지, 선택은 선택지 안의 값만.
+ * 괄호가 없거나(제공 시간 항목 포함) 맞지 않으면 null. 구술 초안 검사와 지난 기록 다시 쓰기가 함께 쓴다.
+ */
+export function normalizeOptionDetail(
+  field: ChoiceFieldDef,
+  value: string,
+  detail: unknown,
+): string | null {
+  const option = findOption(field, value);
+  const text = typeof detail === "string" ? detail.trim() : "";
+  if (!option?.detail || !text) return null;
+  if (option.detail.kind === "text") {
+    return text.slice(0, OPTION_DETAIL_MAX_LENGTH);
+  }
+  if (option.detail.kind === "choice") {
+    return option.detail.options.some((choice) => choice.value === text)
+      ? text
+      : null;
+  }
+  return null;
+}
+
 /* ---------- 저장 검사 스키마 ---------- */
 
 /** 고른 항목의 괄호 안 내용·메모 최대 글자 수 */
@@ -216,8 +247,20 @@ function selectedOptionSchema(field: ChoiceFieldDef) {
 const hasOneDecimal = (value: number) =>
   Math.abs(Math.round(value * 10) - value * 10) < 1e-6;
 
+// 숫자 칸 검사 스키마는 칸마다 한 번만 만든다(지난 기록 정리·구술 초안 검사가 칸마다 여러 번 부른다).
+const numberSchemas = new WeakMap<NumberFieldDef, z.ZodType<number>>();
+
 /** 숫자 칸 하나의 값 검사(구술 초안 검사에서 범위를 확인할 때도 쓴다). */
-export function numberSchema(field: NumberFieldDef) {
+export function numberSchema(field: NumberFieldDef): z.ZodType<number> {
+  let schema = numberSchemas.get(field);
+  if (!schema) {
+    schema = buildNumberSchema(field);
+    numberSchemas.set(field, schema);
+  }
+  return schema;
+}
+
+function buildNumberSchema(field: NumberFieldDef): z.ZodType<number> {
   const label = withParticle(field.label, "은/는");
   const range = `${label} ${field.min}~${field.max} 사이여야 합니다`;
   if (field.decimals === 0) {

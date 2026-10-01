@@ -42,6 +42,7 @@ export const HOME_CARE_DOCTOR_FORM = {
         {
           key: "visitReason",
           label: "방문사유",
+          visitSpecific: true,
           type: "single",
           required: true,
           dictation: true,
@@ -61,6 +62,7 @@ export const HOME_CARE_DOCTOR_FORM = {
         {
           key: "physicalTrend",
           label: "신체기능 자립성(변화)",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           question: "신체기능은 지난번과 비교해 어떤가요?",
@@ -83,6 +85,7 @@ export const HOME_CARE_DOCTOR_FORM = {
         {
           key: "cognitiveTrend",
           label: "인지기능 자립성(변화)",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           question: "인지기능은 지난번과 비교해 어떤가요?",

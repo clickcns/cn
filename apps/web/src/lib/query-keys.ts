@@ -1,5 +1,6 @@
 import type {
   RecipientListQuery,
+  RecipientRecordQuery,
   SameDayWarningQuery,
   VisitCalendarQuery,
   VisitListQuery,
@@ -19,6 +20,12 @@ export const visitKeys = {
   /** 달력(날짜별 건수). `lists` 접두어 아래라 저장·확정·삭제 뒤 목록과 함께 다시 받는다. */
   calendar: (query: VisitCalendarQuery) =>
     [...VISITS, "list", "calendar", query] as const,
+  /**
+   * 수급자의 지난 기록(useInfiniteQuery). `lists` 접두어 아래라 저장·확정·삭제·되돌리기 뒤
+   * 목록과 함께 다시 받는다. cursor 는 키에 넣지 않는다.
+   */
+  pastRecords: (recipientId: string, query: RecipientRecordQuery) =>
+    [...VISITS, "list", "records", recipientId, query] as const,
   detail: (id: string) => [...VISITS, "detail", id] as const,
   sameDayWarnings: (query: SameDayWarningQuery) =>
     [...VISITS, "same-day-warnings", query] as const,

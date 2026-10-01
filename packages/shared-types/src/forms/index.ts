@@ -12,6 +12,7 @@ import { LTC_NURSING_FORM } from "./ltc-nursing.js";
 import { PRIMARY_CARE_CHECK_FORM } from "./primary-care-check.js";
 
 export * from "./engine.js";
+export * from "./reuse.js";
 
 export const FORM_IDS = [
   "PRIMARY_CARE_CHECK",

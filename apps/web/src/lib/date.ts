@@ -32,3 +32,32 @@ export function minutesBetween(start: string, end: string): number | null {
   const diff = new Date(end).getTime() - new Date(start).getTime();
   return diff >= 0 ? Math.round(diff / 60_000) : null;
 }
+
+/**
+ * 방문 시간 글: 시작·종료와 경과 시간(분). 예정일과 다른 날 시작했거나 자정을 넘겨 끝났으면 날짜까지
+ * ("9월 23일 (수) 23:40" ~ "9월 24일 (목) 00:20"). 기록된 시각이 없으면 null, 한쪽만 없으면 "—".
+ */
+export function visitTimeRange(visit: {
+  scheduledAt: string;
+  startedAt: string | null;
+  endedAt: string | null;
+}): { start: string; end: string; minutes: number | null } | null {
+  const { startedAt, endedAt } = visit;
+  if (!startedAt && !endedAt) return null;
+  const scheduledDate = formatKstDate(new Date(visit.scheduledAt));
+  const startDate = startedAt ? formatKstDate(new Date(startedAt)) : null;
+  const endDate = endedAt ? formatKstDate(new Date(endedAt)) : null;
+  // 시작 시각이 없으면 예정일을 기준으로 삼는다.
+  const baseDate = startDate ?? scheduledDate;
+  const withDate =
+    baseDate !== scheduledDate || (endDate !== null && endDate !== baseDate);
+  const format = (iso: string | null) => {
+    if (!iso) return "—";
+    return withDate ? formatDateTimeLabel(iso) : formatTimeLabel(iso);
+  };
+  return {
+    start: format(startedAt),
+    end: format(endedAt),
+    minutes: startedAt && endedAt ? minutesBetween(startedAt, endedAt) : null,
+  };
+}

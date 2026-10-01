@@ -10,11 +10,12 @@ import {
   checkVisitTimes,
   conflictsOnSameDay,
   countVisitsByDay,
+  decodeRecordCursor,
+  encodeRecordCursor,
   emptyStatusCounts,
   findMissingRequired,
   totalCount,
   formatKstTime,
-  formFields,
   FORMS,
   isRecordEditable,
   keepDraftForms,
@@ -26,9 +27,10 @@ import {
   VisitFormsSchema,
   withParticle,
   type CreateVisitSchema,
-  type FormData,
   type FormId,
   type Program,
+  type RecipientRecordPage,
+  type RecipientRecordQuerySchema,
   type SameDayWarningQuerySchema,
   type SameDayWarningResponse,
   type SaveVisitRecordSchema,
@@ -39,7 +41,6 @@ import {
   type VisitDetail,
   type VisitRecordVersionDetail,
   type VisitRecordVersionSummary,
-  type VisitForms,
   type VisitListQuerySchema,
   type VisitListResponse,
   type VisitOrganizationCount,
@@ -54,6 +55,7 @@ import {
 import { toVisitDictation } from "../dictation/dictation.mapper.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/index.js";
+import { recordHistoryOrderBy, recordHistoryWhere } from "./record-history.js";
 import {
   recordHeaderSelect,
   recordVersionData,
@@ -62,8 +64,10 @@ import {
 import { isAssignableStaff, planVisitUpdate } from "./visit-update.js";
 import {
   calendarItemArgs,
+  recipientRecordArgs,
   toFormIds,
   toCalendarDays,
+  toRecipientRecord,
   toVisitCalendarItem,
   toVisitDetail,
   toVisitForms,
@@ -74,7 +78,6 @@ import {
   versionSummaryArgs,
   visitDetailArgs,
   visitSummaryArgs,
-  type VisitDetailRow,
 } from "./visit.mapper.js";
 
 const VISIT_NOT_FOUND = "방문을 찾을 수 없습니다";
@@ -161,17 +164,6 @@ async function findWritable(
   if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
   checkWritable(actor, visit, lockedMessage);
   return { ...visit, formIds: toFormIds(visit.formIds) };
-}
-
-/** 이월 칸만 골라 낸다. */
-function pickCarryOver(formId: FormId, data: FormData): FormData {
-  const picked: FormData = {};
-  for (const field of formFields(FORMS[formId])) {
-    if (field.carryOver && field.key in data) {
-      picked[field.key] = data[field.key];
-    }
-  }
-  return picked;
 }
 
 @Injectable()
@@ -286,7 +278,60 @@ export class VisitService {
       where: { id, ...visitScope(actor) },
     });
     if (!row) throw new NotFoundException(VISIT_NOT_FOUND);
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
+  }
+
+  /**
+   * 수급자의 지난 기록(최신순): 같은 기관의 확정 기록(작성자·직종 무관)과 본인의 작성 중 기록.
+   * beforeVisitId 를 주면 그 방문보다 앞선 기록만 준다(그 방문을 볼 수 있어야 한다 — 현장 직원은 본인 방문).
+   */
+  async records(
+    actor: AuthenticatedUser,
+    recipientId: string,
+    query: z.output<typeof RecipientRecordQuerySchema>,
+  ): Promise<RecipientRecordPage> {
+    const [recipient, anchor] = await Promise.all([
+      this.prisma.recipient.findFirst({
+        where: {
+          id: recipientId,
+          organizationId: resolveOrganizationFilter(actor),
+        },
+        select: { id: true },
+      }),
+      query.beforeVisitId
+        ? this.prisma.visit.findFirst({
+            where: {
+              id: query.beforeVisitId,
+              recipientId,
+              ...visitScope(actor),
+            },
+            select: { id: true, scheduledAt: true },
+          })
+        : null,
+    ]);
+    if (!recipient) throw new NotFoundException("수급자를 찾을 수 없습니다");
+    if (query.beforeVisitId && !anchor) {
+      throw new NotFoundException(VISIT_NOT_FOUND);
+    }
+
+    const rows = await this.prisma.visit.findMany({
+      ...recipientRecordArgs,
+      where: recordHistoryWhere({
+        actor,
+        recipientId,
+        anchor,
+        cursor: query.cursor ? decodeRecordCursor(query.cursor) : null,
+      }),
+      orderBy: recordHistoryOrderBy,
+      take: query.limit + 1,
+    });
+    const items = rows.slice(0, query.limit).map(toRecipientRecord);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        rows.length > query.limit && last ? encodeRecordCursor(last) : null,
+    };
   }
 
   async create(
@@ -355,7 +400,7 @@ export class VisitService {
         scheduledAt: new Date(dto.scheduledAt),
       },
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   /**
@@ -456,7 +501,7 @@ export class VisitService {
         },
       });
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   /**
@@ -504,7 +549,7 @@ export class VisitService {
         data: { formIds: selection.formIds },
       });
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   async confirm(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
@@ -562,7 +607,7 @@ export class VisitService {
         data: { status: "CONFIRMED", confirmedAt },
       });
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   /**
@@ -634,7 +679,7 @@ export class VisitService {
         data: { status: "DRAFT", confirmedAt: null },
       });
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   /**
@@ -706,7 +751,7 @@ export class VisitService {
         data: plan.data,
       });
     });
-    return this.toDetail(actor, row);
+    return toVisitDetail(row);
   }
 
   /** 확정본 이력(1차, 2차 …, 요약만). 방문을 볼 수 있는 사람이면 본다. */
@@ -791,46 +836,6 @@ export class VisitService {
   ) {
     await lockVisitRow(tx, id);
     return findWritable(tx, actor, id, lockedMessage);
-  }
-
-  /** 이월 값은 기록 폼을 여는 담당자에게만 쓸모가 있으므로 그때만 찾는다. */
-  private async toDetail(
-    actor: AuthenticatedUser,
-    row: VisitDetailRow,
-  ): Promise<VisitDetail> {
-    const writable = row.staffId === actor.id && isRecordEditable(row.status);
-    return toVisitDetail(row, writable ? await this.carryOver(row) : {});
-  }
-
-  /**
-   * 아직 저장하지 않은 서식에 쓸 이월 값: 같은 수급자의 이 방문보다 앞선 방문 중
-   * 같은 서식을 저장한 가장 최근 것에서 이월 칸만 가져온다.
-   */
-  private async carryOver(row: VisitDetailRow): Promise<VisitForms> {
-    const saved = new Set(row.forms.map((form) => form.formId));
-    const pending = toFormIds(row.formIds).filter((id) => !saved.has(id));
-    const entries = await Promise.all(
-      pending.map(async (formId) => {
-        const previous = await this.prisma.visitForm.findFirst({
-          where: {
-            formId,
-            visit: {
-              recipientId: row.recipientId,
-              scheduledAt: { lt: row.scheduledAt },
-            },
-          },
-          orderBy: { visit: { scheduledAt: "desc" } },
-          select: { data: true },
-        });
-        return previous
-          ? ([
-              formId,
-              pickCarryOver(formId, previous.data as FormData),
-            ] as const)
-          : null;
-      }),
-    );
-    return Object.fromEntries(entries.filter((entry) => entry !== null));
   }
 }
 

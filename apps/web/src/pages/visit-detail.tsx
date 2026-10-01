@@ -8,6 +8,7 @@ import { Navigate, useParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageError, PageLoading } from "@/components/ui/page-state";
 import { useCurrentUser } from "@/features/auth/hooks/use-session";
+import { PastRecordsCard } from "@/features/past-records/components/past-records-card";
 import { RecipientInfoCard } from "@/features/recipients/components/recipient-info-card";
 import { DeleteVisitButton } from "@/features/visits/components/delete-visit-button";
 import { VisitRecordForm } from "@/features/visits/components/record-form/visit-record-form";
@@ -68,6 +69,7 @@ export default function VisitDetailPage() {
         <aside className="flex flex-col gap-4 md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
           <VisitSummaryCard visit={visit} />
           <RecipientInfoCard recipient={visit.recipient} />
+          <PastRecordsCard visit={visit} />
         </aside>
 
         <div className="min-w-0">

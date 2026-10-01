@@ -52,6 +52,7 @@ export const SYSTOLIC_FIELD = {
   max: 300,
   decimals: 0,
   dictation: true,
+  visitSpecific: true,
   question: BLOOD_PRESSURE_QUESTION,
 } as const satisfies NumberFieldDef;
 
@@ -64,6 +65,7 @@ export const DIASTOLIC_FIELD = {
   max: 200,
   decimals: 0,
   dictation: true,
+  visitSpecific: true,
   question: BLOOD_PRESSURE_QUESTION,
 } as const satisfies NumberFieldDef;
 
@@ -83,6 +85,7 @@ export const PULSE_FIELD = {
   max: 250,
   decimals: 0,
   dictation: true,
+  visitSpecific: true,
   question: "맥박은 1분에 몇 회였나요?",
 } as const satisfies NumberFieldDef;
 
@@ -95,6 +98,7 @@ export const TEMPERATURE_FIELD = {
   max: 45,
   decimals: 1,
   dictation: true,
+  visitSpecific: true,
   question: "체온은 몇 도였나요?",
 } as const satisfies NumberFieldDef;
 
@@ -107,4 +111,5 @@ export const GLUCOSE_FIELD = {
   max: 1000,
   decimals: 0,
   dictation: true,
+  visitSpecific: true,
 } as const satisfies NumberFieldDef;

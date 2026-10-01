@@ -2,6 +2,8 @@ import {
   tallyVisitDays,
   type FormData,
   type FormId,
+  type RecipientRecord,
+  type VisitBase,
   type VisitCalendarDay,
   type VisitCalendarItem,
   type VisitDetail,
@@ -51,6 +53,14 @@ export const visitDetailArgs = {
     forms: { select: { formId: true, data: true } },
     // 확정본 이력은 수만 센다(목록은 versionSummaryArgs로 따로 받는다).
     _count: { select: { versions: true } },
+  },
+} as const satisfies Prisma.VisitDefaultArgs;
+
+/** 지난 기록: 방문 정보와 서식 값(수급자 정보는 싣지 않는다). */
+export const recipientRecordArgs = {
+  include: {
+    staff: staffSelect,
+    forms: { select: { formId: true, data: true } },
   },
 } as const satisfies Prisma.VisitDefaultArgs;
 
@@ -126,7 +136,11 @@ export function toFormIds(formIds: string[]): FormId[] {
   return formIds as FormId[];
 }
 
-function toVisitBase(row: VisitSummaryRow | VisitDetailRow) {
+type RecipientRecordRow = Prisma.VisitGetPayload<typeof recipientRecordArgs>;
+
+function toVisitBase(
+  row: VisitSummaryRow | VisitDetailRow | RecipientRecordRow,
+): VisitBase {
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -158,19 +172,19 @@ export function toVisitForms(
   );
 }
 
-export function toVisitDetail(
-  row: VisitDetailRow,
-  carryOver: VisitForms,
-): VisitDetail {
+export function toVisitDetail(row: VisitDetailRow): VisitDetail {
   return {
     ...toVisitBase(row),
     recipient: toVisitRecipient(row.recipient),
     organization: row.organization,
     staff: row.staff,
     forms: toVisitForms(row.forms),
-    carryOver,
     versionCount: row._count.versions,
   };
+}
+
+export function toRecipientRecord(row: RecipientRecordRow): RecipientRecord {
+  return { ...toVisitBase(row), forms: toVisitForms(row.forms) };
 }
 
 export function toVisitRecordVersionSummary(row: {

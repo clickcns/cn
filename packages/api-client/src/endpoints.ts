@@ -16,6 +16,8 @@ import type {
   Organization,
   Recipient,
   RecipientListQuery,
+  RecipientRecordPage,
+  RecipientRecordQuery,
   SameDayWarningQuery,
   SameDayWarningResponse,
   SaveVisitRecordInput,
@@ -138,6 +140,13 @@ export function createCarenoteApi(http: KyInstance) {
         http.post("recipients", { json: input }).json<Recipient>(),
       update: (id: string, input: UpdateRecipientInput) =>
         http.patch(`recipients/${id}`, { json: input }).json<Recipient>(),
+      /** 지난 기록(최신순): 같은 기관의 확정 기록과 본인의 작성 중 기록. */
+      records: (id: string, query?: RecipientRecordQuery) =>
+        http
+          .get(`recipients/${id}/records`, {
+            searchParams: toSearchParams(query),
+          })
+          .json<RecipientRecordPage>(),
       /** 제7호 월간 기록지 PDF(기관 관리자·운영자). */
       nurseMonthPdf: (id: string, query: NurseMonthPdfQuery) =>
         fileDownload(

@@ -21,7 +21,7 @@ export function Notice({
   tone: keyof typeof NOTICE_TONES;
   icon: LucideIcon;
   message: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <div

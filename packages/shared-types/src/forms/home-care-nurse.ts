@@ -33,6 +33,7 @@ export const HOME_CARE_NURSE_FORM = {
         {
           key: "visitType",
           label: "방문사유",
+          visitSpecific: true,
           type: "single",
           // 원본 월간 서식은 정기(1~2번 칸)·추가(3~5번 칸)로 칸을 나눠 적으므로 확정 전에 정한다.
           required: true,
@@ -87,6 +88,7 @@ export const HOME_CARE_NURSE_FORM = {
         {
           key: "weightChange",
           label: "체중 변화",
+          visitSpecific: true,
           type: "number",
           unit: "kg",
           min: -50,
@@ -99,6 +101,7 @@ export const HOME_CARE_NURSE_FORM = {
         {
           key: "delirium",
           label: "문제행동(섬망)",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           question: CONDITION_QUESTION,
@@ -107,6 +110,7 @@ export const HOME_CARE_NURSE_FORM = {
         {
           key: "fall",
           label: "낙상",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           question: CONDITION_QUESTION,
@@ -115,6 +119,7 @@ export const HOME_CARE_NURSE_FORM = {
         {
           key: "incontinence",
           label: "소변/대변실금",
+          visitSpecific: true,
           type: "single",
           dictation: true,
           question: CONDITION_QUESTION,

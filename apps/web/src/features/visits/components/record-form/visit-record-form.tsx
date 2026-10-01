@@ -21,7 +21,10 @@ import { useDictationSession } from "@/features/dictation/hooks/use-dictation-se
 import { FormFields } from "@/features/forms/components/form-fields";
 import { FormHeading } from "@/features/forms/components/form-view";
 import { FormTabs } from "@/features/forms/components/form-tabs";
-import { fieldElementId } from "@/features/forms/lib/field-ids";
+import { fieldElementId, formPanelId } from "@/features/forms/lib/field-ids";
+import { PastRecordsTools } from "@/features/past-records/components/past-records-tools";
+import { usePastFills } from "@/features/past-records/hooks/use-past-fills";
+import { usePastFieldValues } from "@/features/past-records/hooks/use-past-records";
 import { FormSelectDialog } from "@/features/visits/components/record-form/form-select-dialog";
 import { RecordActionBar } from "@/features/visits/components/record-form/record-action-bar";
 import { UnsavedChangesDialog } from "@/features/visits/components/record-form/unsaved-changes-dialog";
@@ -37,6 +40,7 @@ import {
   toFormInitialState,
   toRecordFormValues,
 } from "@/features/visits/lib/record-form";
+import { useStoredFlag } from "@/hooks/use-stored-flag";
 
 /**
  * 방문 기록 작성 폼: 방문 시각 + 이 방문의 서식들(사업·담당자 직종의 규칙 안에서 고른 것).
@@ -68,6 +72,14 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
   // 녹음 상태는 위 초안 카드와 아래 저장 버튼 바([녹음]·녹음 시트)가 함께 쓴다.
   const dictationPanelRef = useRef<HTMLElement>(null);
   const dictation = useDictationSession(visit.id, dictationPanelRef);
+  // 빈 칸 옆 지난 값(같은 수급자의 지난 기록에서 칸마다 가장 최근 값). 스위치로 끄고 켜며 기억한다.
+  const pastValues = usePastFieldValues(visit);
+  const [showPast, toggleShowPast] = useStoredFlag(
+    "carenote:past-values-visible",
+    true,
+  );
+  // 지난 기록에서 채운 칸(그 값 그대로인 동안 "지난 기록" 표시).
+  const pastFills = usePastFills();
 
   const saveRecord = useSaveVisitRecord(visit.id);
   const confirmVisit = useConfirmVisit(visit.id);
@@ -227,6 +239,16 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
             </Button>
           </div>
         )}
+        <PastRecordsTools
+          visit={visit}
+          activeFormId={activeFormId}
+          onShowForm={setSelectedFormId}
+          form={{ getValues, setValue }}
+          pastValues={pastValues}
+          onFilled={pastFills.mark}
+          showPast={showPast}
+          onToggleShowPast={toggleShowPast}
+        />
         {visit.formIds.length > 1 && (
           <FormTabs
             formIds={visit.formIds}
@@ -237,7 +259,7 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
         {visit.formIds.map((formId) => (
           <section
             key={formId}
-            id={`form-panel-${formId}`}
+            id={formPanelId("form-panel", formId)}
             role={visit.formIds.length > 1 ? "tabpanel" : undefined}
             hidden={formId !== activeFormId}
             className="flex flex-col gap-4"
@@ -247,6 +269,11 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
               form={FORMS[formId]}
               control={control}
               basePath={`forms.${formId}`}
+              past={{
+                values: showPast ? pastValues?.[formId] : undefined,
+                fills: pastFills.fills[formId] ?? {},
+                onFill: (entries) => pastFills.mark(formId, entries),
+              }}
             />
           </section>
         ))}
