@@ -8,17 +8,11 @@ import { cn } from "@/lib/utils";
 const formatClock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
-/** 입력 크기 막대(0~1). 말할 때 움직이면 마이크가 소리를 받고 있다. 폭 대신 transform 으로 늘린다. */
-function LevelMeter({
-  level,
-  className,
-}: {
-  level: number;
-  className?: string;
-}) {
+/** 저장 버튼 바의 입력 크기 막대(0~1). 말할 때 움직이면 마이크가 소리를 받고 있다. 폭 대신 transform 으로 늘린다. */
+function LevelMeter({ level }: { level: number }) {
   return (
     <span
-      className={cn("block overflow-hidden rounded-full", className)}
+      className="bg-destructive-soft block h-1.5 overflow-hidden rounded-full"
       aria-hidden
     >
       <span
@@ -29,44 +23,66 @@ function LevelMeter({
   );
 }
 
-function RecordingDot() {
-  return (
-    <span className="bg-destructive size-3 shrink-0 animate-pulse rounded-full" />
-  );
+/** 자동으로 끝나기 전 이만큼(초) 남으면 알린다. */
+const ENDING_SOON_SECONDS = 30;
+
+/** 녹음 중 안내 한 줄. 초마다 바뀌지 않아 화면 읽기 프로그램이 상태가 바뀔 때만 읽는다. */
+function recordingStatus(starting: boolean, endingSoon: boolean): string {
+  if (starting) return "마이크를 켜는 중입니다";
+  if (endingSoon) return `${ENDING_SOON_SECONDS}초 안에 녹음이 저절로 끝납니다`;
+  return `녹음 중 · 최대 ${formatClock(DICTATION_MAX_SECONDS)}`;
 }
 
-/** 패널의 녹음 중 표시: 경과 시간, 입력 크기, 끝내기·취소. */
+/**
+ * 패널의 녹음 중 표시: 마이크 원(둘레가 입력 크기만큼 커진다), 경과 시간, 끝내기·취소.
+ * 마이크 권한을 묻는 동안(starting)은 준비 중이라고 보여 준다.
+ */
 export function RecordingControls({
-  seconds,
-  level,
-  onStop,
-  onCancel,
+  recorder,
 }: {
-  seconds: number;
-  level: number;
-  onStop: () => void;
-  onCancel: () => void;
+  recorder: DictationSession["recorder"];
 }) {
+  const { status, seconds, level } = recorder;
+  const starting = status === "starting";
+  // 시작하는 동안 seconds 는 이전 녹음 값이 남아 있을 수 있다.
+  const endingSoon =
+    !starting && DICTATION_MAX_SECONDS - seconds <= ENDING_SOON_SECONDS;
+
   return (
-    <div className="border-destructive/30 bg-destructive-soft flex flex-col gap-4 rounded-xl border p-4">
-      <div className="flex items-center gap-3" aria-live="polite">
-        <RecordingDot />
-        <span className="text-destructive font-bold">녹음 중</span>
-        <span className="ml-auto text-2xl font-bold tabular-nums">
-          {formatClock(seconds)}
-          <span className="text-muted-foreground text-base font-normal">
-            {" "}
-            / {formatClock(DICTATION_MAX_SECONDS)}
-          </span>
+    <div className="border-destructive/20 bg-destructive-soft/50 flex flex-col items-center gap-5 rounded-2xl border px-4 pt-7 pb-4">
+      <div className="relative flex size-18 items-center justify-center">
+        {/* 말할 때 둘레가 움직이면 마이크가 소리를 받고 있다. 크기 대신 transform 으로 키운다. */}
+        <span
+          aria-hidden
+          className="bg-destructive/15 absolute inset-0 rounded-full transition-transform duration-100"
+          style={{ transform: `scale(${1 + level * 0.6})` }}
+        />
+        <span className="bg-destructive text-destructive-foreground relative flex size-full items-center justify-center rounded-full shadow-sm">
+          <Mic className="size-8" />
         </span>
       </div>
-      <LevelMeter level={level} className="bg-card h-2.5" />
-      <div className="flex gap-3">
-        <Button size="lg" className="flex-1" onClick={onStop}>
+      <div className="text-center">
+        <p className="text-4xl leading-none font-bold tabular-nums">
+          {formatClock(seconds)}
+        </p>
+        <p
+          aria-live="polite"
+          className={cn(
+            "mt-2 text-sm",
+            endingSoon
+              ? "text-destructive font-semibold"
+              : "text-muted-foreground",
+          )}
+        >
+          {recordingStatus(starting, endingSoon)}
+        </p>
+      </div>
+      <div className="flex w-full gap-3">
+        <Button size="lg" className="flex-1" onClick={recorder.stop}>
           <Square />
           녹음 끝내기
         </Button>
-        <Button size="lg" variant="outline" onClick={onCancel}>
+        <Button size="lg" variant="outline" onClick={recorder.cancel}>
           취소
         </Button>
       </div>
@@ -88,16 +104,13 @@ export function DictationBarControl({
   if (session.isRecording) {
     return (
       <div className="flex flex-1 items-center gap-3" aria-live="polite">
-        <RecordingDot />
+        <span className="bg-destructive size-3 shrink-0 animate-pulse rounded-full" />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <span className="font-bold whitespace-nowrap tabular-nums">
             <span className="text-destructive">녹음 중</span>{" "}
             {formatClock(recorder.seconds)}
           </span>
-          <LevelMeter
-            level={recorder.level}
-            className="bg-destructive-soft h-1.5"
-          />
+          <LevelMeter level={recorder.level} />
         </div>
         <Button onClick={recorder.stop}>
           <Square />

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  DICTATION_EXAMPLES,
-  dictationExample,
+  DICTATION_POINTS,
   dictationFields,
+  dictationPoints,
+  filledDraftFields,
+  filledItemCount,
   FORMS,
   missingDictationItems,
   PROGRAM_FORMS,
@@ -13,13 +15,13 @@ import {
   type VisitDictation,
 } from "@repo/shared-types";
 
-describe("구술 예시", () => {
-  it("규칙이 있는 사업 × 직종마다 예시가 있고, 칸은 그 규칙 서식의 구술 칸이며 필수 구술 칸을 모두 보여 준다", () => {
+describe("구술 내용", () => {
+  it("규칙이 있는 사업 × 직종마다 있고, 칸은 그 규칙 서식의 구술 칸이며 필수 칸과 되묻는 칸을 모두 다룬다", () => {
     for (const [program, byProfession] of Object.entries(PROGRAM_FORMS)) {
       for (const [profession, rules] of Object.entries(byProfession)) {
-        const lines =
-          DICTATION_EXAMPLES[program as Program][profession as Profession];
-        assert.ok(lines && lines.length > 0, `${program} ${profession}`);
+        const points =
+          DICTATION_POINTS[program as Program][profession as Profession];
+        assert.ok(points && points.length > 0, `${program} ${profession}`);
         const refs = new Set(
           rules.flatMap((rule) =>
             dictationFields(FORMS[rule.formId]).map(
@@ -27,52 +29,39 @@ describe("구술 예시", () => {
             ),
           ),
         );
-        const used = new Set(lines.flatMap((line) => line.fields));
+        const used = new Set<string>(points.flatMap((point) => point.fields));
         for (const ref of used) assert.ok(refs.has(ref), `${program} ${ref}`);
         for (const rule of rules) {
           for (const field of dictationFields(FORMS[rule.formId])) {
-            if (!field.required) continue;
+            if (!field.required && !field.question) continue;
             const ref = `${rule.formId}.${field.key}`;
-            assert.ok(used.has(ref as never), `예시에 없는 필수 칸 ${ref}`);
+            assert.ok(used.has(ref), `구술 내용에 없는 칸 ${ref}`);
           }
         }
       }
     }
   });
 
-  it("방문에 없는 서식의 칸만 채우는 줄은 빼고, 칸 이름은 서식 정의에서, {이름}은 수급자 이름으로", () => {
-    const both = dictationExample(
-      "HOME_CARE_CENTER",
-      "DOCTOR",
-      ["PRIMARY_CARE_CHECK", "HOME_CARE_DOCTOR"],
-      "강옥자",
-    );
-    const only6 = dictationExample(
-      "HOME_CARE_CENTER",
-      "DOCTOR",
-      ["HOME_CARE_DOCTOR"],
-      "강옥자",
-    );
+  it("방문에 없는 서식의 칸만 채우는 항목은 빼고, 필수 칸이 있으면 필수로 표시한다", () => {
+    const both = dictationPoints("HOME_CARE_CENTER", "DOCTOR", [
+      "PRIMARY_CARE_CHECK",
+      "HOME_CARE_DOCTOR",
+    ]);
+    const only6 = dictationPoints("HOME_CARE_CENTER", "DOCTOR", [
+      "HOME_CARE_DOCTOR",
+    ]);
     assert.equal(both.length, only6.length + 1);
+    assert.ok(!only6.some((point) => point.topic === "방문진료 정보"));
+    assert.deepEqual(
+      only6.filter((point) => point.required).map((point) => point.topic),
+      ["방문 사유", "진찰·처치"],
+    );
+    // 별지 제14호에는 확정 전에 채울 칸이 없다.
     assert.ok(
-      only6.every((line) =>
-        line.fields.every((ref) => ref.startsWith("HOME_CARE_DOCTOR.")),
+      dictationPoints("LTC_NURSING", "NURSE", ["LTC_NURSING"]).every(
+        (point) => !point.required,
       ),
     );
-    assert.match(both[0].text, /^강옥자 님/);
-    assert.deepEqual(both[0].fills, [
-      "방문사유",
-      "동행자",
-      "방문진료 동반인력",
-    ]);
-    const nurse = dictationExample(
-      "HOME_CARE_CENTER",
-      "NURSE",
-      ["HOME_CARE_NURSE"],
-      "강옥자",
-    );
-    // 혈압 짝은 한 이름으로
-    assert.deepEqual(nurse[1].fills, ["혈압", "맥박", "체온", "혈당"]);
   });
 });
 
@@ -169,5 +158,27 @@ describe("초안에서 빠진 항목", () => {
         item.fields.every((ref) => ref.startsWith("HOME_CARE_DOCTOR.")),
       ),
     );
+  });
+});
+
+describe("초안에서 채운 항목", () => {
+  it("채운 칸만 서식 순서로 모으고, 숫자 짝(혈압)은 한 항목으로 센다", () => {
+    const filled = filledDraftFields(
+      dictationOf("HOME_CARE_NURSE", {
+        systolic: 130,
+        diastolic: 80,
+        pulse: 76,
+        notes: "",
+      }),
+      ["PRIMARY_CARE_CHECK", "HOME_CARE_NURSE"],
+    );
+    assert.deepEqual(
+      filled.map(({ formId, fields }) => [
+        formId,
+        fields.map((field) => field.key),
+      ]),
+      [["HOME_CARE_NURSE", ["systolic", "diastolic", "pulse"]]],
+    );
+    assert.equal(filledItemCount(filled), 2);
   });
 });

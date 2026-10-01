@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex h-8 w-fit shrink-0 items-center justify-center gap-1 rounded-full px-3 text-sm font-semibold whitespace-nowrap [&>svg]:size-4",
+  "inline-flex w-fit shrink-0 items-center justify-center gap-1 rounded-full font-semibold whitespace-nowrap [&>svg]:size-4",
   {
     variants: {
       variant: {
@@ -14,9 +14,15 @@ const badgeVariants = cva(
         neutral: "bg-muted text-foreground",
         outline: "border border-border bg-card text-foreground",
       },
+      size: {
+        default: "h-8 px-3 text-sm",
+        // 줄 안에 붙이는 작은 표시(예: "필수")
+        sm: "h-6 px-2 text-xs",
+      },
     },
     defaultVariants: {
       variant: "neutral",
+      size: "default",
     },
   },
 );
@@ -28,12 +34,13 @@ export type BadgeVariant = NonNullable<
 export function Badge({
   className,
   variant,
+  size,
   ...props
 }: ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
   return (
     <span
       data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
+      className={cn(badgeVariants({ variant, size }), className)}
       {...props}
     />
   );

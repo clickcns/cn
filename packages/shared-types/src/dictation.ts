@@ -133,7 +133,10 @@ export function keepDraftForms(
 /** 서식 칸 하나를 가리키는 "서식ID.칸키"(되묻기·검사 결과의 field 와 같은 모양). */
 export type FormFieldRef = `${FormId}.${string}`;
 
-function resolveRef(ref: string): { formId: FormId; field: FieldDef } | null {
+/** "서식ID.칸키" → 서식과 칸 정의. 없는 서식·칸이면 null. */
+export function resolveFieldRef(
+  ref: string,
+): { formId: FormId; field: FieldDef } | null {
   const dot = ref.indexOf(".");
   const formId = ref.slice(0, dot) as FormId;
   const key = ref.slice(dot + 1);
@@ -148,21 +151,59 @@ function fieldLabel(formId: FormId, field: FieldDef): string {
 }
 
 /** 칸 이름들(띄어쓰기만 다른 같은 이름은 한 번: "향후 계획"·"향후계획"). */
-export function formFieldLabels(refs: readonly string[]): string[] {
+function formFieldLabels(
+  resolved: readonly { formId: FormId; field: FieldDef }[],
+): string[] {
   const labels = new Map<string, string>();
-  for (const ref of refs) {
-    const resolved = resolveRef(ref);
-    if (!resolved) continue;
-    const label = fieldLabel(resolved.formId, resolved.field);
+  for (const { formId, field } of resolved) {
+    const label = fieldLabel(formId, field);
     const key = label.replace(/\s/g, "");
     if (!labels.has(key)) labels.set(key, label);
   }
   return [...labels.values()];
 }
 
+/** 서식 한 장에서 초안이 값을 채운 칸. */
+export interface FilledDraftForm {
+  formId: FormId;
+  draft: FormDraft;
+  fields: FieldDef[];
+}
+
+/** 초안에서 값을 채운 칸(서식별, 방문 서식 순서). 초안을 만든 뒤 더한 서식(초안 키 없음)과 채운 칸이 없는 서식은 빠진다. */
+export function filledDraftFields(
+  dictation: Pick<VisitDictation, "draft">,
+  formIds: readonly FormId[],
+): FilledDraftForm[] {
+  return formIds.flatMap((formId) => {
+    const draft = dictation.draft[formId];
+    if (!draft) return [];
+    const fields = formFields(FORMS[formId]).filter(
+      (field) => !isEmptyValue(draft.values[field.key]),
+    );
+    return fields.length > 0 ? [{ formId, draft, fields }] : [];
+  });
+}
+
+/** 채운 항목 수. 빠진 항목(missingDictationItems)처럼 숫자 짝(혈압)은 한 항목으로 센다. */
+export function filledItemCount(filled: readonly FilledDraftForm[]): number {
+  return filled.reduce(
+    (count, { formId, fields }) =>
+      count +
+      new Set(
+        fields.map(
+          (field) =>
+            numberPairOf(FORMS[formId], field.key)?.keys[0] ?? field.key,
+        ),
+      ).size,
+    0,
+  );
+}
+
 /** 초안에서 빠진 항목 하나(여러 칸을 한 질문으로 물으면 한 항목). */
 export interface MissingDictationItem {
-  fields: FormFieldRef[];
+  /** 이 항목의 칸("서식ID.칸키") */
+  fields: string[];
   labels: string[];
   /** 확정 전에 꼭 채울 칸이 있다 */
   required: boolean;
@@ -178,14 +219,15 @@ function missingItem(
   refs: readonly string[],
   question: string | null,
 ): MissingDictationItem {
-  const fields = refs.flatMap((ref) => resolveRef(ref)?.field ?? []);
+  const resolved = refs.flatMap((ref) => resolveFieldRef(ref) ?? []);
+  const fields = resolved.map(({ field }) => field);
   const choice = fields.find(
     (field) => field.type === "single" || field.type === "multi",
   );
   const number = fields.find((field) => field.type === "number");
   return {
-    fields: refs as FormFieldRef[],
-    labels: formFieldLabels(refs),
+    fields: [...refs],
+    labels: formFieldLabels(resolved),
     required: fields.some((field) => field.required === true),
     question,
     options: choice ? choice.options.map((option) => option.label) : [],

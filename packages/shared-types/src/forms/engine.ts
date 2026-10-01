@@ -108,8 +108,6 @@ export interface FormDef {
   /** 작성한 뒤 입력·제출하는 곳 */
   submitTo: string;
   sections: readonly FormSection[];
-  /** 구술할 때 보여 주는 안내(순서 상관없음) */
-  guide: readonly string[];
   /** 여러 칸이 모두 비었을 때만 묻는 질문(예: 건강관리·간호관리 중 하나라도) */
   followUps?: readonly { anyOf: readonly string[]; question: string }[];
   /** 한 줄로 적는 숫자 두 칸. 두 칸은 같은 구분(섹션)에 있어야 한다. */

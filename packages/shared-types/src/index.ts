@@ -14,7 +14,7 @@ export * from "./form-pdf.js";
 export * from "./form-layout.js";
 export * from "./form-layout-edit.js";
 export * from "./dictation.js";
-export * from "./dictation-examples.js";
+export * from "./dictation-points.js";
 export * from "./date.js";
 export * from "./schema.js";
 export * from "./text.js";

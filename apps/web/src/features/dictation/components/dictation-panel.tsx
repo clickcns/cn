@@ -1,30 +1,30 @@
-import { useState, type RefObject } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import { getErrorMessage } from "@repo/api-client";
 import {
-  dictationExample,
-  FORMS,
+  dictationPoints,
+  filledDraftFields,
+  filledItemCount,
   formLabel,
   missingDictationItems,
-  PROFESSION_LABELS,
-  PROGRAM_LABELS,
   withParticle,
-  type FormId,
-  type Program,
-  type Profession,
   type VisitDetail,
-  type VisitDictationExampleLine,
+  type VisitDictation,
   type VisitForms,
 } from "@repo/shared-types";
 import {
+  CircleAlert,
+  CircleCheck,
   ClipboardCheck,
   LoaderCircle,
   Mic,
   RotateCcw,
   RotateCw,
   TriangleAlert,
+  type LucideIcon,
 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,6 +33,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DictationPoints } from "@/features/dictation/components/dictation-points";
 import {
   DraftReview,
   TranscriptDetails,
@@ -45,6 +46,7 @@ import {
   formStartValues,
   type RecordFormValues,
 } from "@/features/visits/lib/record-form";
+import { cn } from "@/lib/utils";
 
 type RecordForm = Pick<
   UseFormReturn<RecordFormValues>,
@@ -53,79 +55,174 @@ type RecordForm = Pick<
 
 type PanelVisit = Pick<
   VisitDetail,
-  "formIds" | "program" | "profession" | "recipient" | "forms" | "carryOver"
+  "formIds" | "program" | "profession" | "forms" | "carryOver"
 >;
+
+/** 녹음 길이(초) → "2분 15초" */
+const formatDuration = (seconds: number) => {
+  const total = Math.round(seconds);
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  if (minutes === 0) return `${rest}초`;
+  return rest === 0 ? `${minutes}분` : `${minutes}분 ${rest}초`;
+};
+
+/** 패널 틀: 마이크 표시·제목·한 줄 설명, 마이크 오류, 그 아래 내용. */
+function PanelCard({
+  panelRef,
+  title,
+  description,
+  error,
+  children,
+}: {
+  panelRef: RefObject<HTMLElement | null>;
+  title: string;
+  description: string;
+  error: string | null;
+  children: ReactNode;
+}) {
+  return (
+    <Card ref={panelRef} className="scroll-mt-20 gap-5">
+      <div className="flex items-center gap-3">
+        <span className="bg-primary-soft text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+          <Mic className="size-5" />
+        </span>
+        <CardHeader className="min-w-0 gap-0">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+      </div>
+      {error && (
+        <p
+          role="alert"
+          className="text-destructive flex items-start gap-2 font-semibold"
+        >
+          <TriangleAlert className="mt-0.5 size-5 shrink-0" />
+          {error}
+        </p>
+      )}
+      {children}
+    </Card>
+  );
+}
+
+const NOTICE_TONES = {
+  primary: "border-primary/20 bg-primary-soft/60 text-primary",
+  warning: "border-warning/20 bg-warning-soft text-warning",
+  destructive: "border-destructive/20 bg-destructive-soft text-destructive",
+};
+
+/** 색 있는 안내 상자(초안 실패·서식 추가·보내기 실패). */
+function Notice({
+  tone,
+  icon: Icon,
+  message,
+  children,
+}: {
+  tone: keyof typeof NOTICE_TONES;
+  icon: LucideIcon;
+  message: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      role={tone === "primary" ? "status" : "alert"}
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border p-4",
+        NOTICE_TONES[tone],
+      )}
+    >
+      <p className="flex items-start gap-2 font-semibold">
+        <Icon className="mt-0.5 size-5 shrink-0" />
+        {message}
+      </p>
+      {children}
+    </div>
+  );
+}
 
 function Processing() {
   return (
     <div
       role="status"
-      className="bg-primary-soft text-primary flex items-center gap-3 rounded-xl p-4"
+      className="bg-primary-soft/70 flex items-center gap-4 rounded-2xl px-4 py-5"
     >
-      <LoaderCircle className="size-6 shrink-0 animate-spin" />
+      <LoaderCircle className="text-primary size-7 shrink-0 animate-spin" />
       <div>
         <p className="font-bold">기록 초안을 만드는 중입니다</p>
-        <p className="text-sm">
-          음성을 글로 옮기고 서식 항목을 채웁니다. 보통 10~30초 걸립니다.
+        <p className="text-muted-foreground text-sm">
+          음성을 글로 옮겨 서식 항목을 채웁니다. 보통 10~30초 걸립니다.
         </p>
       </div>
     </div>
   );
 }
 
-/** 서식들의 구술 안내를 합친다(같은 문구는 한 번). */
-function dictationGuide(formIds: readonly FormId[]): string[] {
-  return [...new Set(formIds.flatMap((formId) => FORMS[formId].guide))];
-}
-
-/** 녹음 전 안내: 이 방문(사업 × 직종)의 예시 문장을 따라 말하게 보여 주고, 말할 항목 목록은 접어 둔다. */
-function DictationExample({
-  program,
-  profession,
-  formIds,
-  lines,
+/** 초안 한눈에: 채운 항목 수와 빠진 필수 항목 수. */
+function DraftSummary({
+  filled,
+  requiredMissing,
 }: {
-  program: Program;
-  profession: Profession;
-  formIds: readonly FormId[];
-  lines: readonly VisitDictationExampleLine[];
+  filled: number;
+  requiredMissing: number;
 }) {
   return (
-    <div className="bg-muted/70 flex flex-col gap-3 rounded-xl p-4">
-      <div>
-        <p className="font-semibold">이렇게 말해 보세요</p>
-        <p className="text-muted-foreground text-sm">
-          {PROGRAM_LABELS[program]} {PROFESSION_LABELS[profession]} 방문
-          예시입니다. 순서는 상관없고, 오늘 한 것만 말하면 됩니다.
-        </p>
-      </div>
-      <ol className="flex flex-col gap-3">
-        {lines.map((line) => (
-          <li key={line.text} className="border-primary/40 border-l-4 pl-3">
-            <p className="text-lg">{line.text}</p>
-            <p className="text-muted-foreground text-sm">
-              {line.fills.join(" · ")}
-            </p>
-          </li>
-        ))}
-      </ol>
-      <details>
-        <summary className="text-primary cursor-pointer font-semibold">
-          말할 항목 모두 보기
-        </summary>
-        <ul className="mt-2 flex list-disc flex-col gap-1 pl-6">
-          {dictationGuide(formIds).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </details>
+    <div className="flex flex-wrap gap-2">
+      <Badge variant={filled > 0 ? "success" : "neutral"}>
+        <CircleCheck />
+        {filled > 0 ? `${filled}개 항목 채움` : "채운 항목 없음"}
+      </Badge>
+      {requiredMissing > 0 && (
+        <Badge variant="warning">
+          <CircleAlert />
+          필수 {requiredMissing}개 빠짐
+        </Badge>
+      )}
     </div>
+  );
+}
+
+/**
+ * 초안 요약·채운 값·빠진 항목. 녹음하는 동안 패널은 입력 크기가 바뀔 때마다 다시 그려지므로,
+ * 구술·방문이 그대로면 다시 계산하지 않게 따로 둔다.
+ */
+function DraftBody({
+  dictation,
+  visit,
+}: {
+  dictation: VisitDictation;
+  visit: PanelVisit;
+}) {
+  const { formIds } = visit;
+  const filled = filledDraftFields(dictation, formIds);
+  // 빠진 항목은 기록에 이미 있는 값(저장한 값, 없으면 이월 값)을 빼고 센다.
+  const record: VisitForms = Object.fromEntries(
+    formIds.map((formId) => [formId, formStartValues(visit, formId)]),
+  );
+  const missing = missingDictationItems(dictation, formIds, record);
+
+  return (
+    <>
+      {!dictation.draftError && (
+        <DraftSummary
+          filled={filledItemCount(filled)}
+          requiredMissing={missing.filter((item) => item.required).length}
+        />
+      )}
+      <DraftReview
+        dictation={dictation}
+        filled={filled}
+        showTitles={formIds.length > 1}
+      />
+      <MissingItems items={missing} />
+    </>
   );
 }
 
 /**
  * 방문 직후 음성 구술 → 서식 초안. 기록 화면 맨 위에 둔다.
  * 한 번 말하면 이 방문의 서식 모두(재택의료 의사: 별지 제4·6호)를 함께 채운다.
+ * 녹음 전에는 말할 내용의 핵심을, 초안 뒤에는 채운 값·빠진 항목을 보여 준다.
  * 초안은 "서식에 채우기"를 눌러야 폼에 들어가고, 저장은 기존 [임시 저장]·[확정]이 한다.
  * 녹음 상태(session)는 기록 화면이 갖고 저장 버튼 바의 [녹음]과 함께 쓴다.
  */
@@ -149,19 +246,63 @@ export function DictationPanel({
   const [appliedAt, setAppliedAt] = useState<string | null>(null);
   const startRecording = () => session.start("panel");
 
-  const examples = dictationExample(
-    visit.program,
-    visit.profession,
-    formIds,
-    visit.recipient.name,
-  );
+  /** 녹음 중·처리 중·보내기 실패 표시. 없으면 null(평소 버튼을 보여 준다). */
+  const controls = (() => {
+    if (session.isRecording) return <RecordingControls recorder={recorder} />;
+    if (session.isProcessing) return <Processing />;
+    if (failed) {
+      return (
+        <Notice tone="destructive" icon={CircleAlert} message={failed.message}>
+          <div className="flex gap-3">
+            <Button className="flex-1" onClick={session.retry}>
+              <RotateCw />
+              다시 보내기
+            </Button>
+            <Button variant="outline" onClick={session.discardFailed}>
+              녹음 버리기
+            </Button>
+          </div>
+        </Notice>
+      );
+    }
+    return null;
+  })();
+
+  if (session.isLoading) return null;
+
+  if (!dictation) {
+    return (
+      <PanelCard
+        panelRef={panelRef}
+        title="음성으로 기록"
+        description="방문 내용을 2~3분 말하면 서식 초안을 만들어 드립니다"
+        error={recorder.error}
+      >
+        {/* 녹음을 누른 뒤에도 아래 말할 내용을 보며 말하도록 조작을 위에 둔다. */}
+        {controls ?? (
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={startRecording}
+            disabled={isBusy}
+          >
+            <Mic />
+            녹음 시작
+          </Button>
+        )}
+        <DictationPoints
+          points={dictationPoints(visit.program, visit.profession, formIds)}
+        />
+      </PanelCard>
+    );
+  }
+
   // 초안을 만든 뒤 방문에 더한 서식(초안에는 만들 때 쓴 서식마다 키가 있다). 초안 다시 만들기로 채운다.
-  const addedAfterDraft = dictation
-    ? formIds.filter((formId) => !(formId in dictation.draft))
-    : [];
+  const addedAfterDraft = formIds.filter(
+    (formId) => !(formId in dictation.draft),
+  );
 
   const applyDraft = (force = false) => {
-    if (!dictation) return;
     const merged = mergeDraft(
       form.getValues("forms"),
       dictation.draft,
@@ -211,178 +352,80 @@ export function DictationPanel({
     </Button>
   );
 
-  /** 녹음 중·처리 중·보내기 실패 표시. 없으면 null(평소 버튼을 보여 준다). */
-  const controls = (() => {
-    if (session.isRecording) {
-      return (
-        <RecordingControls
-          seconds={recorder.seconds}
-          level={recorder.level}
-          onStop={recorder.stop}
-          onCancel={recorder.cancel}
-        />
-      );
-    }
-    if (session.isProcessing) return <Processing />;
-    if (failed) {
-      return (
-        <div
-          role="alert"
-          className="border-destructive/20 bg-destructive-soft flex flex-col gap-3 rounded-xl border p-4"
-        >
-          <p className="text-destructive font-semibold">{failed.message}</p>
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={session.retry}>
-              <RotateCw />
-              다시 보내기
-            </Button>
-            <Button variant="outline" onClick={session.discardFailed}>
-              녹음 버리기
-            </Button>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  })();
-
-  if (session.isLoading) return null;
-
-  // 빠진 항목은 기록에 이미 있는 값(저장한 값, 없으면 이월 값)을 빼고 센다.
-  const record: VisitForms = Object.fromEntries(
-    formIds.map((formId) => [formId, formStartValues(visit, formId)]),
-  );
-
   return (
-    <Card ref={panelRef} className="scroll-mt-20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mic className="text-primary size-5" />
-          음성으로 기록
-        </CardTitle>
-        {!dictation && (
-          <CardDescription className="text-base">
-            방문을 마친 뒤 2~3분 동안 편하게 말하면 서식 초안을 만들어 드립니다.
-            초안은 확인한 뒤 서식에 채웁니다.
-          </CardDescription>
-        )}
-      </CardHeader>
-
-      {recorder.error && (
-        <p
-          role="alert"
-          className="text-destructive flex items-start gap-2 font-semibold"
+    <PanelCard
+      panelRef={panelRef}
+      title="음성 초안"
+      description={`녹음 ${dictation.takes}회 · ${formatDuration(dictation.audioSeconds)}`}
+      error={recorder.error}
+    >
+      {dictation.draftError ? (
+        <Notice
+          tone="warning"
+          icon={TriangleAlert}
+          message={dictation.draftError}
         >
-          <TriangleAlert className="mt-0.5 size-5 shrink-0" />
-          {recorder.error}
-        </p>
+          {redraftButton}
+        </Notice>
+      ) : (
+        addedAfterDraft.length > 0 && (
+          <Notice
+            tone="primary"
+            icon={RotateCw}
+            message={`초안을 만든 뒤 ${withParticle(
+              addedAfterDraft.map(formLabel).join(", "),
+              "을/를",
+            )} 더했습니다. 초안을 다시 만들면 더한 서식도 채웁니다.`}
+          >
+            {redraftButton}
+          </Notice>
+        )
       )}
 
-      {!dictation && (
-        <>
-          {/* 녹음을 누른 뒤 아래 예시를 보며 말하도록 조작을 예시 위에 둔다. */}
-          {controls ?? (
+      <DraftBody dictation={dictation} visit={visit} />
+
+      <div className="flex flex-col gap-3">
+        {controls ?? (
+          <>
             <Button
               size="lg"
               className="w-full"
-              onClick={startRecording}
+              onClick={() => applyDraft()}
               disabled={isBusy}
             >
-              <Mic />
-              녹음 시작
+              <ClipboardCheck />
+              서식에 채우기
             </Button>
-          )}
-          <DictationExample
-            program={visit.program}
-            profession={visit.profession}
-            formIds={formIds}
-            lines={examples}
-          />
-        </>
-      )}
-
-      {dictation && (
-        <>
-          {dictation.draftError ? (
-            <div
-              role="alert"
-              className="border-warning/20 bg-warning-soft flex flex-col gap-3 rounded-xl border p-4"
-            >
-              <p className="text-warning flex items-start gap-2 font-semibold">
-                <TriangleAlert className="mt-0.5 size-5 shrink-0" />
-                {dictation.draftError}
+            {appliedAt === dictation.updatedAt && (
+              <p className="text-success flex items-center justify-center gap-2 font-semibold">
+                <CircleCheck className="size-5 shrink-0" />
+                서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
               </p>
-              {redraftButton}
-            </div>
-          ) : (
-            addedAfterDraft.length > 0 && (
-              <div
-                role="status"
-                className="border-primary/20 bg-primary-soft/60 flex flex-col gap-3 rounded-xl border p-4"
-              >
-                <p className="text-primary font-semibold">
-                  초안을 만든 뒤{" "}
-                  {withParticle(
-                    addedAfterDraft.map(formLabel).join(", "),
-                    "을/를",
-                  )}{" "}
-                  더했습니다. 초안을 다시 만들면 더한 서식도 채웁니다.
-                </p>
-                {redraftButton}
-              </div>
-            )
-          )}
-
-          <DraftReview dictation={dictation} formIds={formIds} />
-          <MissingItems
-            items={missingDictationItems(dictation, formIds, record)}
-            examples={examples}
-            disabled={isBusy}
-            onAnswer={startRecording}
-          />
-          <TranscriptDetails dictation={dictation} />
-
-          <div className="flex flex-col gap-3">
-            {controls ?? (
-              <>
-                <Button
-                  size="lg"
-                  className="w-full"
-                  onClick={() => applyDraft()}
-                  disabled={isBusy}
-                >
-                  <ClipboardCheck />
-                  서식에 채우기
-                </Button>
-                {appliedAt === dictation.updatedAt && (
-                  <p className="text-success text-center font-semibold">
-                    서식에 채웠습니다. 아래 서식을 확인하고 저장해 주세요.
-                  </p>
-                )}
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={startRecording}
-                    disabled={isBusy}
-                  >
-                    <Mic />
-                    이어서 말하기
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setRestartOpen(true)}
-                    disabled={isBusy}
-                  >
-                    <RotateCcw />
-                    처음부터
-                  </Button>
-                </div>
-              </>
             )}
-          </div>
-        </>
-      )}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={startRecording}
+                disabled={isBusy}
+              >
+                <Mic />
+                이어서 말하기
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setRestartOpen(true)}
+                disabled={isBusy}
+              >
+                <RotateCcw />
+                처음부터
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <TranscriptDetails dictation={dictation} />
 
       <ConfirmDialog
         open={overwritten !== null}
@@ -404,6 +447,6 @@ export function DictationPanel({
         confirmText="지우기"
         variant="destructive"
       />
-    </Card>
+    </PanelCard>
   );
 }

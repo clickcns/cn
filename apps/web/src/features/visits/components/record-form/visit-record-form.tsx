@@ -169,9 +169,14 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
     const needsSave =
       isDirty || visit.formIds.some((formId) => !(formId in visit.forms));
     try {
-      if (needsSave && !(await save())) {
-        setConfirmOpen(false);
-        return;
+      // try 안의 `a && !(await b)` 같은 논리식은 React Compiler 가 처리하지 못해 이 컴포넌트 전체를
+      // 경고 없이 건너뛴다(녹음 중 입력 크기가 바뀔 때마다 폼 전체를 다시 계산하게 된다). if 로 나눠 쓴다.
+      if (needsSave) {
+        const saved = await save();
+        if (!saved) {
+          setConfirmOpen(false);
+          return;
+        }
       }
       await confirmVisit.mutateAsync();
       // 확정되면 상세 캐시가 갱신되어 읽기 전용 화면으로 바뀐다.
