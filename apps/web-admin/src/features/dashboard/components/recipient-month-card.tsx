@@ -1,6 +1,7 @@
 import {
   CARE_GRADE_LABELS,
   HOME_CARE_MONTHLY_VISITS,
+  homeCarePlannedCounts,
   PROGRAM_SHORT_LABELS,
   type Recipient,
 } from "@repo/shared-types";
@@ -75,13 +76,15 @@ export function RecipientMonthCard({
               </Note>
             ) : (
               <ul className="grid gap-0.5">
-                {checks.lacking.map(({ recipient, counts, shortfall }) =>
+                {checks.lacking.map((status) =>
                   row(
-                    recipient,
+                    status.recipient,
                     <span className="flex items-center gap-2">
-                      <HomeCareCounts counts={counts} />
+                      <HomeCareCounts
+                        counts={homeCarePlannedCounts(status.tallies)}
+                      />
                       <span className="text-warning text-xs font-semibold whitespace-nowrap tabular-nums">
-                        {shortfall}회 부족
+                        {status.shortfall}회 부족
                       </span>
                     </span>,
                   ),

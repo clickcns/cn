@@ -51,6 +51,11 @@ export function isIsoMonth(value: unknown): value is string {
   return typeof value === "string" && ISO_MONTH_REGEX.test(value);
 }
 
+/** 이 달을 볼 때 기본으로 고를 날: 이번 달이면 오늘, 그 밖의 달은 1일. */
+export function defaultDayOf(month: string, today: string): string {
+  return monthOf(today) === month ? today : `${month}-01`;
+}
+
 /** YYYY-MM-DD(한국 날짜)가 속한 달. 예: "2026-09-24" → "2026-09" */
 export function monthOf(date: string): string {
   return date.slice(0, 7);

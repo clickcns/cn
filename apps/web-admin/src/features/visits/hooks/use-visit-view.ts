@@ -1,4 +1,5 @@
 import {
+  defaultDayOf,
   formatKstDate,
   isIsoDate,
   isIsoMonth,
@@ -32,9 +33,7 @@ export function useVisitView() {
   const selectedDay =
     isIsoDate(dayParam) && monthOf(dayParam) === month
       ? dayParam
-      : monthOf(today) === month
-        ? today
-        : `${month}-01`;
+      : defaultDayOf(month, today);
 
   // 바꾸는 함수는 늘 같다(방향키로 날짜를 옮겨도 달력 칸·수급자 패널에 넘긴 함수가 그대로라 다시 그리지 않는다).
   const update = useSearchParamsUpdater();

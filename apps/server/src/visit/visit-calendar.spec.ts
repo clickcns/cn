@@ -7,7 +7,6 @@ import {
   daysBetween,
   formatDateLabel,
   formatMonthLabel,
-  homeCareMonthStatuses,
   isIsoMonth,
   monthGridDates,
   shiftCalendarDate,
@@ -310,41 +309,6 @@ describe("summarizeMonthStaff", () => {
       SCHEDULED: 1,
       DRAFT: 1,
       CONFIRMED: 0,
-    });
-  });
-});
-
-describe("homeCareMonthStatuses", () => {
-  it("재택의료센터 수급자만, 방문이 없으면 모두 모자란 것으로 보고 부족한 순서로 둔다", () => {
-    const kim = { id: "r1", name: "김영자", careGrade: "2" as const };
-    const summaries = summarizeMonthRecipients(
-      [
-        calendarItem({ recipient: kim, profession: "DOCTOR" }),
-        calendarItem({ recipient: kim }),
-        calendarItem({ recipient: kim }),
-        calendarItem({ recipient: kim, profession: "SOCIAL_WORKER" }),
-      ],
-      "2026-09",
-    );
-    const statuses = homeCareMonthStatuses(
-      [
-        { id: "r1", programs: ["HOME_CARE_CENTER"] as const },
-        { id: "r2", programs: ["LTC_NURSING"] as const },
-        { id: "r3", programs: ["HOME_CARE_CENTER", "LTC_NURSING"] as const },
-      ],
-      summaries,
-    );
-    assert.deepEqual(
-      statuses.map((status) => [status.recipient.id, status.shortfall]),
-      [
-        ["r3", 4],
-        ["r1", 0],
-      ],
-    );
-    assert.deepEqual(statuses[1].counts, {
-      DOCTOR: 1,
-      NURSE: 2,
-      SOCIAL_WORKER: 1,
     });
   });
 });

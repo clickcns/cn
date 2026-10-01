@@ -561,18 +561,34 @@ export interface MonthRecipientSummary {
   homeCareShortfall: number;
 }
 
-/** 모자란 재택의료 방문 수(직종별 요건과 비교). */
+/** 직종별로 재택의료 월 요건(HOME_CARE_MONTHLY_VISITS)에서 모자란 방문 수. */
+export function homeCareMissing(
+  counts: HomeCareVisitCounts,
+): HomeCareVisitCounts {
+  const missing = (profession: keyof HomeCareVisitCounts) =>
+    Math.max(0, HOME_CARE_MONTHLY_VISITS[profession] - counts[profession]);
+  return {
+    DOCTOR: missing("DOCTOR"),
+    NURSE: missing("NURSE"),
+    SOCIAL_WORKER: missing("SOCIAL_WORKER"),
+  };
+}
+
+/** 모자란 재택의료 방문 수(직종 합). 0이면 요건을 채움. */
 export function homeCareShortfall(counts: HomeCareVisitCounts): number {
-  return (
-    Object.entries(HOME_CARE_MONTHLY_VISITS) as [
-      keyof HomeCareVisitCounts,
-      number,
-    ][]
-  ).reduce(
-    (sum, [profession, required]) =>
-      sum + Math.max(0, required - counts[profession]),
-    0,
-  );
+  const missing = homeCareMissing(counts);
+  return missing.DOCTOR + missing.NURSE + missing.SOCIAL_WORKER;
+}
+
+/**
+ * 달력 항목의 한국 날짜. month 밖이면 null이다(달력 요청 범위에 섞인 앞뒤 달 항목을 건너뛸 때).
+ */
+export function kstDateInMonth(
+  item: Pick<VisitCalendarItem, "scheduledAt">,
+  month: string,
+): string | null {
+  const date = formatKstDate(new Date(item.scheduledAt));
+  return monthOf(date) === month ? date : null;
 }
 
 /**
@@ -585,8 +601,8 @@ export function summarizeMonthRecipients(
 ): MonthRecipientSummary[] {
   const byRecipient = new Map<string, MonthRecipientSummary>();
   for (const item of items) {
-    const date = formatKstDate(new Date(item.scheduledAt));
-    if (monthOf(date) !== month) continue;
+    const date = kstDateInMonth(item, month);
+    if (!date) continue;
     let summary = byRecipient.get(item.recipient.id);
     if (!summary) {
       summary = {
@@ -628,38 +644,6 @@ export function withoutMonthVisits<T extends { id: string }>(
   return recipients.filter((recipient) => !visited.has(recipient.id));
 }
 
-/** 재택의료센터 수급자 한 명의 이달 월 요건(관리 웹 현황판). */
-export interface HomeCareMonthStatus<T> {
-  recipient: T;
-  /** 이달 재택의료센터 방문의 직종별 건수(예정 포함) */
-  counts: HomeCareVisitCounts;
-  /** 요건에서 모자란 건수의 합. 0이면 충족 */
-  shortfall: number;
-}
-
-/**
- * 재택의료센터에 등록한 수급자마다 이달 월 요건을 본다(방문이 없으면 모두 모자람).
- * 모자란 건수가 많은 수급자부터, 같으면 받은 순서 그대로다.
- */
-export function homeCareMonthStatuses<
-  T extends { id: string; programs: readonly Program[] },
->(
-  recipients: readonly T[],
-  summaries: readonly MonthRecipientSummary[],
-): HomeCareMonthStatus<T>[] {
-  const byRecipient = new Map(
-    summaries.map((summary) => [summary.recipient.id, summary]),
-  );
-  return recipients
-    .filter((recipient) => recipient.programs.includes("HOME_CARE_CENTER"))
-    .map((recipient) => {
-      const counts =
-        byRecipient.get(recipient.id)?.homeCare ?? emptyHomeCareCounts();
-      return { recipient, counts, shortfall: homeCareShortfall(counts) };
-    })
-    .sort((a, b) => b.shortfall - a.shortfall);
-}
-
 /** 이달 담당자 한 명의 방문 요약(관리 웹 현황판). */
 export interface MonthStaffSummary {
   staff: VisitCalendarItem["staff"];
@@ -680,8 +664,8 @@ export function summarizeMonthStaff(
 ): MonthStaffSummary[] {
   const byStaff = new Map<string, MonthStaffSummary>();
   for (const item of items) {
-    const date = formatKstDate(new Date(item.scheduledAt));
-    if (monthOf(date) !== month) continue;
+    const date = kstDateInMonth(item, month);
+    if (!date) continue;
     let summary = byStaff.get(item.staff.id);
     if (!summary) {
       summary = {

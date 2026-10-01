@@ -2,9 +2,7 @@ import { getErrorMessage, getErrorStatus } from "@repo/api-client";
 import {
   formChoicesFor,
   formatDateLabel,
-  formatMonthLabel,
   addKstDays,
-  addMonths,
   canRescheduleVisit,
   formRulesFor,
   monthGridDates,
@@ -21,21 +19,19 @@ import {
 } from "@repo/shared-types";
 import {
   CalendarXIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   PlusIcon,
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MonthNav } from "@/components/month-nav";
 import { Button } from "@/components/ui/button";
 import {
   EmptyState,
   ErrorState,
   LoadingState,
 } from "@/components/ui/data-state";
-import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import {
   useRecipient,
@@ -324,40 +320,12 @@ export function VisitCalendarView({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="이전 달"
-            onClick={() => onMonthChange(addMonths(month, -1))}
-          >
-            <ChevronLeftIcon />
-          </Button>
-          <h2
-            className="min-w-28 text-center text-base font-semibold tabular-nums"
-            aria-live="polite"
-          >
-            {formatMonthLabel(month)}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="다음 달"
-            onClick={() => onMonthChange(addMonths(month, 1))}
-          >
-            <ChevronRightIcon />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-1"
-            disabled={month === thisMonth}
-            onClick={() => onMonthChange(thisMonth)}
-          >
-            이번 달
-          </Button>
-          {calendarQuery.isFetching && <Spinner className="ml-2" />}
-        </div>
+        <MonthNav
+          month={month}
+          thisMonth={thisMonth}
+          onChange={onMonthChange}
+          busy={calendarQuery.isFetching}
+        />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           {/* 칩이 있을 때만(상한 초과면 칸에 건수만 있다) */}
           {itemsByDay && (

@@ -1,4 +1,5 @@
 import {
+  BanknoteIcon,
   Building2Icon,
   ClipboardListIcon,
   HeartHandshakeIcon,
@@ -22,6 +23,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: "현황판", icon: LayoutDashboardIcon },
   { to: ROUTES.visits, label: "방문 기록", icon: ClipboardListIcon },
+  { to: ROUTES.homeCare, label: "재택의료 기본료", icon: BanknoteIcon },
   { to: ROUTES.recipients, label: "수급자", icon: HeartHandshakeIcon },
   { to: ROUTES.users, label: "사용자", icon: UsersRoundIcon },
   {

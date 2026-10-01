@@ -9,6 +9,11 @@ import {
   type Gender,
 } from "@repo/shared-types";
 
+/** 원 → 만원(재택의료 기본료처럼 만원 단위 금액을 크게 보일 때). */
+export function wonToManwon(won: number): number {
+  return won / 10_000;
+}
+
 /** 화면 표시는 모두 한국 시간 기준이다. 값이 없으면 대시로 표시한다. */
 const EMPTY = "—";
 
