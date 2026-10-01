@@ -48,6 +48,18 @@ export function formatDateTime(value: DateInput): string {
   return `${day} (${kstWeekday(day)}) ${formatKstTime(date)}`;
 }
 
+/** "2026-01-11" → "26.1.11"(표 칸처럼 좁은 곳, 해가 다른 날짜를 함께 볼 때) */
+export function formatShortDate(date: string): string {
+  const [year, month, day] = date.split("-");
+  return `${year!.slice(2)}.${Number(month)}.${Number(day)}`;
+}
+
+/** "2026-01-11" → "2026년 1월 11일" */
+export function formatYearDate(date: string): string {
+  const [year, month, day] = date.split("-");
+  return `${year}년 ${Number(month)}월 ${Number(day)}일`;
+}
+
 /** 2026-09-22 */
 export function formatDate(value: DateInput): string {
   const date = toDate(value);

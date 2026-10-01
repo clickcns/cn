@@ -44,6 +44,32 @@ enum VisitStatus {
 }
 
 /// 방문간호 기관(재가장기요양기관·가정간호사업소 등).
+/// 재택의료센터 포괄평가 구분(shared-types HOME_CARE_ASSESSMENT_KINDS)
+enum HomeCareAssessmentKind {
+  INITIAL
+  REASSESS
+}
+
+/// 재택의료 종결 사유(shared-types HOME_CARE_END_REASONS). 사망이면 그달 기본료 50%를 볼 수 있다.
+enum HomeCareEndReason {
+  DEATH
+  FACILITY
+  OTHER
+}
+
+/// 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 다른 기관 서비스(shared-types EXTERNAL_SERVICE_KINDS)
+enum ExternalServiceKind {
+  LTC_NURSING
+  HOME_NURSING
+  DAY_CARE
+  BATH
+  SHORT_STAY
+  FACILITY
+  LTC_SOCIAL_WORKER
+  CHRONIC_CARE
+  DISABILITY_DOCTOR
+}
+
 model Organization {
   id        String    @id @default(uuid())
   name      String
@@ -85,6 +111,7 @@ model User {
   confirmedVersions     VisitRecordVersion[]   @relation("VersionConfirmedBy")
   reopenedVersions      VisitRecordVersion[]   @relation("VersionReopenedBy")
   portalEntries         VisitPortalEntry[]
+  homeCareAssessments   HomeCareAssessment[]
   /// 저장한 원본 서식 조정
   formLayoutAdjustments FormLayoutAdjustment[]
 
@@ -111,30 +138,35 @@ model RefreshSession {
 
 /// 장기요양 수급자(방문 대상자).
 model Recipient {
-  id             String    @id @default(uuid())
-  organizationId String
-  name           String
+  id                String             @id @default(uuid())
+  organizationId    String
+  name              String
   /// 차트번호(기관 EMR의 환자 번호). 기관 안에서 겹치지 않는다.
-  chartNumber    String?
-  birthDate      DateTime? @db.Date
-  gender         Gender?
+  chartNumber       String?
+  birthDate         DateTime?          @db.Date
+  gender            Gender?
   /// 장기요양등급: "1"~"5", "COGNITIVE"(인지지원등급)
-  careGrade      String?
+  careGrade         String?
   /// 장기요양인정번호
-  ltcCertNumber  String?
-  phone          String?
-  address        String?
-  guardianName   String?
-  guardianPhone  String?
-  notes          String?
+  ltcCertNumber     String?
+  phone             String?
+  address           String?
+  guardianName      String?
+  guardianPhone     String?
+  notes             String?
   /// 등록한(동의한) 사업. 기관 사업의 부분집합이며, 방문은 이 중에서 고른다.
-  programs       Program[] @default([])
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  programs          Program[]          @default([])
+  /// 재택의료 종결 날짜·사유. 함께 적거나 함께 비운다.
+  homeCareEndedOn   DateTime?          @db.Date
+  homeCareEndReason HomeCareEndReason?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  visits       Visit[]
+  organization     Organization               @relation(fields: [organizationId], references: [id])
+  visits           Visit[]
+  assessments      HomeCareAssessment[]
+  externalServices RecipientExternalService[]
 
   @@unique([organizationId, chartNumber])
   @@index([organizationId, name])
@@ -242,6 +274,48 @@ model VisitPortalEntry {
 
   @@unique([visitId, formId])
   @@map("visit_portal_entries")
+}
+
+/// 재택의료센터 포괄평가(별지 제5호를 쓴 날). 그달 기본료 산정 기간과 재평가 기한을 정한다.
+model HomeCareAssessment {
+  id          String                 @id @default(uuid())
+  recipientId String
+  assessedOn  DateTime               @db.Date
+  kind        HomeCareAssessmentKind
+  note        String?
+  createdById String
+  createdAt   DateTime               @default(now())
+
+  recipient Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@unique([recipientId, assessedOn])
+  @@map("home_care_assessments")
+}
+
+/// 수급자가 다른 기관에서 받는 서비스 일정(요일·기간·이용 시간). 같은 날(또는 같은 시간) 재택의료팀이
+/// 방문하면 재택의료 급여를 산정하지 않는다.
+model RecipientExternalService {
+  id          String              @id @default(uuid())
+  recipientId String
+  kind        ExternalServiceKind
+  /// 제공 기관 이름
+  provider    String?
+  /// 요일(0=일요일 … 6=토요일). 비면 기간 안의 모든 날
+  weekdays    Int[]               @default([])
+  startsOn    DateTime?           @db.Date
+  endsOn      DateTime?           @db.Date
+  /// 이용 시간(HH:mm). 시간이 겹칠 때만 해당하는 서비스에 적는다
+  startTime   String?
+  endTime     String?
+  note        String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  recipient Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@map("recipient_external_services")
 }
 
 /// 방문 직후 음성 구술과 그로부터 만든 기록 초안. 방문당 하나이며, 다시 녹음하면 바꾸고

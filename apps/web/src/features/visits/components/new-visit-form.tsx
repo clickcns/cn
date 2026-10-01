@@ -103,9 +103,19 @@ export function NewVisitForm({
 
   // 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지(추가를 막지는 않는다).
   const date = useWatch({ control, name: "date" });
+  const time = useWatch({ control, name: "time" });
   const { data: sameDayWarnings = [] } = useSameDayWarnings(
     recipient && program && isIsoDate(date)
-      ? { recipientId: recipient.id, program, date }
+      ? {
+          recipientId: recipient.id,
+          program,
+          date,
+          // 시각은 재택의료센터 방문에서만 쓴다(다른 기관 서비스의 이용 시간과 겹치는지).
+          time:
+            program === "HOME_CARE_CENTER" && HHMM_REGEX.test(time)
+              ? time
+              : undefined,
+        }
       : null,
   );
 

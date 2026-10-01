@@ -1,22 +1,30 @@
 import { z } from "zod";
-import { addMonths, minutesBetween, monthOf } from "./date.js";
+import {
+  addMonths,
+  minutesBetween,
+  monthOf,
+  toKstIsoDateTime,
+} from "./date.js";
 import {
   selectedOptions,
   type FormId,
   type VisitForms,
 } from "./forms/index.js";
 import {
-  HOME_CARE_BASE_FEE,
-  type HomeCareFeeStatus,
-  type HomeCareFeeVerdict,
-} from "./home-care-fee.js";
+  checkHomeCareVisit,
+  homeCareMonthPeriod,
+  type ExternalServiceSchedule,
+  type HomeCareAssessmentFact,
+  type HomeCareCaseFacts,
+} from "./home-care-case.js";
+import type { HomeCareFeeStatus } from "./home-care-fee.js";
 import { HOME_CARE_MONTHLY_VISITS } from "./programs.js";
+import type { Recipient } from "./recipient.js";
 import type { Profession } from "./roles.js";
 import { isoMonthSchema } from "./schema.js";
 import {
   emptyHomeCareCounts,
   homeCareShortfall,
-  type HomeCareVisitCounts,
   type VisitCalendarItem,
 } from "./visit.js";
 
@@ -137,14 +145,31 @@ export function homeCareVisitFacts(visit: {
 
 /* ---------- API ---------- */
 
-/** 그달 재택의료센터 방문 하나(모든 상태). */
+/** 그달 재택의료센터 방문 하나(모든 상태). 시작·종료는 다른 기관 서비스와 시간이 겹치는지 볼 때 쓴다. */
 export interface HomeCareMonthVisit extends VisitCalendarItem {
+  startedAt: string | null;
+  endedAt: string | null;
   facts: HomeCareVisitFacts;
 }
 
+/** 재택의료 수입의 수급자: 판정에 쓰는 사례 정보(포괄평가·종결·다른 기관 서비스)를 함께 싣는다. */
+export interface HomeCareRecipient
+  extends
+    Pick<
+      Recipient,
+      "id" | "organizationId" | "name" | "careGrade" | "programs" | "isActive"
+    >,
+    HomeCareCaseFacts {
+  assessments: HomeCareAssessmentFact[];
+  /** 기관 밖 서비스와, 같은 기관의 그달 장기요양 방문간호 날(ownLtcNursingDay) */
+  externalServices: ExternalServiceSchedule[];
+}
+
 export interface HomeCareMonthResponse {
-  /** 방문이 상한(VISIT_CALENDAR_MAX_ITEMS)을 넘으면 null(운영자의 전체 기관 보기) */
+  /** 방문이 상한(VISIT_CALENDAR_MAX_ITEMS)을 넘으면 null(운영자의 전체 기관 보기, 수급자도 비운다) */
   visits: HomeCareMonthVisit[] | null;
+  /** 재택의료센터 수급자 중 사용 중이거나 그달 방문이 있고, 그달 전에 종결하지 않은 수급자 */
+  recipients: HomeCareRecipient[];
   /** 수급자 id → 그달 직전까지 기본료 요건을 확정 기록으로 이어서 채운 달 수(0이면 뺀다) */
   priorStreaks: Record<string, number>;
 }
@@ -155,20 +180,26 @@ export const HomeCareMonthQuerySchema = z.object({
 });
 export type HomeCareMonthQuery = z.input<typeof HomeCareMonthQuerySchema>;
 
+/** 그달 전 확정 방문을 수급자·한국 날짜·직종별로 센 줄. */
+export interface HomeCareConfirmedCount {
+  recipientId: string;
+  date: string;
+  profession: Profession;
+  count: number;
+}
+
 /**
- * 수급자별로 그달 직전부터 거슬러 기본료 요건(homeCareShortfall, 이달 판정과 같은 규칙)을 채운 달이
- * 몇 달 이어지는지. counts는 그달 전의 확정 방문을 수급자·한국 날짜·직종별로 센 것이다.
+ * factsOf의 수급자마다 그달 직전부터 거슬러 기본료 요건을 채운 달이 몇 달 이어지는지. 달마다 이달
+ * 판정과 같은 산정 기간(homeCareMonthPeriod: 포괄평가 전·기한 지남은 채우지 못한 달)과 방문
+ * 세기(checkHomeCareVisit — 날짜만 알므로 이용 시간이 겹칠 때만 해당하는 서비스는 빼지 않는다),
+ * 요건(homeCareShortfall)으로 본다.
  */
 export function homeCarePriorStreaks(
-  counts: readonly {
-    recipientId: string;
-    date: string;
-    profession: Profession;
-    count: number;
-  }[],
+  counts: readonly HomeCareConfirmedCount[],
   month: string,
+  factsOf: ReadonlyMap<string, HomeCareCaseFacts>,
 ): Record<string, number> {
-  const byRecipient = new Map<string, Map<string, HomeCareVisitCounts>>();
+  const byRecipient = new Map<string, Map<string, HomeCareConfirmedCount[]>>();
   for (const row of counts) {
     let months = byRecipient.get(row.recipientId);
     if (!months) {
@@ -176,16 +207,39 @@ export function homeCarePriorStreaks(
       byRecipient.set(row.recipientId, months);
     }
     const rowMonth = monthOf(row.date);
-    const monthCounts = months.get(rowMonth) ?? emptyHomeCareCounts();
-    monthCounts[row.profession] += row.count;
-    months.set(rowMonth, monthCounts);
+    const rows = months.get(rowMonth);
+    if (rows) rows.push(row);
+    else months.set(rowMonth, [row]);
   }
   const streaks: Record<string, number> = {};
-  for (const [recipientId, months] of byRecipient) {
+  for (const [recipientId, facts] of factsOf) {
+    const months = byRecipient.get(recipientId);
+    if (!months) continue;
+    const secured = (previous: string) => {
+      const rows = months.get(previous);
+      if (!rows) return false;
+      const period = homeCareMonthPeriod(facts, previous);
+      if (period.block) return false;
+      const tally = emptyHomeCareCounts();
+      for (const row of rows) {
+        const visit = {
+          profession: row.profession,
+          scheduledAt: toKstIsoDateTime(row.date, "00:00"),
+          timeUnknown: true,
+        };
+        if (
+          checkHomeCareVisit(period, facts.externalServices, visit, row.date)
+            .counted
+        ) {
+          tally[row.profession] += row.count;
+        }
+      }
+      return homeCareShortfall(tally) === 0;
+    };
     let streak = 0;
     for (
       let previous = addMonths(month, -1);
-      homeCareShortfall(months.get(previous) ?? emptyHomeCareCounts()) === 0;
+      secured(previous);
       previous = addMonths(previous, -1)
     ) {
       streak += 1;
@@ -286,30 +340,44 @@ function extraNursing(visits: readonly HomeCareMonthVisit[]) {
 
 /**
  * 수급자 한 명의 그달 예상 수입. visits는 그 수급자의 그달 재택의료센터 방문(모든 상태)이다.
- * 예정·미확정 방문도 마치고 확정하면 받을 금액으로 넣는다(기본료 판정이 방문 부족이면 기본료는 0).
+ * 예정·미확정 방문도 마치고 확정하면 받을 금액으로 넣는다. 기본료는 판정이 방문 부족·포괄평가
+ * 필요면 0, 아니면 판정의 fee(사망 종결 50% 포함)다. 포괄평가 필요(막힘)면 장기요양 재택의료
+ * 급여(기본료·추가간호료·지속관리료)는 없고 건강보험 방문진료료만 받는다. 추가간호료는 기본료
+ * 횟수에 넣은 방문(countedVisitIds)으로 센다.
  */
 export function homeCareRevenue(
-  verdict: HomeCareFeeVerdict,
+  status: Pick<
+    HomeCareFeeStatus<unknown>,
+    "verdict" | "fee" | "halfFee" | "countedVisitIds"
+  >,
   visits: readonly HomeCareMonthVisit[],
   priorStreak: number,
 ): HomeCareRevenue {
-  const short = verdict === "SHORT";
-  const { issues, ...extra } = extraNursing(visits);
-  const social = visits.filter((visit) => visit.profession === "SOCIAL_WORKER");
+  const blocked = status.verdict === "BLOCKED";
+  const payable = !blocked && status.verdict !== "SHORT";
+  const counted = visits.filter((visit) =>
+    status.countedVisitIds.has(visit.id),
+  );
+  const { issues, ...extra } = extraNursing(blocked ? [] : counted);
+  const social = counted.filter(
+    (visit) => visit.profession === "SOCIAL_WORKER",
+  );
   if (social.length > 0 && social.every((visit) => visit.facts.scheduleOnly)) {
     issues.push(
       "사회복지사 상담 내용이 방문일정 조율뿐입니다. 단순 안부확인은 기본료 상담으로 인정되지 않습니다",
     );
   }
-  if (short && priorStreak > 0) {
+  if (!payable && priorStreak > 0) {
     issues.push(
       `기본료를 놓치면 ${priorStreak}개월 이어 온 연속이 끊깁니다(지속관리료는 ${HOME_CARE_CONTINUITY_MONTHS}개월 연속마다)`,
     );
   }
-  const streak = short ? 0 : priorStreak + 1;
-  const due = streak > 0 && streak % HOME_CARE_CONTINUITY_MONTHS === 0;
+  const streak = payable ? priorStreak + 1 : 0;
+  // 사망 종결로 기본료 50%를 받는 달은 지속관리료를 산정하지 않는다.
+  const due =
+    !status.halfFee && streak > 0 && streak % HOME_CARE_CONTINUITY_MONTHS === 0;
   const parts: RevenueParts = {
-    base: { count: short ? 0 : 1, amount: short ? 0 : HOME_CARE_BASE_FEE },
+    base: { count: payable ? 1 : 0, amount: payable ? status.fee : 0 },
     visitFee: visitFee(visits),
     extraNursing: extra,
     continuity: {
@@ -353,9 +421,10 @@ export function homeCareMonthRevenue(
   const parts = Object.fromEntries(
     HOME_CARE_REVENUE_PARTS.map((part) => [part, { count: 0, amount: 0 }]),
   ) as RevenueParts;
-  for (const { recipient, verdict } of statuses) {
+  for (const status of statuses) {
+    const { recipient } = status;
     const revenue = homeCareRevenue(
-      verdict,
+      status,
       visitsOf.get(recipient.id) ?? [],
       priorStreaks[recipient.id] ?? 0,
     );

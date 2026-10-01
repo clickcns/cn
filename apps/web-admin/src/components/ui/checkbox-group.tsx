@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
-export interface CheckboxOption<T extends string> {
+export interface CheckboxOption<T extends string | number> {
   value: T;
   label: ReactNode;
   /** 항목 옆의 작은 안내(예: "필수", "장기요양등급 필요") */
@@ -11,7 +11,7 @@ export interface CheckboxOption<T extends string> {
 }
 
 /** 여러 개 고르는 체크박스 묶음. value는 고른 항목들이고, 바꿀 때마다 새 목록으로 onChange를 부른다. */
-export function CheckboxGroup<T extends string>({
+export function CheckboxGroup<T extends string | number>({
   label,
   options,
   value,

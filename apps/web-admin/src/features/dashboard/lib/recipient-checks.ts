@@ -1,36 +1,36 @@
 import {
-  homeCareFeeStatuses,
-  homeCareFeeTotals,
+  isFeeAtRisk,
   summarizeMonthRecipients,
   withoutMonthVisits,
   type HomeCareFeeStatus,
+  type HomeCareRecipient,
   type Recipient,
   type VisitCalendarItem,
 } from "@repo/shared-types";
 
 /** 현황판의 이달 수급자 확인. */
 export interface RecipientChecks {
-  /** 재택의료센터 수급자별 이달 기본료 판정(위험한 것부터) */
-  homeCare: HomeCareFeeStatus<Recipient>[];
-  /** 그중 지금 일정(예정 포함)으로는 요건이 모자란 수급자 */
-  lacking: HomeCareFeeStatus<Recipient>[];
-  /** 판정별 수급자 수와 기본료 합계 */
-  feeTotals: ReturnType<typeof homeCareFeeTotals>;
+  /** 재택의료센터 수급자 수 */
+  homeCareCount: number;
+  /** 그중 지금 일정(예정 포함)으로는 요건이 모자라거나 포괄평가가 필요한 수급자(위험한 것부터) */
+  lacking: HomeCareFeeStatus<HomeCareRecipient>[];
   /** 재택의료센터 밖의 수급자 중 이달 방문이 없는 수급자 */
   noVisit: Recipient[];
 }
 
+/**
+ * 재택의료 판정(useHomeCareMonth: 재택의료 수입과 같은 판정)에서 기본료가 위험한 수급자와, 달력
+ * 방문으로 센 재택의료 밖 수급자의 이달 방문 여부를 합친다.
+ */
 export function recipientChecks(
   visits: readonly VisitCalendarItem[],
   recipients: readonly Recipient[],
   month: string,
-  today: string,
+  homeCare: readonly HomeCareFeeStatus<HomeCareRecipient>[],
 ): RecipientChecks {
-  const homeCare = homeCareFeeStatuses(recipients, visits, month, today);
   return {
-    homeCare,
-    lacking: homeCare.filter((status) => status.verdict === "SHORT"),
-    feeTotals: homeCareFeeTotals(homeCare),
+    homeCareCount: homeCare.length,
+    lacking: homeCare.filter((status) => isFeeAtRisk(status.verdict)),
     noVisit: withoutMonthVisits(
       recipients.filter(
         (recipient) => !recipient.programs.includes("HOME_CARE_CENTER"),

@@ -33,6 +33,9 @@ export const queryKeys = {
     all: ["recipients"] as const,
     list: (query: RecipientListQuery) => ["recipients", "list", query] as const,
     detail: (id: string) => ["recipients", "detail", id] as const,
+    /** 재택의료 사례 정보(포괄평가·다른 기관 서비스·종결). 상세 아래라 수급자 수정 뒤 함께 다시 받는다. */
+    homeCareCase: (id: string) =>
+      ["recipients", "detail", id, "home-care-case"] as const,
   },
   visits: {
     all: ["visits"] as const,
@@ -50,9 +53,11 @@ export const queryKeys = {
     /** 달력(날짜별 건수). `lists` 접두어 아래라 등록·삭제 뒤 목록과 함께 다시 받는다. */
     calendar: (query: VisitCalendarQuery) =>
       ["visits", "list", "calendar", query] as const,
-    /** 재택의료 수입(그달 재택의료센터 방문 + 연속 개월). `lists` 아래라 저장·확정·삭제 뒤 다시 받는다. */
+    /** 재택의료 수입 캐시 전부(사례 정보를 바꾼 뒤 다시 받는다). */
+    homeCareMonths: ["visits", "list", "home-care"] as const,
+    /** 재택의료 수입(그달 재택의료센터 방문·수급자 사례 정보·연속 개월). `lists` 아래라 저장·확정·삭제 뒤 다시 받는다. */
     homeCareMonth: (query: HomeCareMonthQuery) =>
-      ["visits", "list", "home-care", query] as const,
+      [...queryKeys.visits.homeCareMonths, query] as const,
     /** calendar()로 만든 키에서 조건을 꺼낸다(캐시를 고칠 때). */
     calendarQueryOf: (key: readonly unknown[]) =>
       key[3] as VisitCalendarQuery | undefined,

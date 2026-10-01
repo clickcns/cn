@@ -223,6 +223,7 @@ export function VisitCalendarView({
         program: item.program,
         staffId: item.staff.id,
         date,
+        time: visitTime(item),
       })
       .then(
         (response) => response.warnings,

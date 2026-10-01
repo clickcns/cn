@@ -2,10 +2,13 @@ import type {
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
+  CreateHomeCareAssessmentInput,
   FormLayoutDetail,
   FormLayoutSummary,
   FormId,
+  ExternalServiceInput,
   FormPdfQuery,
+  HomeCareCase,
   HomeCareMonthQuery,
   HomeCareMonthResponse,
   MarkPortalEntryInput,
@@ -28,6 +31,7 @@ import type {
   SameDayWarningQuery,
   SameDayWarningResponse,
   SaveVisitRecordInput,
+  SetHomeCareEndInput,
   UpdateOrganizationInput,
   UpdateRecipientInput,
   UpdateUserInput,
@@ -161,6 +165,39 @@ export function createCarenoteApi(http: KyInstance) {
             searchParams: toSearchParams(query),
           }),
         ),
+      /** 재택의료 사례 정보(포괄평가·다른 기관 서비스·종결). 바꾸는 요청도 모두 사례 정보 전체를 준다. */
+      homeCareCase: (id: string) =>
+        http.get(`recipients/${id}/home-care-case`).json<HomeCareCase>(),
+      addAssessment: (id: string, input: CreateHomeCareAssessmentInput) =>
+        http
+          .post(`recipients/${id}/assessments`, { json: input })
+          .json<HomeCareCase>(),
+      removeAssessment: (id: string, assessmentId: string) =>
+        http
+          .delete(`recipients/${id}/assessments/${assessmentId}`)
+          .json<HomeCareCase>(),
+      addExternalService: (id: string, input: ExternalServiceInput) =>
+        http
+          .post(`recipients/${id}/external-services`, { json: input })
+          .json<HomeCareCase>(),
+      updateExternalService: (
+        id: string,
+        serviceId: string,
+        input: ExternalServiceInput,
+      ) =>
+        http
+          .put(`recipients/${id}/external-services/${serviceId}`, {
+            json: input,
+          })
+          .json<HomeCareCase>(),
+      removeExternalService: (id: string, serviceId: string) =>
+        http
+          .delete(`recipients/${id}/external-services/${serviceId}`)
+          .json<HomeCareCase>(),
+      setHomeCareEnd: (id: string, input: SetHomeCareEndInput) =>
+        http
+          .put(`recipients/${id}/home-care-end`, { json: input })
+          .json<HomeCareCase>(),
     },
 
     visits: {

@@ -10,24 +10,22 @@ import {
   HOME_CARE_MONTHLY_VISITS,
   HOME_CARE_VISIT_FEE_RATES,
   homeCareClaimDeadline,
-  homeCareFeeStatuses,
-  homeCareFeeTotals,
-  homeCareMonthRevenue,
   isIsoMonth,
   monthOf,
   type HomeCareFeeVerdict,
+  type HomeCareRecipient,
   type Profession,
-  type Recipient,
 } from "@repo/shared-types";
 import {
   CalendarClockIcon,
   CircleAlertIcon,
   CircleCheckIcon,
+  ClipboardXIcon,
   ClockIcon,
   HeartHandshakeIcon,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { MonthNav } from "@/components/month-nav";
 import { Card } from "@/components/ui/card";
@@ -36,6 +34,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { WarningList } from "@/components/ui/warning-list";
 import { MonthFallback } from "@/features/dashboard/components/month-fallback";
 import { StatCard } from "@/features/dashboard/components/stat-card";
+import { HomeCareCaseDialog } from "@/features/home-care/components/home-care-case-dialog";
 import { HomeCareFeeTable } from "@/features/home-care/components/home-care-fee-table";
 import { RevenueSummary } from "@/features/home-care/components/revenue-summary";
 import { useHomeCareMonth } from "@/features/home-care/hooks/use-home-care-month";
@@ -61,6 +60,12 @@ const VERDICT_CARDS: Record<
     tone: "warning" | "success" | "default";
   }
 > = {
+  BLOCKED: {
+    icon: ClipboardXIcon,
+    label: () => "포괄평가 필요",
+    detail: () => "최초 평가 전·재평가 기한 지남",
+    tone: "warning",
+  },
   SHORT: {
     icon: CircleAlertIcon,
     label: (closed) => (closed ? "못 받은 기본료" : "방문 부족"),
@@ -86,7 +91,8 @@ const VERDICT_CARDS: Record<
 /**
  * 재택의료 수입: 재택의료센터 수급자마다 그달 재택의료기본료 요건(의사·간호사·사회복지사 방문)을
  * 확정 기록으로 판정하고, 기본료·방문진료료·추가간호료·지속관리료 예상 금액과 놓치기 쉬운 산정
- * 조건을 보여 준다. 모자란 직종은 바로 방문 등록 창으로 잡는다.
+ * 조건을 보여 준다. 모자란 직종은 바로 방문 등록 창으로 잡고, 포괄평가·다른 기관 서비스·종결은
+ * 수급자마다 [사례 정보] 창에서 적는다.
  */
 export default function HomeCarePage() {
   const today = formatKstDate();
@@ -98,22 +104,11 @@ export default function HomeCarePage() {
   // 운영자가 "전체 기관"을 볼 때만 있다. 표를 기관별로 묶는다.
   const organizationNames = useOrganizationColumnNames();
   const [create, setCreate] = useState<CreateVisitDefaults | null>(null);
+  const [caseRecipient, setCaseRecipient] = useState<HomeCareRecipient | null>(
+    null,
+  );
 
-  const { data, recipients, error, retry, isFetching } =
-    useHomeCareMonth(month);
-  const visits = data?.visits;
-  // 판정·판정별 금액·예상 수입. null은 방문이 너무 많아 목록 없음(운영자의 전체 기관 보기),
-  // undefined는 받는 중.
-  const judged = useMemo(() => {
-    if (!data || !visits || !recipients)
-      return visits === null ? null : undefined;
-    const statuses = homeCareFeeStatuses(recipients, visits, month, today);
-    return {
-      statuses,
-      totals: homeCareFeeTotals(statuses),
-      revenue: homeCareMonthRevenue(statuses, visits, data.priorStreaks),
-    };
-  }, [data, visits, recipients, month, today]);
+  const { visits, judged, error, retry, isFetching } = useHomeCareMonth(month);
   const revenue = judged?.revenue;
   const totals = judged?.totals;
 
@@ -126,7 +121,7 @@ export default function HomeCarePage() {
       ? daysBetween(today, `${addMonths(month, 1)}-01`)
       : null;
 
-  const schedule = (recipient: Recipient, profession: Profession) =>
+  const schedule = (recipient: HomeCareRecipient, profession: Profession) =>
     setCreate({
       recipientId: recipient.id,
       program: "HOME_CARE_CENTER",
@@ -145,7 +140,7 @@ export default function HomeCarePage() {
 
       <div className="grid gap-4">
         <RevenueSummary totals={revenue?.totals} closed={closed} />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {HOME_CARE_FEE_VERDICTS.map((verdict) => {
             const card = VERDICT_CARDS[verdict];
             const total = totals?.[verdict];
@@ -219,6 +214,7 @@ export default function HomeCarePage() {
               closed={closed}
               organizationNames={organizationNames}
               onSchedule={schedule}
+              onOpenCase={setCaseRecipient}
             />
           )}
 
@@ -233,12 +229,18 @@ export default function HomeCarePage() {
             추가간호료는 간호사 기본 {HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘고
             정기로 적지 않은 {HOME_CARE_EXTRA_NURSING_MIN_MINUTES}분 이상·의사
             동행 아닌 방문, 지속관리료의 연속 개월은 케어노트에 확정한 기록으로
-            셉니다. 아직 보지 않는 규칙: 첫 포괄평가 달의 산정 기간, 케어플랜
-            없는 긴급왕진, 사망 종결 50%, 다른 기관 서비스와 같은 날 겹침.
+            셉니다. 최초 포괄평가 달은 평가일부터, 종결한 달은 종결일까지 세고,
+            재평가 기한이 지나면 다시 평가할 때까지, 같은 날 다른 기관 서비스가
+            있는 방문은 재택의료 급여로 세지 않습니다(사례 정보에 적은 것만
+            봅니다). 아직 보지 않는 규칙: 케어플랜 없는 긴급왕진.
           </p>
         </Card>
       </div>
 
+      <HomeCareCaseDialog
+        recipient={caseRecipient}
+        onClose={() => setCaseRecipient(null)}
+      />
       <CreateVisitDialog
         open={create !== null}
         onOpenChange={(open) => {

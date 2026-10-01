@@ -1,3 +1,4 @@
+import { EXTERNAL_SERVICE_INFO } from "./home-care-case.js";
 import { FORMS, type FormId } from "./forms/index.js";
 import { PROFESSION_LABELS, type Profession } from "./roles.js";
 import { withParticle } from "./text.js";
@@ -148,7 +149,7 @@ export function formIdsForNewStaff(
 
 /**
  * 재택의료기본료의 매달 방문 요건: 의사 1회·간호사 2회 이상, 사회복지사 매월 상담(재택의료센터 지침 13쪽).
- * 달 중간에 최초 포괄평가를 한 달은 평가일부터 말일까지로 본다(여기서는 달 전체로 센다).
+ * 세는 기간(최초 포괄평가 달은 평가일부터, 종결한 달은 종결일까지)은 home-care-case.ts의 homeCareMonthPeriod가 정한다.
  */
 export const HOME_CARE_MONTHLY_VISITS = {
   DOCTOR: 1,
@@ -165,19 +166,20 @@ export function canHandleProgram(
 }
 
 /**
- * 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문 짝(재택의료센터 지침):
- * 재택의료센터 간호사 방문 ↔ 장기요양 방문간호. 방문을 등록할 때 경고만 하고 막지는 않는다.
+ * 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문 짝(재택의료센터 지침): 재택의료센터 방문 ↔
+ * 장기요양 방문간호. 겹치면 안 되는 직종은 다른 기관 서비스와 같은 규칙
+ * (EXTERNAL_SERVICE_INFO.LTC_NURSING, 지금은 간호사)이다. 방문을 등록할 때 경고만 하고 막지는 않는다.
  */
 export function conflictsOnSameDay(
   a: { program: Program; profession: Profession | null },
   b: { program: Program; profession: Profession | null },
 ): boolean {
-  const homeCareNurse = (visit: typeof a) =>
-    visit.program === "HOME_CARE_CENTER" && visit.profession === "NURSE";
+  const homeCare = (visit: typeof a) =>
+    visit.program === "HOME_CARE_CENTER" &&
+    visit.profession !== null &&
+    EXTERNAL_SERVICE_INFO.LTC_NURSING.professions.includes(visit.profession);
   const ltcNursing = (visit: typeof a) => visit.program === "LTC_NURSING";
-  return (
-    (homeCareNurse(a) && ltcNursing(b)) || (ltcNursing(a) && homeCareNurse(b))
-  );
+  return (homeCare(a) && ltcNursing(b)) || (ltcNursing(a) && homeCare(b));
 }
 
 /** 켜고 끌 수 있는 선택 서식이 있는지. */

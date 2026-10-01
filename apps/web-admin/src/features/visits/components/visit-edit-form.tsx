@@ -94,14 +94,19 @@ export function VisitEditForm({ visit, onDone, onCancel }: VisitEditFormProps) {
     scheduledAt !== null &&
     new Date(scheduledAt).getTime() !== new Date(visit.scheduledAt).getTime();
 
-  // 날짜나 담당자(직종)를 바꿨을 때만 같은 날 겹침을 확인한다.
+  // 일정이나 담당자(직종)를 바꿨을 때만 같은 날 겹침을 확인한다.
   const { data: sameDayWarnings = [] } = useSameDayWarnings(
-    dateValid && (date !== visitDate(visit) || staffChanged)
+    dateValid && (scheduleChanged || staffChanged)
       ? {
           recipientId: visit.recipient.id,
           program: visit.program,
           staffId,
           date,
+          // 시각은 재택의료센터 방문에서만 쓴다(다른 기관 서비스의 이용 시간과 겹치는지).
+          time:
+            visit.program === "HOME_CARE_CENTER" && timeValid
+              ? time
+              : undefined,
         }
       : null,
   );

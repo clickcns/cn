@@ -6,7 +6,7 @@ import {
   type FormId,
   type VisitForms,
 } from "./forms/index.js";
-import { daysBetween, formatKstDate, monthOf } from "./date.js";
+import { daysBetween, formatKstDate, HHMM_REGEX, monthOf } from "./date.js";
 import {
   HOME_CARE_MONTHLY_VISITS,
   PROGRAMS,
@@ -122,8 +122,9 @@ export const CreateVisitSchema = z.object({
 export type CreateVisitInput = z.input<typeof CreateVisitSchema>;
 
 /**
- * 만들려는 방문의 같은 날 경고(conflictsOnSameDay)를 묻는다. 담당자는 방문 만들기와 같이
- * 현장 직원이면 본인, 아니면 staffId(없으면 본인)다.
+ * 만들려는 방문의 같은 날 경고(conflictsOnSameDay, 재택의료센터 방문은 다른 기관 서비스의
+ * externalConflicts도)를 묻는다. 담당자는 방문 만들기와 같이 현장 직원이면 본인, 아니면
+ * staffId(없으면 본인)다.
  */
 export const SameDayWarningQuerySchema = z.object({
   recipientId: z.uuid("수급자를 선택해 주세요"),
@@ -131,6 +132,11 @@ export const SameDayWarningQuerySchema = z.object({
   staffId: z.uuid().optional(),
   /** 방문 날짜(한국 날짜 YYYY-MM-DD) */
   date: z.iso.date("방문 날짜 형식이 올바르지 않습니다"),
+  /** 방문 시각(HH:mm). 있으면 주야간보호처럼 이용 시간이 겹칠 때만 해당하는 서비스를 정확히 본다 */
+  time: z
+    .string()
+    .regex(HHMM_REGEX, "시각은 HH:mm 형식으로 입력해 주세요")
+    .optional(),
 });
 export type SameDayWarningQuery = z.input<typeof SameDayWarningQuerySchema>;
 

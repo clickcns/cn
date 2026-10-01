@@ -171,6 +171,7 @@ function CreateVisitForm({
   const program = toProgram(useWatch({ control, name: "program" }));
   const staffId = useWatch({ control, name: "staffId" });
   const date = useWatch({ control, name: "date" });
+  const time = useWatch({ control, name: "time" });
   const selectedRecipient = recipients.find((r) => r.id === recipientId);
   const programOptions = programsFor(selectedRecipient);
   const selectedStaff = staff.find((user) => user.id === staffId);
@@ -187,7 +188,17 @@ function CreateVisitForm({
   // 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지(등록을 막지는 않는다).
   const { data: sameDayWarnings = [] } = useSameDayWarnings(
     recipientId && program && staffId && isIsoDate(date)
-      ? { recipientId, program, staffId, date }
+      ? {
+          recipientId,
+          program,
+          staffId,
+          date,
+          // 시각은 재택의료센터 방문에서만 쓴다(다른 기관 서비스의 이용 시간과 겹치는지).
+          time:
+            program === "HOME_CARE_CENTER" && HHMM_REGEX.test(time)
+              ? time
+              : undefined,
+        }
       : null,
   );
   // 담당자는 수급자와 같은 기관이고, 고른 사업을 맡을 수 있는 직종이어야 한다.

@@ -16,11 +16,19 @@ import {
   FORMS,
   formFields,
   type FormId,
+  type HomeCareFeeVerdict,
   type HomeCareMonthVisit,
   type HomeCareVisitFacts,
   type Profession,
   type VisitForms,
 } from "@repo/shared-types";
+
+const NO_CASE = {
+  assessments: [],
+  homeCareEndedOn: null,
+  homeCareEndReason: null,
+  externalServices: [],
+};
 
 const NO_FACTS: HomeCareVisitFacts = {
   visitFeeRate: null,
@@ -49,6 +57,8 @@ function visit(
     formIds: [],
     recipient: { id: recipientId, name: recipientId, careGrade: "1" },
     staff: { ...staff, profession, isActive: true },
+    startedAt: null,
+    endedAt: null,
     facts: { ...NO_FACTS, ...facts },
   };
 }
@@ -60,6 +70,24 @@ const nurse = (
 
 const SECURED = "SECURED";
 const SHORT = "SHORT";
+
+/** 판정 하나(방문은 모두 기본료 횟수에 넣었다고 본다)로 예상 수입을 낸다. */
+const revenue = (
+  verdict: HomeCareFeeVerdict,
+  visits: HomeCareMonthVisit[],
+  priorStreak: number,
+  fee = HOME_CARE_BASE_FEE,
+) =>
+  homeCareRevenue(
+    {
+      verdict,
+      fee,
+      halfFee: false,
+      countedVisitIds: new Set(visits.map((visit) => visit.id)),
+    },
+    visits,
+    priorStreak,
+  );
 
 describe("HOME_CARE_REVENUE_FIELDS", () => {
   it("금액 셈이 읽는 칸·선택지가 서식 정의에 있다", () => {
@@ -167,7 +195,7 @@ describe("homeCareRevenue", () => {
       visit("r", "DOCTOR", 8, { visitFeeRate: 0.75 }),
       visit("r", "DOCTOR", 9),
     ];
-    const secured = homeCareRevenue(SECURED, visits, 0);
+    const secured = revenue(SECURED, visits, 0);
     assert.deepEqual(secured.parts.base, {
       count: 1,
       amount: HOME_CARE_BASE_FEE,
@@ -180,14 +208,14 @@ describe("homeCareRevenue", () => {
       secured.total,
       HOME_CARE_BASE_FEE + secured.parts.visitFee.amount,
     );
-    const short = homeCareRevenue(SHORT, visits, 0);
+    const short = revenue(SHORT, visits, 0);
     assert.deepEqual(short.parts.base, { count: 0, amount: 0 });
     assert.equal(short.total, secured.parts.visitFee.amount);
   });
 
   it("추가간호료: 기본 2회를 넘는 방문 중 정기가 아니고 30분 이상·의사 동행 아닌 방문, 월 3회까지", () => {
     const extra = (visits: HomeCareMonthVisit[]) =>
-      homeCareRevenue(SECURED, visits, 0).parts.extraNursing;
+      revenue(SECURED, visits, 0).parts.extraNursing;
     // 2회뿐이면 추가 방문으로 적어도 기본 방문이다
     assert.equal(extra([nurse("REGULAR"), nurse("ADDITIONAL")]).count, 0);
     assert.deepEqual(
@@ -222,7 +250,7 @@ describe("homeCareRevenue", () => {
   });
 
   it("추가간호료를 놓치는 까닭을 알린다", () => {
-    const { issues } = homeCareRevenue(
+    const { issues } = revenue(
       SECURED,
       [
         nurse("REGULAR"),
@@ -237,7 +265,7 @@ describe("homeCareRevenue", () => {
     assert.match(issues[0], /정기 방문이 3회/);
     assert.match(issues[1], /의사와 동행한 추가 방문 1건/);
     assert.match(issues[2], /30분이 안 된 추가 방문 1건/);
-    const over = homeCareRevenue(
+    const over = revenue(
       SECURED,
       [
         nurse("REGULAR"),
@@ -252,7 +280,7 @@ describe("homeCareRevenue", () => {
 
   it("사회복지사 상담이 모두 방문일정 조율뿐일 때만 알린다", () => {
     const social = (...scheduleOnly: boolean[]) =>
-      homeCareRevenue(
+      revenue(
         SECURED,
         scheduleOnly.map((only, index) =>
           visit("r", "SOCIAL_WORKER", index + 1, { scheduleOnly: only }),
@@ -265,23 +293,27 @@ describe("homeCareRevenue", () => {
   });
 
   it("지속관리료: 연속 6의 배수 달에 받고, 방문 부족이면 연속이 끊긴다고 알린다", () => {
-    const five = homeCareRevenue(SECURED, [], 5);
+    const five = revenue(SECURED, [], 5);
     assert.equal(five.streak, 6);
     assert.deepEqual(five.parts.continuity, {
       count: 1,
       amount: HOME_CARE_CONTINUITY_FEE,
     });
-    assert.equal(homeCareRevenue(SECURED, [], 6).parts.continuity.count, 0);
-    assert.equal(homeCareRevenue(SECURED, [], 11).parts.continuity.count, 1);
-    const broken = homeCareRevenue(SHORT, [], 5);
+    assert.equal(revenue(SECURED, [], 6).parts.continuity.count, 0);
+    assert.equal(revenue(SECURED, [], 11).parts.continuity.count, 1);
+    const broken = revenue(SHORT, [], 5);
     assert.equal(broken.streak, 0);
     assert.equal(broken.parts.continuity.count, 0);
     assert.match(broken.issues[0], /5개월 이어 온 연속이 끊깁니다/);
-    assert.equal(homeCareRevenue(SHORT, [], 0).issues.length, 0);
+    assert.equal(revenue(SHORT, [], 0).issues.length, 0);
   });
 });
 
 describe("homeCarePriorStreaks", () => {
+  /** 사례 정보 없는 수급자들 */
+  const noCase = (...ids: string[]) =>
+    new Map(ids.map((id) => [id, NO_CASE] as const));
+
   /** 그달(YYYY-MM) day일에 의사 1·간호사 nurses·사회복지사 1회 */
   const counts = (recipientId: string, month: string, nurses = 2, day = 5) => {
     const date = `${month}-${String(day).padStart(2, "0")}`;
@@ -306,6 +338,7 @@ describe("homeCarePriorStreaks", () => {
           ...counts("d", "2026-01"),
         ],
         "2026-10",
+        noCase("a", "b", "c", "d"),
       ),
       { a: 2 },
     );
@@ -314,6 +347,7 @@ describe("homeCarePriorStreaks", () => {
       homeCarePriorStreaks(
         [...counts("d", "2025-12"), ...counts("d", "2025-11")],
         "2026-01",
+        noCase("d"),
       ),
       { d: 2 },
     );
@@ -332,6 +366,7 @@ describe("homeCarePriorStreaks", () => {
           },
         ],
         "2026-10",
+        noCase("a"),
       ),
       { a: 1 },
     );
@@ -342,6 +377,7 @@ describe("homeCareMonthRevenue", () => {
   const homeCare = (id: string) => ({
     id,
     programs: ["HOME_CARE_CENTER"] as const,
+    ...NO_CASE,
   });
 
   it("수급자마다 셈하고 항목별 건수·금액과 총액을 합한다", () => {

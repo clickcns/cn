@@ -13,6 +13,8 @@ import {
   decodeRecordCursor,
   encodeRecordCursor,
   emptyStatusCounts,
+  externalConflicts,
+  externalConflictText,
   findMissingRequired,
   totalCount,
   formatKstTime,
@@ -23,6 +25,7 @@ import {
   kstStartOfDay,
   PROGRAM_LABELS,
   selectForms,
+  toKstIsoDateTime,
   VISIT_CALENDAR_MAX_ITEMS,
   VisitFormsSchema,
   withParticle,
@@ -55,6 +58,10 @@ import {
 import { toVisitDictation } from "../dictation/dictation.mapper.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/index.js";
+import {
+  externalServiceScheduleSelect,
+  toExternalServiceSchedule,
+} from "../recipient/home-care-case.mapper.js";
 import { recordHistoryOrderBy, recordHistoryWhere } from "./record-history.js";
 import {
   recordHeaderSelect,
@@ -404,8 +411,10 @@ export class VisitService {
   }
 
   /**
-   * 만들려는 방문과 같은 날, 함께 있으면 재택의료 급여를 산정하지 않는 방문(conflictsOnSameDay)이
-   * 있는지 알려 준다. 현장 직원은 다른 직원의 방문을 볼 수 없으므로 방문 내용 대신 시각·사업만 문구로 준다.
+   * 만들려는 방문과 같은 날, 함께 있으면 재택의료 급여를 산정하지 않는 방문(conflictsOnSameDay)이나
+   * 다른 기관 서비스(재택의료센터 방문일 때, externalConflicts)가 있는지 알려 준다. 현장 직원은 다른
+   * 직원의 방문을 볼 수 없으므로 방문 내용 대신 시각·사업만 문구로 준다. 시각(time)을 모르면 이용
+   * 시간이 겹칠 때만 해당하는 서비스는 "겹치면"으로 알린다.
    */
   async sameDayWarnings(
     actor: AuthenticatedUser,
@@ -415,7 +424,13 @@ export class VisitService {
     const [recipient, staff] = await Promise.all([
       this.prisma.recipient.findUnique({
         where: { id: query.recipientId },
-        select: { organizationId: true },
+        select: {
+          organizationId: true,
+          // 다른 기관 서비스는 재택의료센터 방문에서만 본다.
+          externalServices: query.program === "HOME_CARE_CENTER" && {
+            select: externalServiceScheduleSelect,
+          },
+        },
       }),
       this.prisma.user.findUnique({
         where: { id: staffId },
@@ -429,10 +444,8 @@ export class VisitService {
       "수급자를 찾을 수 없습니다",
     );
 
-    const planned = {
-      program: query.program,
-      profession: staff?.profession ?? null,
-    };
+    const profession = staff?.profession ?? null;
+    const planned = { program: query.program, profession };
     const sameDay = await this.prisma.visit.findMany({
       where: {
         recipientId: query.recipientId,
@@ -441,21 +454,33 @@ export class VisitService {
       select: { scheduledAt: true, program: true, profession: true },
       orderBy: { scheduledAt: "asc" },
     });
+    const warnings: string[] = [];
     const conflicts = sameDay.filter((visit) =>
       conflictsOnSameDay(planned, visit),
     );
-    if (conflicts.length === 0) return { warnings: [] };
-    const visits = conflicts
-      .map(
-        (visit) =>
-          `${formatKstTime(visit.scheduledAt)} ${PROGRAM_LABELS[visit.program]}`,
-      )
-      .join(", ");
-    return {
-      warnings: [
+    if (conflicts.length > 0) {
+      const visits = conflicts
+        .map(
+          (visit) =>
+            `${formatKstTime(visit.scheduledAt)} ${PROGRAM_LABELS[visit.program]}`,
+        )
+        .join(", ");
+      warnings.push(
         `이날 ${visits} 방문이 있습니다. 재택의료센터 간호사 방문과 장기요양 방문간호가 같은 날 있으면 재택의료 급여를 산정하지 않습니다`,
-      ],
-    };
+      );
+    }
+    if (recipient.externalServices && profession) {
+      const external = externalConflicts(
+        {
+          profession,
+          scheduledAt: toKstIsoDateTime(query.date, query.time ?? "00:00"),
+          timeUnknown: !query.time,
+        },
+        recipient.externalServices.map(toExternalServiceSchedule),
+      );
+      warnings.push(...external.map(externalConflictText));
+    }
+    return { warnings };
   }
 
   async saveRecord(

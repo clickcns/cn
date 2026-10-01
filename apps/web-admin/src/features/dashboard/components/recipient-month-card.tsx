@@ -1,5 +1,6 @@
 import {
   CARE_GRADE_LABELS,
+  HOME_CARE_FEE_VERDICT_LABELS,
   HOME_CARE_MONTHLY_VISITS,
   homeCarePlannedCounts,
   PROGRAM_SHORT_LABELS,
@@ -15,6 +16,11 @@ import { MonthFallback } from "@/features/dashboard/components/month-fallback";
 import type { RecipientChecks } from "@/features/dashboard/lib/recipient-checks";
 import { HomeCareCounts } from "@/features/visits/components/home-care-counts";
 import { visitsHref } from "@/features/visits/lib/visits-href";
+
+type RecipientSummary = Pick<
+  Recipient,
+  "id" | "name" | "careGrade" | "organizationId"
+>;
 
 /**
  * 이달 수급자 확인: 재택의료 월 요건이 모자란 수급자와 (재택의료 밖에서) 이달 방문이 없는
@@ -34,7 +40,7 @@ export function RecipientMonthCard({
   onRetry: () => void;
   organizationNames: Map<string, string> | undefined;
 }) {
-  const row = (recipient: Recipient, trailing: ReactNode) => (
+  const row = (recipient: RecipientSummary, trailing: ReactNode) => (
     <li key={recipient.id}>
       <RecipientLink
         recipient={recipient}
@@ -61,14 +67,14 @@ export function RecipientMonthCard({
       ) : (
         <div className="grid gap-5 px-5 py-4">
           <Section
-            title="재택의료 월 요건 부족"
+            title="재택의료 기본료 위험"
             count={
-              checks.homeCare.length > 0
-                ? `${checks.lacking.length}명 / 재택의료 수급자 ${checks.homeCare.length}명`
+              checks.homeCareCount > 0
+                ? `${checks.lacking.length}명 / 재택의료 수급자 ${checks.homeCareCount}명`
                 : undefined
             }
           >
-            {checks.homeCare.length === 0 ? (
+            {checks.homeCareCount === 0 ? (
               <Note>재택의료센터에 등록한 수급자가 없습니다.</Note>
             ) : checks.lacking.length === 0 ? (
               <Note done>
@@ -84,7 +90,9 @@ export function RecipientMonthCard({
                         counts={homeCarePlannedCounts(status.tallies)}
                       />
                       <span className="text-warning text-xs font-semibold whitespace-nowrap tabular-nums">
-                        {status.shortfall}회 부족
+                        {status.verdict === "BLOCKED"
+                          ? HOME_CARE_FEE_VERDICT_LABELS.BLOCKED
+                          : `${status.shortfall}회 부족`}
                       </span>
                     </span>,
                   ),
@@ -168,7 +176,7 @@ function RecipientLink({
   organizationName,
   trailing,
 }: {
-  recipient: Recipient;
+  recipient: RecipientSummary;
   month: string;
   organizationName: string | undefined;
   trailing: ReactNode;

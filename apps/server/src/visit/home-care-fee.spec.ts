@@ -37,9 +37,17 @@ function visit(
   };
 }
 
+const NO_CASE = {
+  assessments: [],
+  homeCareEndedOn: null,
+  homeCareEndReason: null,
+  externalServices: [],
+};
+
 const homeCare = (id: string) => ({
   id,
   programs: ["HOME_CARE_CENTER"] as const,
+  ...NO_CASE,
 });
 
 describe("homeCareFeeStatuses", () => {
@@ -50,7 +58,7 @@ describe("homeCareFeeStatuses", () => {
         homeCare("pending"),
         homeCare("none"),
         homeCare("short"),
-        { id: "ltc", programs: ["LTC_NURSING"] as const },
+        { id: "ltc", programs: ["LTC_NURSING"] as const, ...NO_CASE },
       ],
       [
         visit("secured", "DOCTOR", 2, "CONFIRMED"),
@@ -165,6 +173,7 @@ describe("homeCareFeeTotals · homeCarePlannedCounts · homeCareClaimDeadline", 
       TODAY,
     );
     assert.deepEqual(homeCareFeeTotals(statuses), {
+      BLOCKED: { count: 0, amount: 0 },
       SHORT: { count: 2, amount: 2 * HOME_CARE_BASE_FEE },
       PENDING: { count: 0, amount: 0 },
       SECURED: { count: 1, amount: HOME_CARE_BASE_FEE },

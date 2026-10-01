@@ -68,6 +68,11 @@ export function minutesBetween(start: string, end: string): number | null {
   return diff >= 0 ? Math.round(diff / 60_000) : null;
 }
 
+/** 그달(YYYY-MM)의 말일(YYYY-MM-DD). */
+export function monthLastDay(month: string): string {
+  return addKstDays(`${addMonths(month, 1)}-01`, -1);
+}
+
 /** 한국 달(YYYY-MM)의 시각 범위: 그달 1일 0시 ≤ t < 다음 달 1일 0시. */
 export function kstMonthRange(month: string): { gte: Date; lt: Date } {
   return {
@@ -148,7 +153,7 @@ export function withKstDate(iso: string, date: string): string {
 }
 
 /** 요일 번호(일요일 0 ~ 토요일 6). 달력 날짜 자체의 요일이라 UTC 자정으로 계산한다. */
-function weekdayIndex(date: string): number {
+export function weekdayIndex(date: string): number {
   return new Date(`${date}T00:00:00Z`).getUTCDay();
 }
 
