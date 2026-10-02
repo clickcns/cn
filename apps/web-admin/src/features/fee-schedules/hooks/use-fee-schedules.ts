@@ -2,6 +2,7 @@ import { getErrorMessage } from "@repo/api-client";
 import type {
   CreateHomeCareFeeScheduleInput,
   HomeCareFeeScheduleList,
+  UpdateHomeCareFeeScheduleInput,
 } from "@repo/shared-types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -17,7 +18,7 @@ export function useFeeSchedules() {
 }
 
 /**
- * 넣기·지우기. 서버가 목록 전체를 돌려주므로 그대로 캐시에 넣고, 금액이 바뀌는 재택의료 수입을
+ * 넣기·고치기·지우기. 서버가 목록 전체를 돌려주므로 그대로 캐시에 넣고, 금액이 바뀌는 재택의료 수입을
  * 다시 받는다. 실패는 알림으로 알린다.
  */
 function useFeeScheduleMutation<V>(
@@ -39,6 +40,12 @@ function useFeeScheduleMutation<V>(
 export const useCreateFeeSchedule = () =>
   useFeeScheduleMutation((input: CreateHomeCareFeeScheduleInput) =>
     api.feeSchedules.create(input),
+  );
+
+export const useUpdateFeeSchedule = () =>
+  useFeeScheduleMutation(
+    ({ id, input }: { id: string; input: UpdateHomeCareFeeScheduleInput }) =>
+      api.feeSchedules.update(id, input),
   );
 
 export const useRemoveFeeSchedule = () =>

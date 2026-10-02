@@ -34,6 +34,7 @@ import type {
   SameDayWarningResponse,
   SaveVisitRecordInput,
   SetHomeCareEndInput,
+  UpdateHomeCareFeeScheduleInput,
   UpdateOrganizationInput,
   UpdateRecipientInput,
   UpdateUserInput,
@@ -117,6 +118,10 @@ export function createCarenoteApi(http: KyInstance) {
       create: (input: CreateHomeCareFeeScheduleInput) =>
         http
           .post("home-care-fee-schedules", { json: input })
+          .json<HomeCareFeeScheduleList>(),
+      update: (id: string, input: UpdateHomeCareFeeScheduleInput) =>
+        http
+          .put(`home-care-fee-schedules/${id}`, { json: input })
           .json<HomeCareFeeScheduleList>(),
       remove: (id: string) =>
         http

@@ -4,18 +4,21 @@ import {
   formatMonthLabel,
   monthOf,
   scheduleForMonth,
+  type HomeCareFeeSchedule,
 } from "@repo/shared-types";
-import { PlusIcon } from "lucide-react";
+import { CircleHelpIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState, LoadingState } from "@/components/ui/data-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { Tour } from "@/components/ui/tour";
 import { useIsAdmin } from "@/features/auth/hooks/use-current-user";
-import { CreateFeeScheduleDialog } from "@/features/fee-schedules/components/create-fee-schedule-dialog";
+import { FeeScheduleDialog } from "@/features/fee-schedules/components/fee-schedule-dialog";
 import { FeeScheduleHistory } from "@/features/fee-schedules/components/fee-schedule-history";
 import { FeeValuesTable } from "@/features/fee-schedules/components/fee-values-table";
 import { useFeeSchedules } from "@/features/fee-schedules/hooks/use-fee-schedules";
+import { feeScheduleTourSteps } from "@/features/fee-schedules/lib/fee-schedule-tour";
 
 /**
  * 수가 관리: 재택의료 수입이 쓰는 수가·비율·한도. 이번 달에 쓰는 묶음과 이력(시행 월 늦은 순,
@@ -27,7 +30,11 @@ export default function FeeSchedulesPage() {
   const thisMonth = monthOf(formatKstDate());
   const query = useFeeSchedules();
   const list = query.data;
-  const [creating, setCreating] = useState(false);
+  // null: 닫힘, { editing: null }: 새로 넣기, { editing: 묶음 }: 그 묶음 고치기
+  const [dialog, setDialog] = useState<{
+    editing: HomeCareFeeSchedule | null;
+  } | null>(null);
+  const [touring, setTouring] = useState(false);
 
   const current = list ? scheduleForMonth(list.schedules, thisMonth) : null;
   const upcoming = list?.schedules
@@ -43,9 +50,10 @@ export default function FeeSchedulesPage() {
         description={
           <>
             재택의료 수입이 쓰는 수가·비율·한도입니다. 지침이 바뀌면 새 수가를
-            시행 월과 함께 넣습니다(모든 기관 공통, 넣은 수가는 고치지 않고 새로
-            넣습니다). 지침 받는 곳과 쪽수는{" "}
+            시행 월과 함께 넣습니다(모든 기관 공통, 고치거나 지운 수가도 이력에
+            남습니다). 지침 받는 곳과 쪽수는{" "}
             <a
+              data-tour="fee-doc"
               href="/dev/fees"
               target="_blank"
               rel="noreferrer"
@@ -58,11 +66,21 @@ export default function FeeSchedulesPage() {
           </>
         }
         actions={
-          isAdmin &&
           list && (
-            <Button onClick={() => setCreating(true)}>
-              <PlusIcon />새 수가 넣기
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => setTouring(true)}>
+                <CircleHelpIcon />
+                사용 안내
+              </Button>
+              {isAdmin && (
+                <Button
+                  data-tour="fee-new"
+                  onClick={() => setDialog({ editing: null })}
+                >
+                  <PlusIcon />새 수가 넣기
+                </Button>
+              )}
+            </>
           )
         }
       />
@@ -81,7 +99,7 @@ export default function FeeSchedulesPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          <Card className="grid gap-4 p-5">
+          <Card data-tour="fee-current" className="grid gap-4 p-5">
             <div className="grid gap-1">
               <h2 className="text-[15px] font-semibold">
                 {formatMonthLabel(thisMonth)}에 쓰는 수가
@@ -95,27 +113,30 @@ export default function FeeSchedulesPage() {
             <FeeValuesTable fees={current?.fees ?? list.defaults.fees} />
           </Card>
 
-          <Card className="overflow-hidden">
-            <div className="border-b px-5 py-4">
-              <h2 className="text-[15px] font-semibold">이력</h2>
-              <p className="text-muted-foreground text-xs">
-                줄을 누르면 값과 전 수가에서 바뀐 칸을 봅니다.
-              </p>
-            </div>
+          <Card data-tour="fee-history" className="overflow-hidden">
             <FeeScheduleHistory
               list={list}
               thisMonth={thisMonth}
               current={current}
               canEdit={isAdmin}
+              onEdit={(schedule) => setDialog({ editing: schedule })}
             />
           </Card>
 
-          <CreateFeeScheduleDialog
-            open={creating}
-            onOpenChange={setCreating}
+          <FeeScheduleDialog
+            open={dialog !== null}
+            onOpenChange={(open) => {
+              if (!open) setDialog(null);
+            }}
             list={list}
+            editing={dialog?.editing ?? null}
             thisMonth={thisMonth}
             defaultMonth={addMonths(thisMonth, 1)}
+          />
+          <Tour
+            steps={feeScheduleTourSteps(isAdmin)}
+            open={touring}
+            onClose={() => setTouring(false)}
           />
         </div>
       )}

@@ -8,6 +8,7 @@ import {
   parseStoredFees,
   scheduleForMonth,
   type CreateHomeCareFeeScheduleSchema,
+  type UpdateHomeCareFeeScheduleSchema,
   type HomeCareFees,
   type HomeCareFeeSchedule,
   type HomeCareFeeScheduleList,
@@ -39,6 +40,7 @@ function feesOf(row: { id: string; fees: Prisma.JsonValue }): HomeCareFees {
 function toSchedule(row: ScheduleRow): HomeCareFeeSchedule {
   return {
     id: row.id,
+    replacesId: row.replacesId,
     effectiveMonth: row.effectiveMonth,
     fees: feesOf(row),
     source: row.source,
@@ -104,6 +106,50 @@ export class FeeScheduleService {
       .catch((error: unknown) =>
         handlePrismaError(error, {
           conflict: `${effectiveMonth} 시행 수가가 이미 있습니다. 고치려면 그 묶음을 지우고 다시 넣어 주세요`,
+        }),
+      );
+    return this.list();
+  }
+
+  /**
+   * 고치기: 한 트랜잭션으로 그 묶음을 지우고 고친 묶음을 새로 넣는다(replacesId). 고치기 전 묶음은
+   * 이력에 "고침"으로 남는다. 이미 지웠거나 고친 묶음이면 404, 고친 시행 월에 다른 묶음이 있으면 409.
+   */
+  async update(
+    actor: AuthenticatedUser,
+    id: string,
+    {
+      effectiveMonth,
+      fees,
+      source,
+      note,
+    }: z.output<typeof UpdateHomeCareFeeScheduleSchema>,
+  ): Promise<HomeCareFeeScheduleList> {
+    await this.prisma
+      .$transaction(async (tx) => {
+        const { count } = await tx.homeCareFeeSchedule.updateMany({
+          where: { id, deletedAt: null },
+          data: { deletedAt: new Date(), deletedById: actor.id },
+        });
+        if (count === 0) {
+          throw new NotFoundException(
+            "고칠 수가 묶음을 찾을 수 없습니다(이미 지웠거나 고쳤을 수 있습니다)",
+          );
+        }
+        await tx.homeCareFeeSchedule.create({
+          data: {
+            effectiveMonth,
+            fees,
+            source,
+            note,
+            createdById: actor.id,
+            replacesId: id,
+          },
+        });
+      })
+      .catch((error: unknown) =>
+        handlePrismaError(error, {
+          conflict: `${effectiveMonth} 시행 수가가 이미 있습니다. 그 묶음을 고치거나 지운 뒤 다시 해 주세요`,
         }),
       );
     return this.list();

@@ -4,8 +4,8 @@ import { isoMonthSchema, optionalText } from "./schema.js";
 
 /*
  * 재택의료 수입이 쓰는 수가·비율·한도. 지침이 바뀌면 운영자가 관리 웹 [수가 관리]에서 시행 월과 함께
- * 새 묶음을 넣고(지운 묶음도 이력으로 남는다), 그달 판정·금액은 시행 월이 그달 이하인 가장 늦은
- * 묶음을 쓴다. 넣은 묶음이 없는 달은 코드 기본값(DEFAULT_HOME_CARE_FEE_SET)이다.
+ * 새 묶음을 넣고, 그달 판정·금액은 시행 월이 그달 이하인 가장 늦은 묶음을 쓴다. 묶음은 덮어쓰지 않는다:
+ * 고치면 그 묶음을 지우고 고친 묶음을 새로 넣으며(replacesId), 지운·고친 묶음도 이력에 남는다. 넣은 묶음이 없는 달은 코드 기본값(DEFAULT_HOME_CARE_FEE_SET)이다.
  * 규칙의 모양(직종별 요건, 재평가 기한, 같은 날 산정 제외 종류)은 여기 두지 않는다 — 바뀌면 계산이
  * 바뀌므로 코드와 테스트를 고친다. 지침 받는 곳·쪽수는 docs/fees.html(/dev/fees).
  */
@@ -178,9 +178,11 @@ export function parseStoredFees(value: unknown): HomeCareFees | null {
   return parsed.success ? parsed.data : null;
 }
 
-/** 운영자가 넣은 수가 묶음 하나. 지우면 deletedAt이 붙고 이력에 남는다. */
+/** 운영자가 넣은 수가 묶음 하나. 지우거나 고치면 deletedAt이 붙고 이력에 남는다. */
 export interface HomeCareFeeSchedule {
   id: string;
+  /** 이 묶음이 고친 묶음(그 묶음은 deletedAt이 붙어 "고침"으로 보인다) */
+  replacesId: string | null;
   /** 시행 월(YYYY-MM). 그달부터 다음 묶음의 시행 월 전까지 쓴다 */
   effectiveMonth: string;
   fees: HomeCareFees;
@@ -212,6 +214,10 @@ export const CreateHomeCareFeeScheduleSchema = z.object({
 export type CreateHomeCareFeeScheduleInput = z.input<
   typeof CreateHomeCareFeeScheduleSchema
 >;
+
+/** PUT /home-care-fee-schedules/:id — 고친 묶음 전체(시행 월도 고칠 수 있다). */
+export const UpdateHomeCareFeeScheduleSchema = CreateHomeCareFeeScheduleSchema;
+export type UpdateHomeCareFeeScheduleInput = CreateHomeCareFeeScheduleInput;
 
 /**
  * 그달에 쓰는 수가 묶음: 지우지 않은 것 중 시행 월이 그달 이하인 가장 늦은 묶음, 없으면 null(코드

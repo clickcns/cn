@@ -3,6 +3,7 @@ import {
   CreateHomeCareFeeScheduleSchema,
   formatMonthLabel,
   HOME_CARE_FEE_GROUPS,
+  type HomeCareFeeSchedule,
   type HomeCareFeeScheduleList,
 } from "@repo/shared-types";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -20,25 +21,31 @@ import { FormDialogFooter } from "@/components/ui/form-dialog-footer";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateFeeSchedule } from "@/features/fee-schedules/hooks/use-fee-schedules";
+import {
+  useCreateFeeSchedule,
+  useUpdateFeeSchedule,
+} from "@/features/fee-schedules/hooks/use-fee-schedules";
 import { feesBefore, formatFee } from "@/features/fee-schedules/lib/fee-format";
 import { cn } from "@/lib/utils";
 
 /**
- * 새 수가 넣기(운영자). 시작 값은 기본 시행 월 바로 전 달 수가이고, 바꾼 칸은 고른 시행 월 전 달
- * 수가와 견줘 이전 값과 함께 강조한다. 근거(지침 판·쪽)는 꼭 적는다. 같은 시행 월에 지우지 않은
- * 수가가 있으면 넣지 못한다(서버도 409).
+ * 수가 넣기·고치기(운영자). 넣을 때는 기본 시행 월 바로 전 달 수가로 시작하고 바꾼 칸을 고른 시행 월
+ * 전 달 수가와 견주며, 고칠 때는 그 묶음 값으로 시작하고 고치기 전 값과 견준다. 근거(지침 판·쪽)는
+ * 꼭 적는다. 같은 시행 월에 지우지 않은 다른 수가가 있으면 저장하지 못한다(서버도 409).
  */
-export function CreateFeeScheduleDialog({
+export function FeeScheduleDialog({
   open,
   onOpenChange,
   list,
+  editing,
   thisMonth,
   defaultMonth,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   list: HomeCareFeeScheduleList;
+  /** 고칠 묶음. null이면 새로 넣는다 */
+  editing: HomeCareFeeSchedule | null;
   thisMonth: string;
   defaultMonth: string;
 }) {
@@ -46,8 +53,10 @@ export function CreateFeeScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         {open && (
-          <CreateForm
+          <FeeScheduleForm
+            key={editing?.id ?? "new"}
             list={list}
+            editing={editing}
             thisMonth={thisMonth}
             defaultMonth={defaultMonth}
             onDone={() => onOpenChange(false)}
@@ -58,58 +67,87 @@ export function CreateFeeScheduleDialog({
   );
 }
 
-function CreateForm({
+function FeeScheduleForm({
   list,
+  editing,
   thisMonth,
   defaultMonth,
   onDone,
 }: {
   list: HomeCareFeeScheduleList;
+  editing: HomeCareFeeSchedule | null;
   thisMonth: string;
   defaultMonth: string;
   onDone: () => void;
 }) {
   const create = useCreateFeeSchedule();
+  const update = useUpdateFeeSchedule();
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(CreateHomeCareFeeScheduleSchema),
-    defaultValues: {
-      effectiveMonth: defaultMonth,
-      fees: feesBefore(list, defaultMonth),
-      source: "",
-      note: "",
-    },
+    defaultValues: editing
+      ? {
+          effectiveMonth: editing.effectiveMonth,
+          fees: editing.fees,
+          source: editing.source,
+          note: editing.note ?? "",
+        }
+      : {
+          effectiveMonth: defaultMonth,
+          fees: feesBefore(list, defaultMonth),
+          source: "",
+          note: "",
+        },
   });
   const month = useWatch({ control, name: "effectiveMonth" });
   const values = useWatch({ control, name: "fees" });
-  const previous = feesBefore(list, month);
+  const previous = editing ? editing.fees : feesBefore(list, month);
   const taken = list.schedules.some(
-    (schedule) => schedule.effectiveMonth === month && !schedule.deletedAt,
+    (schedule) =>
+      schedule.effectiveMonth === month &&
+      !schedule.deletedAt &&
+      schedule.id !== editing?.id,
   );
 
   const onSubmit = handleSubmit((input) => {
     if (taken) return;
-    create.mutate(input, {
-      onSuccess: () => {
-        toast.success(
-          `${formatMonthLabel(input.effectiveMonth)}부터 쓸 수가를 넣었습니다`,
-        );
-        onDone();
+    const label = formatMonthLabel(input.effectiveMonth);
+    if (!editing) {
+      create.mutate(input, {
+        onSuccess: () => {
+          toast.success(`${label}부터 쓸 수가를 넣었습니다`);
+          onDone();
+        },
+      });
+      return;
+    }
+    if (!isDirty) {
+      toast.info("고친 칸이 없습니다");
+      return;
+    }
+    update.mutate(
+      { id: editing.id, input },
+      {
+        onSuccess: () => {
+          toast.success(`${label} 수가를 고쳤습니다`);
+          onDone();
+        },
       },
-    });
+    );
   });
 
   return (
     <form noValidate onSubmit={onSubmit} className="flex min-h-0 flex-col">
       <DialogHeader>
-        <DialogTitle>새 수가 넣기</DialogTitle>
+        <DialogTitle>{editing ? "수가 고치기" : "새 수가 넣기"}</DialogTitle>
         <DialogDescription>
-          모든 기관의 재택의료 수입에 쓰입니다. 지침이 바뀐 달을 시행 월로
-          고르고, 바뀐 칸만 고치면 됩니다.
+          {editing
+            ? `고친 값으로 바꿉니다. 고치기 전 값은 이력에 "고침"으로 남고, 그 달부터 고친 값으로 다시 셉니다.`
+            : "모든 기관의 재택의료 수입에 쓰입니다. 지침이 바뀐 달을 시행 월로 고르고, 바뀐 칸만 고치면 됩니다."}
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="grid gap-5">
@@ -119,7 +157,7 @@ function CreateForm({
             required
             error={
               taken
-                ? "이 달에 넣은 수가가 이미 있습니다. 이력에서 지우고 다시 넣어 주세요"
+                ? "이 달에 넣은 수가가 이미 있습니다. 그 수가를 고치거나 지운 뒤 다시 해 주세요"
                 : undefined
             }
           >
@@ -170,7 +208,9 @@ function CreateForm({
                     htmlFor={id}
                     error={error}
                     hint={
-                      changed ? `이전 ${formatFee(field, before)}` : undefined
+                      changed
+                        ? `${editing ? "고치기 전" : "이전"} ${formatFee(field, before)}`
+                        : undefined
                     }
                   >
                     <Input
@@ -199,15 +239,15 @@ function CreateForm({
             id="fee-note"
             maxLength={500}
             rows={2}
-            placeholder="선택"
+            placeholder={editing ? "고친 까닭(선택)" : "선택"}
             {...register("note")}
           />
         </FormField>
       </DialogBody>
       <FormDialogFooter
-        submitText="넣기"
+        submitText={editing ? "고치기" : "넣기"}
         onCancel={onDone}
-        isPending={create.isPending}
+        isPending={create.isPending || update.isPending}
       />
     </form>
   );

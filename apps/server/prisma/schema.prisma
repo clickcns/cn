@@ -346,9 +346,13 @@ model HomeCareFeeSchedule {
   createdAt      DateTime  @default(now())
   deletedById    String?
   deletedAt      DateTime?
+  /// 이 묶음이 고친 묶음. 고치면 그 묶음은 지운 상태가 되고 이력에 "고침"으로 남는다
+  replacesId     String?   @unique
 
-  createdBy User  @relation("FeeScheduleCreatedBy", fields: [createdById], references: [id])
-  deletedBy User? @relation("FeeScheduleDeletedBy", fields: [deletedById], references: [id])
+  createdBy  User                 @relation("FeeScheduleCreatedBy", fields: [createdById], references: [id])
+  deletedBy  User?                @relation("FeeScheduleDeletedBy", fields: [deletedById], references: [id])
+  replaces   HomeCareFeeSchedule? @relation("FeeScheduleReplaces", fields: [replacesId], references: [id])
+  replacedBy HomeCareFeeSchedule? @relation("FeeScheduleReplaces")
 
   /// 시행 월마다 지우지 않은 묶음은 하나(지우고 다시 넣는다)
   @@unique([effectiveMonth], where: raw("\"deletedAt\" IS NULL"))
