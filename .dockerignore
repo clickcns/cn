@@ -23,3 +23,4 @@ docs
 # 개발 지침 문서(시장조사 포함)만 현장 웹 이미지의 /dev 로 넣는다.
 !docs/dev-guide.html
 !docs/market.html
+!docs/fees.html

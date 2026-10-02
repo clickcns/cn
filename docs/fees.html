@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>케어노트 수가 근거 자료</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #f2f4f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --ink: #15202a;
+    --ink-2: #3a4854;
+    --muted: #63717d;
+    --line: #dee4e9;
+    --line-strong: #b9c3cc;
+    --accent: #2446b0;
+    --accent-ink: #1d3c9e;
+    --accent-soft: #e8edfa;
+    --hira: #0f766e;
+    --hira-soft: #dcf2ee;
+    --nhis: #6a3fbf;
+    --nhis-soft: #efe8fb;
+    --keep: #8e5b06;
+    --keep-soft: #fbefd6;
+    --good: #1c7447;
+    --good-soft: #e2f2e8;
+    --warn: #8e5b06;
+    --warn-soft: #fbefd6;
+    --bad: #b3342a;
+    --bad-soft: #fbe6e3;
+    --font-display: "Hahmlet", "Noto Serif KR", "AppleMyungjo", serif;
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0e141a;
+      --surface: #151d25;
+      --surface-2: #1b252e;
+      --ink: #e7edf2;
+      --ink-2: #c3ced7;
+      --muted: #91a0ac;
+      --line: #27333d;
+      --line-strong: #455461;
+      --accent: #8da7ff;
+      --accent-ink: #afc1ff;
+      --accent-soft: #1c2746;
+      --hira: #5fd0c2;
+      --hira-soft: #12352f;
+      --nhis: #b99cff;
+      --nhis-soft: #291f44;
+      --keep: #e8b75a;
+      --keep-soft: #33270e;
+      --good: #62cc92;
+      --good-soft: #14301f;
+      --warn: #e8b75a;
+      --warn-soft: #33270e;
+      --bad: #f38c7e;
+      --bad-soft: #3a1c18;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e141a;
+    --surface: #151d25;
+    --surface-2: #1b252e;
+    --ink: #e7edf2;
+    --ink-2: #c3ced7;
+    --muted: #91a0ac;
+    --line: #27333d;
+    --line-strong: #455461;
+    --accent: #8da7ff;
+    --accent-ink: #afc1ff;
+    --accent-soft: #1c2746;
+    --hira: #5fd0c2;
+    --hira-soft: #12352f;
+    --nhis: #b99cff;
+    --nhis-soft: #291f44;
+    --keep: #e8b75a;
+    --keep-soft: #33270e;
+    --good: #62cc92;
+    --good-soft: #14301f;
+    --warn: #e8b75a;
+    --warn-soft: #33270e;
+    --bad: #f38c7e;
+    --bad-soft: #3a1c18;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  a { color: var(--accent-ink); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+  h1, h2, h3, h4 { margin: 0; text-wrap: balance; }
+  b { font-weight: 600; }
+  code { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-2); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding-inline: 20px; }
+
+  .toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .toc-inner { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 10px; }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc a { flex: none; padding: 5px 12px; border-radius: 999px; font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  .toc a:hover { background: var(--surface); }
+
+  .hero { padding-block: 44px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+  .hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.25; }
+  .hero .lead { font-size: 17.5px; color: var(--ink-2); max-width: 60ch; }
+
+  .musts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-top: 20px; counter-reset: m; }
+  .musts li { counter-increment: m; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 8px; font-size: 15px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .musts li::before { content: counter(m); font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+
+  section.sec { padding-block: 60px 0; scroll-margin-top: 56px; }
+  .sec-label { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent-ink); }
+  .sec h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 3vw, 29px); line-height: 1.35; margin-top: 6px; }
+  .sec .lead { margin-top: 8px; font-size: 16px; color: var(--ink-2); max-width: 64ch; }
+
+  figure { margin: 20px 0 0; }
+  .fig { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .fig-scroll { overflow-x: auto; }
+  .fig-scroll svg { min-width: 680px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { margin-top: 10px; font-size: 14px; color: var(--ink-2); max-width: 72ch; }
+
+  .dg { color: var(--ink); }
+  .dg text { font-family: var(--font-body); font-size: 12px; fill: currentColor; }
+  .dg .b { font-size: 13px; font-weight: 600; }
+  .dg .s { font-size: 11px; fill: var(--muted); }
+  .dg .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+  .dg .soft { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
+  .dg .acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.8; }
+  .dg .hira { fill: var(--hira-soft); stroke: var(--hira); stroke-width: 1.2; }
+  .dg .nhis { fill: var(--nhis-soft); stroke: var(--nhis); stroke-width: 1.2; }
+  .dg .keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.2; }
+  .dg .good { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.2; }
+  .dg .bad { fill: var(--bad-soft); stroke: var(--bad); stroke-width: 1.4; }
+  .dg .dash { fill: none; stroke: var(--line-strong); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-nhis { fill: none; stroke: var(--nhis); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .dash-keep { fill: var(--keep-soft); stroke: var(--keep); stroke-width: 1.3; stroke-dasharray: 5 4; }
+  .dg .ln { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+  .dg .ln-d { fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-dasharray: 5 4; }
+  .dg .snd { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 3; }
+  .dg .ah { fill: var(--ink-2); }
+  .dg .t-acc { fill: var(--accent-ink); }
+  .dg .t-hira { fill: var(--hira); }
+  .dg .t-nhis { fill: var(--nhis); }
+  .dg .t-keep { fill: var(--keep); }
+  .dg .t-good { fill: var(--good); }
+  .dg .t-bad { fill: var(--bad); }
+  .dg .f-acc { fill: var(--accent); }
+  .dg .f-nhis { fill: var(--nhis); }
+  .dg .f-hira { fill: var(--hira); }
+  .dg .f-muted { fill: var(--line-strong); }
+  .dg .o-acc { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1.2px solid; }
+  .legend .l-hira { background: var(--hira-soft); border-color: var(--hira); }
+  .legend .l-nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .legend .l-dash { border-style: dashed; border-color: var(--line-strong); }
+  .legend .l-acc { background: var(--accent-soft); border-color: var(--accent); }
+  .legend .l-keep { background: var(--keep-soft); border-color: var(--keep); }
+
+  .multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .multi .fig { display: grid; gap: 8px; align-content: start; }
+  .multi h3 { font-size: 15px; font-weight: 600; }
+  .multi .span2 { grid-column: 1 / -1; }
+  .note-sm { font-size: 13.5px; color: var(--ink-2); }
+  .note-sm b { color: var(--ink); }
+
+  .pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; line-height: 1; padding: 5px 8px; border-radius: 999px; white-space: nowrap; background: var(--accent-soft); color: var(--accent-ink); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.plain { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14.5px; }
+  th, td { padding: 10px 14px; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); }
+  thead th { border-top: 0; font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+  tbody th { font-weight: 600; white-space: nowrap; }
+  td.c, th.c { text-align: center; }
+  tr.ours th, tr.ours td { background: var(--accent-soft); }
+  /* 두 서식 비교표: 항목 칸은 좁게 줄바꿈하고 칸은 위로 맞춘다. */
+  table.cmp { min-width: 540px; }
+  table.cmp th, table.cmp td { vertical-align: top; }
+  table.cmp tbody th { white-space: normal; width: 6.5em; }
+  /* 좁은 화면: 표 대신 항목마다 두 서식을 위아래로 */
+  @media (max-width: 640px) {
+    table.cmp { min-width: 0; }
+    table.cmp thead { display: none; }
+    table.cmp tr, table.cmp tbody th, table.cmp td { display: block; width: auto; }
+    table.cmp td { border-top: 0; padding-top: 2px; }
+    table.cmp td::before { content: attr(data-label); display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  }
+  .dot { font-size: 16px; line-height: 1; }
+  .dot.y { color: var(--good); }
+  .dot.p { color: var(--warn); }
+  .dot.n { color: var(--line-strong); }
+  .dot.q { color: var(--muted); font-size: 13px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .tile b { font-size: 14.5px; line-height: 1.45; }
+  .tile span.s { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .tile .pill { justify-self: start; }
+
+  .lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .lane { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 8px; align-content: start; }
+  .lane h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .lane li { font-size: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
+
+  .qd { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .qd .fig h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .qd ol { display: grid; gap: 0; counter-reset: q; }
+  .qd ol li { counter-increment: q; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 6px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .qd ol li:first-child { border-top: 0; }
+  .qd ol li .pill { margin-left: 6px; }
+  .qd ol li::before { content: counter(q); font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+
+  details.more { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in { margin-top: 10px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  details.more .in li { padding-left: 14px; position: relative; }
+  details.more .in li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  details.more .src { font-size: 12.5px; color: var(--muted); }
+
+  .sources { display: grid; gap: 10px; margin-top: 16px; }
+  .sources details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  .sources summary { cursor: pointer; font-weight: 600; font-size: 14.5px; }
+  .sources ul { margin-top: 8px; display: grid; gap: 5px; font-size: 13.5px; color: var(--ink-2); }
+  .sources a { overflow-wrap: anywhere; }
+
+  footer { padding-block: 48px 64px; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+
+  .tiles.t3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dest { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .dcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+  .dcard .dtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dcard .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; }
+  .dcard .org.hira { background: var(--hira-soft); border-color: var(--hira); color: var(--ink); }
+  .dcard .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); color: var(--ink); }
+  .dcard > b { font-size: 16px; }
+  .dcard > code { justify-self: start; font-size: 13px; }
+  .dcard dl { margin: 4px 0 0; display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 5px 10px; font-size: 14px; }
+  .dcard dt { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .dcard dd { margin: 0; color: var(--ink-2); line-height: 1.55; }
+  .dcard .tagline { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; margin-top: 4px; }
+  .org { font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1.2px solid; color: var(--ink); }
+  .org.hira { background: var(--hira-soft); border-color: var(--hira); }
+  .org.nhis { background: var(--nhis-soft); border-color: var(--nhis); }
+  .org.paper { background: var(--surface-2); border-color: var(--line-strong); }
+  .dg .hit { cursor: pointer; }
+  .dg .hit:focus { outline: none; }
+  .dg .ring { fill: none; stroke: var(--accent); stroke-width: 2.4; opacity: 0; }
+  .dg .hit:hover .ring { opacity: 0.45; }
+  .dg .hit.on .ring, .dg .hit:focus-visible .ring { opacity: 1; }
+  .where { margin-top: 12px; background: var(--surface); border: 1.5px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 8px; }
+  .where .w-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .where .w-title { font-size: 16px; }
+  .where .w-form { font-size: 13.5px; color: var(--muted); }
+  .where .w-form b { color: var(--ink); }
+  .where .w-row { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .where .w-row .k { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+  .where a, .dcard a { overflow-wrap: anywhere; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 1px 0 3px; }
+  .crumbs.in-line { display: inline-flex; margin: 0 0 0 4px; vertical-align: middle; }
+  .crumbs li { display: inline-flex; align-items: center; }
+  .crumbs li span { font-size: 12.5px; line-height: 1.4; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 6px; padding: 2px 7px; color: var(--ink); }
+  .crumbs li:not(:last-child)::after { content: "›"; margin: 0 5px; color: var(--muted); font-size: 13px; }
+  .dcard dd b { font-weight: 600; color: var(--ink); }
+  .sub-h { margin-top: 36px; font-size: 18px; font-weight: 700; }
+  .golink { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; }
+  .golink a { font-weight: 700; font-size: 16px; }
+  .golink span { font-size: 13.5px; color: var(--ink-2); }
+  @media (max-width: 760px) {
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tiles.t3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding-inline: 16px; }
+    .musts, .multi, .lanes, .qd, .dest { grid-template-columns: 1fr; }
+    .fig { padding: 12px; }
+    section.sec { padding-block: 48px 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+  .prose { margin-top: 12px; display: grid; gap: 10px; font-size: 15px; color: var(--ink-2); max-width: 72ch; }
+  .prose b { color: var(--ink); }
+  .bul { display: grid; gap: 6px; margin-top: 12px; font-size: 14.5px; color: var(--ink-2); }
+  .bul li { padding-left: 14px; position: relative; }
+  .bul li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  .bul b { color: var(--ink); }
+  .multi .bul { margin-top: 0; }
+  .callout { margin-top: 20px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius); padding: 14px 18px; font-size: 15px; color: var(--ink); }
+  .steps { margin-top: 14px; display: grid; counter-reset: st; }
+  .steps li { counter-increment: st; display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 8px; font-size: 14.5px; color: var(--ink-2); padding: 8px 0; border-top: 1px solid var(--line); }
+  .steps li::before { content: counter(st); font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+  .steps b { color: var(--ink); }
+  .idea { margin-top: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: grid; gap: 12px; }
+  .idea h3 { font-size: 18px; font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .idea dl { margin: 0; display: grid; grid-template-columns: 6em minmax(0, 1fr); gap: 10px 16px; font-size: 14.5px; }
+  .idea dt { color: var(--muted); font-size: 13px; font-weight: 600; padding-top: 2px; }
+  .idea dd { margin: 0; color: var(--ink-2); min-width: 0; }
+  .idea dd b { color: var(--ink); }
+  .idea dd ul { display: grid; gap: 4px; }
+  .idea dd li { padding-left: 14px; position: relative; }
+  .idea dd li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--line-strong); }
+  .idea .table-wrap table { min-width: 560px; }
+  .ok { color: var(--good); font-weight: 600; }
+  .mid { color: var(--warn); font-weight: 600; }
+  .ng { color: var(--bad); font-weight: 600; }
+  @media (max-width: 640px) {
+    .idea { padding: 14px; }
+    .idea dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .idea dt { padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+<nav class="toc" aria-label="목차">
+  <div class="wrap toc-inner">
+    <a href="/dev">← 개발 지침</a>
+    <a href="#top">요약</a>
+    <a href="#primary">일차의료 지침 받기</a>
+    <a href="#homecare">재택의료 지침 받기</a>
+    <a href="#values">값과 근거</a>
+    <a href="#update">갱신 절차</a>
+    <a href="#history">변경 이력</a>
+    <a href="#admin">관리 화면(계획)</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero" id="top">
+    <div class="eyebrow">수가 근거 · 2026년 10월 2일 기준</div>
+    <h1>수가 근거 자료와 갱신 방법</h1>
+    <p class="lead">관리 웹 "재택의료 수입"이 쓰는 금액·비율·한도는 두 지침에서 왔습니다. 이 문서는 지침을 <b>어디서 받는지</b>, 지침의 <b>어디를 보는지</b>, 바뀌면 <b>무엇을 고치는지</b>를 적습니다.</p>
+
+    <ol class="musts" aria-label="요약">
+      <li><span><b>일차의료 방문진료</b> 지침은 심평원 공지사항에서 받는다. 지금 최신은 2026.4판(2026-04-20)</span></li>
+      <li><span><b>재택의료센터</b> 지침은 공식 배포처를 아직 확인하지 못했다. 협력 기관에 공단이 보낸 파일을 받는다</span></li>
+      <li><span>확인 시기는 <b>매년 1월</b>(점수당 단가가 바뀜)과 <b>지침 개정 공지가 올라올 때</b></span></li>
+      <li><span>바뀌면 지금은 <b>코드의 상수</b>를 고친다(아래 표의 코드 위치). 관리 화면에서 고치는 방안은 맨 아래 계획</span></li>
+      <li><span><b>별지 제4호 서식</b>이 바뀌면 서식 정의와 원본 서식 PDF 자리도 고친다</span></li>
+      <li><span>확인할 때마다 맨 아래 <b>변경 이력</b>에 판·날짜·결과를 적는다</span></li>
+    </ol>
+  </header>
+
+  <section class="sec" id="primary">
+    <div class="sec-label">받는 곳 1</div>
+    <h2>일차의료 방문진료 수가 시범사업 지침</h2>
+    <p class="lead">방문진료료(제4호로 심평원에 청구), 동일 건물·세대 비율, 의사 1인당 월 횟수의 근거입니다. 건강보험심사평가원 공지사항이 공식 게시처입니다.</p>
+
+    <div class="dest">
+      <div class="dcard">
+        <div class="dtop"><b>건강보험심사평가원</b><span class="org hira">개정 지침</span></div>
+        <code>https://www.hira.or.kr</code>
+        <dl>
+          <dt>경로</dt><dd>기관소식 → HIRA 소식 → 공지사항 → 검색어 "일차의료 방문진료"</dd>
+          <dt>최신</dt><dd>「일차의료 방문진료 수가 시범사업(의과,한의)」 지침 개정 안내 (2026-04-20) — <a href="https://www.hira.or.kr/bbsDummy.do?pgmid=HIRAA020002000100&amp;brdScnBltNo=4&amp;brdBltNo=12025">바로가기</a></dd>
+          <dt>받을 것</dt><dd>
+            <ul class="bul">
+              <li><b>「일차의료 방문진료 수가 시범사업」 지침(2026.4.)</b> — 수가표·산정 기준·횟수 한도(필수)</li>
+              <li><b>지침 주요 개정사항(2026.4.)</b> — 이전 판과 무엇이 바뀌었는지</li>
+              <li><b>별지서식 모음(2026.4.)</b> — 별지 제4호 점검서식이 바뀌었는지</li>
+            </ul>
+          </dd>
+          <dt>안 받음</dt><dd>지침 일부개정 통보(공문 표지), 한의 방문진료 3개(케어노트는 한의를 다루지 않음)</dd>
+        </dl>
+        <div class="tagline">첨부는 게시물 아래 [첨부파일 다운로드] 버튼으로 받는다(로그인 필요 없음).</div>
+      </div>
+      <div class="dcard">
+        <div class="dtop"><b>보건복지부</b><span class="org paper">공모 때 지침</span></div>
+        <code>https://www.mohw.go.kr</code>
+        <dl>
+          <dt>경로</dt><dd>알림 → 공지사항 → "일차의료 방문진료 수가 시범사업 참여기관 공모"</dd>
+          <dt>예</dt><dd>2026년 상반기 공모 (2026-01-05) — 첨부 "(2026) 일차의료 방문진료 수가 시범사업 지침_최종.pdf"(2026.1판)</dd>
+          <dt>주의</dt><dd>2026.4판부터 참여기관을 <b>상시 모집</b>하므로 연 2회 공모 공지가 다시 올라오지 않을 수 있다. 심평원 공지를 먼저 본다.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="homecare">
+    <div class="sec-label">받는 곳 2</div>
+    <h2>장기요양 재택의료센터 시범사업 지침</h2>
+    <p class="lead">재택의료기본료·지속관리료·추가간호료, 포괄평가 기한, 같은 날 산정 제외의 근거입니다. 공단·복지부가 운영하는 사업이지만 공식 게시처를 아직 확인하지 못했습니다.</p>
+    <ul class="bul">
+      <li><b>지금 쓰는 파일</b>: 2026.2판(급여 목록 "’26년 2월 1일 기준"). 대한정형외과학회 게시판(koa.or.kr)에 올라온 사본이라 <b>공식본이 아니다</b>.</li>
+      <li><b>공식 배포처 후보</b>: 공단 요양기관정보마당 <code>https://medicare.nhis.or.kr</code>(재택의료센터 업무 화면, 기관 공동인증서 로그인 필요) · 노인장기요양보험 <code>https://www.longtermcare.or.kr</code> 공지사항. 둘 다 메뉴 위치는 확인하지 못했다.</li>
+      <li><b>할 일</b>: 협력 재택의료센터에 공단이 보낸 지침 파일(공문 첨부)을 받아 아래 표의 쪽수와 대조하고, 받은 경로를 이 문서에 적는다.</li>
+    </ul>
+  </section>
+
+  <section class="sec" id="values">
+    <div class="sec-label">대조표</div>
+    <h2>케어노트 값과 지침 위치</h2>
+    <p class="lead">쪽수는 인쇄된 쪽 번호입니다. 재택 = 재택의료센터 지침 2026.2판, 일차 = 일차의료 방문진료 지침 2026.4판. 금액은 본인부담금을 포함한 수가입니다.</p>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>값</th><th>지금 값</th><th>지침 위치</th><th>코드 위치(shared-types)</th></tr></thead>
+        <tbody>
+          <tr><th>재택의료기본료</th><td data-label="지금 값">140,000원 / 수급자·월</td><td data-label="지침 위치">재택 19쪽 급여 목록, 13쪽 나.1)</td><td data-label="코드 위치"><code>home-care-fee.ts</code> HOME_CARE_BASE_FEE</td></tr>
+          <tr><th>기본료 요건</th><td data-label="지금 값">의사 1회 · 간호사 2회 · 사회복지사 상담 1회</td><td data-label="지침 위치">재택 13쪽 나.1)나)</td><td data-label="코드 위치"><code>programs.ts</code> HOME_CARE_MONTHLY_VISITS</td></tr>
+          <tr><th>사망 종결</th><td data-label="지금 값">기본료 50%(70,000원), 지속관리료 없음</td><td data-label="지침 위치">재택 13쪽 나.4), 14쪽 다.1), 19쪽</td><td data-label="코드 위치"><code>home-care-fee.ts</code> HOME_CARE_DEATH_FEE_RATE</td></tr>
+          <tr><th>지속관리료</th><td data-label="지금 값">60,000원, 기본료 6개월 연속마다</td><td data-label="지침 위치">재택 14쪽 다., 19쪽, 66쪽 Q2-4</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_CONTINUITY_FEE · _MONTHS</td></tr>
+          <tr><th>추가간호료</th><td data-label="지금 값">53,770원, 기본 2회 초과·월 3회까지·30분 이상·의사 동행 제외</td><td data-label="지침 위치">재택 14쪽 라., 19쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_EXTRA_NURSING_FEE · _MAX · _MIN_MINUTES</td></tr>
+          <tr><th>의사 1인당 한도</th><td data-label="지금 값">기본료 수급자 140명, 방문진료료 140회 / 월</td><td data-label="지침 위치">재택 13쪽 나.2), 12쪽 가.1) · 일차 11쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_DOCTOR_MONTHLY_LIMIT</td></tr>
+          <tr><th>방문진료료Ⅰ</th><td data-label="지금 값">131,720원(의원 IA001) — 보건의료원·보건소 IA005도 같은 금액, 병원급 이상 IA003은 140,600원</td><td data-label="지침 위치">일차 12쪽 급여 목록(점수당 단가 ’26년 의원 95.6원·병원 83.8원·보건기관 98.6원), 보건소 24쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_VISIT_FEE(의원 기준)</td></tr>
+          <tr><th>동일 건물 · 세대</th><td data-label="지금 값">동일 건물 75%, 동일 세대 두 번째 환자부터 50%</td><td data-label="지침 위치">일차 10쪽 2.가.3)·4), 12쪽 주 1·2</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_VISIT_FEE_RATES</td></tr>
+          <tr><th>포괄평가 재평가 기한</th><td data-label="지금 값">평가한 달의 12개월 뒤 1일 ~ 13개월 뒤 말일, 넘기면 급여 산정 안 함</td><td data-label="지침 위치">재택 16쪽 아.1)나)②, 예시 1~3</td><td data-label="코드 위치"><code>home-care-case.ts</code> reassessmentWindow</td></tr>
+          <tr><th>첫 달 산정 기간</th><td data-label="지금 값">최초 포괄평가일부터 그달 말일</td><td data-label="지침 위치">재택 65쪽 Q2-2</td><td data-label="코드 위치"><code>home-care-case.ts</code> homeCareMonthPeriod</td></tr>
+          <tr><th>같은 날 산정 제외</th><td data-label="지금 값">가정간호·방문간호·주야간보호·방문목욕·단기보호·시설급여·사회복지사 급여관리·만성질환관리·장애인 주치의</td><td data-label="지침 위치">재택 14~15쪽 바.</td><td data-label="코드 위치"><code>home-care-case.ts</code> EXTERNAL_SERVICE_INFO</td></tr>
+          <tr><th>청구 마감</th><td data-label="지금 값">다음 달 10일</td><td data-label="지침 위치">재택 34쪽</td><td data-label="코드 위치"><code>home-care-fee.ts</code> homeCareClaimDeadline</td></tr>
+          <tr><th>셈하지 않는 가산</th><td data-label="지금 값">의사 외 인력 동반 350.69점, 의료접근성 취약지 275.56점, 소아 21.56·8.88점</td><td data-label="지침 위치">일차 10쪽 5), 12쪽 주 3~5</td><td data-label="코드 위치">없음(예상 수입에 넣지 않음)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec" id="update">
+    <div class="sec-label">절차</div>
+    <h2>지침이 바뀌었을 때</h2>
+    <ol class="steps">
+      <li><span><b>언제 볼까</b> — 매년 1월(새해 점수당 단가로 금액이 바뀌어 새 지침이 나온다), 그리고 심평원·복지부 공지에 "지침 개정"이 올라올 때. 재택의료센터는 공단 공문(예: "’26년 2월 1일 기준")이 올 때.</span></li>
+      <li><span><b>받기</b> — 지침 본문, 주요 개정사항, 별지서식 모음(위 "받는 곳").</span></li>
+      <li><span><b>주요 개정사항부터</b> — 금액·비율·한도·서식이 바뀌었는지 먼저 본다. 요약에 없더라도 본문 급여 목록과 산정 기준을 위 대조표와 한 줄씩 맞춰 본다(개발자는 PDF를 글로 뽑아 이전 판과 비교하면 빠르다).</span></li>
+      <li><span><b>값이 바뀌었으면</b> — 대조표의 코드 위치에서 상수를 고치고 <code>pnpm test</code>로 확인한 뒤 배포한다. 화면의 산정 기준 글도 같은 상수로 만들어지므로 따로 고칠 곳은 없다.</span></li>
+      <li><span><b>별지 제4호가 바뀌었으면</b> — 서식 정의(<code>forms/primary-care-check.ts</code>)와 원본 서식 PDF(<code>apps/server/src/form-pdf/assets/templates</code>)·자리(<code>overlay/layouts.ts</code>)를 고친다. 순서는 개발 지침의 "서식 PDF"를 따른다. 금액 셈이 읽는 칸(동일 건물·세대)은 테스트가 서식 정의에 있는지 본다.</span></li>
+      <li><span><b>기록</b> — 아래 변경 이력에 확인한 날, 판, 결과를 적는다. 개발 지침과 CLAUDE.md의 지침 판 표기도 맞춘다.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec" id="history">
+    <div class="sec-label">이력</div>
+    <h2>변경 이력</h2>
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead><tr><th>확인한 날</th><th>지침</th><th>결과</th><th>케어노트</th></tr></thead>
+        <tbody>
+          <tr><th>2026-10-02</th><td data-label="지침">일차의료 2026.4판(심평원 2026-04-20)과 2026.1판 비교</td><td data-label="결과">방문진료료·동일 건물/세대 비율·횟수 한도·가산 점수·별지 제4호 서식 모두 그대로. 바뀐 것: 참여기관 상시 모집(매월 신청, 다음 달 10일 통보), 보건의료원 코드 IA005·보건소/보건지소 별도 장(금액은 131,720원 같음), "의료기관"→"시범기관" 용어, 보건소 질의응답 추가</td><td data-label="케어노트">수정 없음</td></tr>
+          <tr><th>2026-10-01</th><td data-label="지침">재택의료센터 2026.2판(학회 게시판 사본) · 일차의료 2026.1판(복지부)</td><td data-label="결과">재택의료 수입 1~3차(기본료 판정, 방문진료료·추가간호료·지속관리료, 포괄평가·종결·같은 날 겹침)의 근거로 사용</td><td data-label="케어노트">재택의료센터 지침은 공식본과 대조 필요</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="sec" id="admin">
+    <div class="sec-label">계획</div>
+    <h2>관리 화면에서 수가 관리하기(검토 중)</h2>
+    <p class="lead">값이 바뀔 때마다 코드를 고치고 배포하지 않도록, 운영자가 관리 웹에서 새 수가를 <b>시행일과 함께</b> 등록하는 방안입니다.</p>
+    <ul class="bul">
+      <li><b>관리 화면으로 옮길 것</b>: 금액(기본료, 방문진료료 의원·병원급, 추가간호료, 지속관리료)과 비율(사망 50%, 동일 건물 75%, 동일 세대 50%), 숫자 한도(의사 140명·140회, 추가간호 월 3회·30분).</li>
+      <li><b>코드에 남길 것</b>: 규칙의 모양(직종별 요건, 재평가 기한 계산, 같은 날 산정 제외 종류, 무엇을 방문으로 세는지). 이것이 바뀌면 계산 방법이 바뀌므로 코드 수정과 테스트가 필요하다.</li>
+      <li><b>시행일별 이력</b>: 한 번 등록한 수가는 지우지 않고 새 시행일로 덧붙인다. 지난달 금액은 그때 수가로 계산되고, 다음 달부터 바뀌는 수가를 미리 넣어 둘 수 있다. 누가·언제·어떤 근거(지침 판·쪽)로 넣었는지 남긴다.</li>
+      <li><b>권한</b>: 운영자만(모든 기관 공통). 기관 관리자는 보기만.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>작성 2026년 10월 2일 · 개발 지침은 <a href="/dev">/dev</a> · 시장조사는 <a href="/dev/market">/dev/market</a></p>
+    <p>쪽수는 각 지침 PDF의 인쇄 쪽 번호입니다. 판이 바뀌면 쪽수도 다시 확인합니다.</p>
+  </footer>
+</main>
+</body>
+</html>
