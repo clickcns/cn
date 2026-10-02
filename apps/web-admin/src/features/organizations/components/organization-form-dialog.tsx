@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CreateOrganizationSchema,
+  INSTITUTION_TYPE_LABELS,
+  INSTITUTION_TYPES,
   PROGRAM_LABELS,
   PROGRAMS,
   type Organization,
@@ -18,6 +20,7 @@ import {
 import { FormDialogFooter } from "@/components/ui/form-dialog-footer";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import {
   useCreateOrganization,
   useUpdateOrganization,
@@ -74,6 +77,7 @@ function OrganizationForm({
       name: organization?.name ?? "",
       code: organization?.code ?? "",
       programs: organization?.programs ?? [],
+      institutionType: organization?.institutionType ?? "CLINIC",
     },
   });
 
@@ -92,7 +96,7 @@ function OrganizationForm({
         <DialogTitle>{isEdit ? "기관 정보 수정" : "기관 등록"}</DialogTitle>
         <DialogDescription>
           {isEdit
-            ? "기관 이름·코드·사업을 수정합니다."
+            ? "기관 이름·코드·종별·사업을 수정합니다."
             : "새 기관을 등록합니다. 등록한 뒤 기관 관리자 계정을 추가하세요."}
         </DialogDescription>
       </DialogHeader>
@@ -121,6 +125,24 @@ function OrganizationForm({
             aria-invalid={!!errors.code}
             {...register("code")}
           />
+        </FormField>
+        <FormField
+          label="기관 종별"
+          htmlFor="organization-institution-type"
+          required
+          error={errors.institutionType?.message}
+          hint="재택의료 수입의 방문진료료 단가를 고릅니다(수가 관리의 의원·보건기관 / 병원급 이상)"
+        >
+          <Select
+            id="organization-institution-type"
+            {...register("institutionType")}
+          >
+            {INSTITUTION_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {INSTITUTION_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </Select>
         </FormField>
         <FormField
           label="사업"

@@ -4,6 +4,7 @@ export const ROUTES = {
   visits: "/visits",
   visitDetail: (id: string) => `/visits/${id}`,
   homeCare: "/home-care",
+  feeSchedules: "/fee-schedules",
   portal: "/portal",
   recipients: "/recipients",
   users: "/users",

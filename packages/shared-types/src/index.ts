@@ -10,6 +10,7 @@ export * from "./user.js";
 export * from "./recipient.js";
 export * from "./maps.js";
 export * from "./visit.js";
+export * from "./fee-schedule.js";
 export * from "./home-care-case.js";
 export * from "./home-care-fee.js";
 export * from "./home-care-revenue.js";

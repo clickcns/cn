@@ -106,6 +106,7 @@ export const homeCareRecipientSelect = {
   isActive: true,
   homeCareEndedOn: true,
   homeCareEndReason: true,
+  organization: { select: { institutionType: true } },
   assessments: assessmentFactArgs,
   externalServices: { select: externalServiceScheduleSelect },
 } as const satisfies Prisma.RecipientSelect;
@@ -126,6 +127,7 @@ export function toHomeCareRecipient(
     careGrade: toCareGrade(row.careGrade),
     programs: row.programs,
     isActive: row.isActive,
+    institutionType: row.organization.institutionType,
     homeCareEndedOn: fromDbDate(row.homeCareEndedOn),
     homeCareEndReason: row.homeCareEndReason,
     assessments: row.assessments.map(toAssessmentFact),

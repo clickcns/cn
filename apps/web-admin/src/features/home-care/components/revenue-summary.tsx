@@ -1,10 +1,8 @@
 import {
-  HOME_CARE_BASE_FEE,
-  HOME_CARE_CONTINUITY_MONTHS,
-  HOME_CARE_EXTRA_NURSING_MAX,
   HOME_CARE_MONTHLY_VISITS,
   HOME_CARE_REVENUE_PART_INFO,
   HOME_CARE_REVENUE_PARTS,
+  type HomeCareFees,
   type HomeCareMonthRevenue,
   type HomeCareRevenuePart,
 } from "@repo/shared-types";
@@ -12,13 +10,15 @@ import { BanknoteIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { formatManwon, formatNumber, wonToManwon } from "@/lib/format";
 
-/** 항목별 산정 조건 한 줄. */
-const PART_NOTES: Record<HomeCareRevenuePart, string> = {
-  base: `월 ${formatManwon(HOME_CARE_BASE_FEE)}, 요건을 채운 수급자`,
+/** 항목별 산정 조건 한 줄(그달 수가 묶음으로). */
+const partNotes = (
+  fees: HomeCareFees,
+): Record<HomeCareRevenuePart, string> => ({
+  base: `월 ${formatManwon(fees.baseFee)}, 요건을 채운 수급자`,
   visitFee: "제4호로 청구하는 의사 방문",
-  extraNursing: `간호사 ${HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘는 방문, 월 ${HOME_CARE_EXTRA_NURSING_MAX}회까지`,
-  continuity: `기본료 ${HOME_CARE_CONTINUITY_MONTHS}개월 연속마다`,
-};
+  extraNursing: `간호사 ${HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘는 방문, 월 ${fees.extraNursingMax}회까지`,
+  continuity: `기본료 ${fees.continuityMonths}개월 연속마다`,
+});
 
 /**
  * 그달 예상 수입: 총액과 항목별(기본료·방문진료료·추가간호료·지속관리료) 금액·건수. totals가
@@ -26,12 +26,16 @@ const PART_NOTES: Record<HomeCareRevenuePart, string> = {
  */
 export function RevenueSummary({
   totals,
+  fees,
   closed,
 }: {
   totals: HomeCareMonthRevenue["totals"] | undefined;
+  /** 그달 수가 묶음(항목 설명). 받는 중이면 undefined */
+  fees: HomeCareFees | undefined;
   /** 지난달: "예상"이 아니라 그달 받을 수 있는 금액 */
   closed: boolean;
 }) {
+  const notes = fees && partNotes(fees);
   return (
     <Card className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-10">
       <div className="flex shrink-0 flex-col gap-1.5">
@@ -65,7 +69,7 @@ export function RevenueSummary({
               </dd>
               <dd className="text-muted-foreground text-xs tabular-nums">
                 {total && `${total.count}${unit} · `}
-                {PART_NOTES[part]}
+                {notes?.[part]}
               </dd>
             </div>
           );

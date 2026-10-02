@@ -1,6 +1,9 @@
 import type { AuthUser, UserSummary } from "@repo/shared-types";
 import type { Prisma } from "../generated/prisma/client.js";
 
+/** 누가 했는지(확정·되돌림·입력·수가 넣기 등) 보일 때의 사용자 이름. */
+export const actorSelect = { select: { id: true, name: true } } as const;
+
 /** 사용자 응답(UserSummary·AuthUser)에 필요한 컬럼. */
 export const userSelect = {
   id: true,

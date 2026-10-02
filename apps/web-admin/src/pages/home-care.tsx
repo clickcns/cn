@@ -4,11 +4,9 @@ import {
   defaultDayOf,
   formatDateLabel,
   formatKstDate,
-  HOME_CARE_BASE_FEE,
-  HOME_CARE_EXTRA_NURSING_MIN_MINUTES,
+  formatMonthLabel,
   HOME_CARE_FEE_VERDICTS,
   HOME_CARE_MONTHLY_VISITS,
-  HOME_CARE_VISIT_FEE_RATES,
   homeCareClaimDeadline,
   isIsoMonth,
   monthOf,
@@ -45,9 +43,7 @@ import {
   type CreateVisitDefaults,
 } from "@/features/visits/components/create-visit-dialog";
 import { useSearchParamsUpdater } from "@/hooks/use-search-params-updater";
-import { formatManwon, wonToManwon } from "@/lib/format";
-
-const percent = (rate: number) => `${rate * 100}%`;
+import { wonToManwon } from "@/lib/format";
 
 /** 판정별 금액 칸. 지난달(closed)이면 이름·설명이 "못 받음·청구"로 바뀐다. */
 const VERDICT_CARDS: Record<
@@ -108,7 +104,8 @@ export default function HomeCarePage() {
     null,
   );
 
-  const { visits, judged, error, retry, isFetching } = useHomeCareMonth(month);
+  const { visits, feeSet, judged, error, retry, isFetching } =
+    useHomeCareMonth(month);
   const revenue = judged?.revenue;
   const totals = judged?.totals;
 
@@ -135,11 +132,15 @@ export default function HomeCarePage() {
     <>
       <PageHeader
         title="재택의료 수입"
-        description={`재택의료센터 수급자마다 그달 재택의료기본료(월 ${formatManwon(HOME_CARE_BASE_FEE)}) 요건을 확정 기록으로 판정하고, 방문진료료·추가간호료·지속관리료까지 받을 수 있는 금액을 셉니다. 모자란 방문은 바로 일정으로 잡습니다.`}
+        description="재택의료센터 수급자마다 그달 재택의료기본료 요건을 확정 기록으로 판정하고, 방문진료료·추가간호료·지속관리료까지 받을 수 있는 금액을 셉니다. 모자란 방문은 바로 일정으로 잡습니다."
       />
 
       <div className="grid gap-4">
-        <RevenueSummary totals={revenue?.totals} closed={closed} />
+        <RevenueSummary
+          totals={revenue?.totals}
+          fees={feeSet?.fees}
+          closed={closed}
+        />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {HOME_CARE_FEE_VERDICTS.map((verdict) => {
             const card = VERDICT_CARDS[verdict];
@@ -218,22 +219,24 @@ export default function HomeCarePage() {
             />
           )}
 
-          <p className="text-muted-foreground border-t px-5 py-3 text-xs">
-            장기요양 재택의료센터 시범사업 지침(2026.2)과 일차의료 방문진료
-            수가(의원)로 셉니다. 금액은 본인부담금을 포함한 수가이고
-            동반인력·야간 가산은 넣지 않습니다. 직종 칸은 방문한 직종으로 세고,
-            의사·간호사가 함께 방문하면 각각 셉니다. 방문진료료는 제4호를 쓴
-            의사 방문(동일 건물{" "}
-            {percent(HOME_CARE_VISIT_FEE_RATES.SAME_BUILDING)}
-            ·동일 세대 {percent(HOME_CARE_VISIT_FEE_RATES.SAME_HOUSEHOLD)}),
-            추가간호료는 간호사 기본 {HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘고
-            정기로 적지 않은 {HOME_CARE_EXTRA_NURSING_MIN_MINUTES}분 이상·의사
-            동행 아닌 방문, 지속관리료의 연속 개월은 케어노트에 확정한 기록으로
-            셉니다. 최초 포괄평가 달은 평가일부터, 종결한 달은 종결일까지 세고,
-            재평가 기한이 지나면 다시 평가할 때까지, 같은 날 다른 기관 서비스가
-            있는 방문은 재택의료 급여로 세지 않습니다(사례 정보에 적은 것만
-            봅니다). 아직 보지 않는 규칙: 케어플랜 없는 긴급왕진.
-          </p>
+          {feeSet && (
+            <p className="text-muted-foreground border-t px-5 py-3 text-xs">
+              금액은 [수가 관리]의 {formatMonthLabel(month)} 수가(근거:{" "}
+              {feeSet.source})로 셉니다. 본인부담금을 포함한 수가이고
+              동반인력·야간 가산은 넣지 않습니다. 직종 칸은 방문한 직종으로
+              세고, 의사·간호사가 함께 방문하면 각각 셉니다. 방문진료료는
+              제4호를 쓴 의사 방문(기관 종별 단가, 동일 건물{" "}
+              {feeSet.fees.sameBuildingPercent}%·동일 세대{" "}
+              {feeSet.fees.sameHouseholdPercent}%), 추가간호료는 간호사 기본{" "}
+              {HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘고 정기로 적지 않은{" "}
+              {feeSet.fees.extraNursingMinMinutes}분 이상·의사 동행 아닌 방문,
+              지속관리료의 연속 개월은 케어노트에 확정한 기록으로 셉니다. 최초
+              포괄평가 달은 평가일부터, 종결한 달은 종결일까지 세고, 재평가
+              기한이 지나면 다시 평가할 때까지, 같은 날 다른 기관 서비스가 있는
+              방문은 재택의료 급여로 세지 않습니다(사례 정보에 적은 것만
+              봅니다). 아직 보지 않는 규칙: 케어플랜 없는 긴급왕진.
+            </p>
+          )}
         </Card>
       </div>
 

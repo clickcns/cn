@@ -2,6 +2,20 @@ import { z } from "zod";
 import { PROGRAMS, type Program } from "./programs.js";
 import { optionalText } from "./schema.js";
 
+/** 기관 종별. 재택의료 수입의 방문진료료 단가를 고른다(fee-schedule.ts의 visitFeeFor). */
+export const INSTITUTION_TYPES = [
+  "CLINIC",
+  "HOSPITAL",
+  "PUBLIC_HEALTH",
+] as const;
+export type InstitutionType = (typeof INSTITUTION_TYPES)[number];
+
+export const INSTITUTION_TYPE_LABELS: Record<InstitutionType, string> = {
+  CLINIC: "의원",
+  HOSPITAL: "병원급 이상",
+  PUBLIC_HEALTH: "보건소·보건지소·보건의료원",
+};
+
 export const CreateOrganizationSchema = z.object({
   name: z
     .string()
@@ -18,6 +32,10 @@ export const CreateOrganizationSchema = z.object({
       (programs) => new Set(programs).size === programs.length,
       "같은 사업이 중복되었습니다",
     ),
+  /** 기관 종별. 보내지 않으면 DB 기본값(의원) */
+  institutionType: z
+    .enum(INSTITUTION_TYPES, "기관 종별을 골라 주세요")
+    .optional(),
 });
 export type CreateOrganizationInput = z.input<typeof CreateOrganizationSchema>;
 
@@ -29,6 +47,7 @@ export interface Organization {
   name: string;
   code: string | null;
   programs: Program[];
+  institutionType: InstitutionType;
   userCount: number;
   recipientCount: number;
   createdAt: string;

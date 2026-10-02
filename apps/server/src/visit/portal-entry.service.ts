@@ -16,7 +16,8 @@ import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/index.js";
 import { toCareGrade } from "../recipient/recipient.mapper.js";
-import { actorSelect, staffSelect, toFormIds } from "./visit.mapper.js";
+import { actorSelect } from "../user/user.mapper.js";
+import { staffSelect, toFormIds } from "./visit.mapper.js";
 import { filterWhere, scheduledRange, visitScope } from "./visit.service.js";
 
 /** 미입력 목록이 한 번에 보는 확정 방문 수. 넘으면 truncated로 알린다. */

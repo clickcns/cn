@@ -354,7 +354,7 @@
     <a href="#values">값과 근거</a>
     <a href="#update">갱신 절차</a>
     <a href="#history">변경 이력</a>
-    <a href="#admin">관리 화면(계획)</a>
+    <a href="#admin">수가 관리 화면</a>
   </div>
 </nav>
 
@@ -368,7 +368,7 @@
       <li><span><b>일차의료 방문진료</b> 지침은 심평원 공지사항에서 받는다. 지금 최신은 2026.4판(2026-04-20)</span></li>
       <li><span><b>재택의료센터</b> 지침은 공식 배포처를 아직 확인하지 못했다. 협력 기관에 공단이 보낸 파일을 받는다</span></li>
       <li><span>확인 시기는 <b>매년 1월</b>(점수당 단가가 바뀜)과 <b>지침 개정 공지가 올라올 때</b></span></li>
-      <li><span>바뀌면 지금은 <b>코드의 상수</b>를 고친다(아래 표의 코드 위치). 관리 화면에서 고치는 방안은 맨 아래 계획</span></li>
+      <li><span>금액·비율·한도가 바뀌면 관리 웹 <b>[수가 관리]</b>에서 새 수가를 시행 월과 함께 넣는다(운영자). 규칙의 모양이 바뀌면 코드를 고친다</span></li>
       <li><span><b>별지 제4호 서식</b>이 바뀌면 서식 정의와 원본 서식 PDF 자리도 고친다</span></li>
       <li><span>확인할 때마다 맨 아래 <b>변경 이력</b>에 판·날짜·결과를 적는다</span></li>
     </ol>
@@ -423,24 +423,24 @@
   <section class="sec" id="values">
     <div class="sec-label">대조표</div>
     <h2>케어노트 값과 지침 위치</h2>
-    <p class="lead">쪽수는 인쇄된 쪽 번호입니다. 재택 = 재택의료센터 지침 2026.2판, 일차 = 일차의료 방문진료 지침 2026.4판. 금액은 본인부담금을 포함한 수가입니다.</p>
+    <p class="lead">쪽수는 인쇄된 쪽 번호입니다. 재택 = 재택의료센터 지침 2026.2판, 일차 = 일차의료 방문진료 지침 2026.4판. 금액은 본인부담금을 포함한 수가입니다. "지금 값"은 코드 기본값이고, [수가 관리]에 넣은 수가가 있으면 그 달부터 그 값을 씁니다. 코드에 남은 규칙의 파일은 shared-types 아래입니다.</p>
     <div class="table-wrap">
       <table class="cmp">
-        <thead><tr><th>값</th><th>지금 값</th><th>지침 위치</th><th>코드 위치(shared-types)</th></tr></thead>
+        <thead><tr><th>값</th><th>지금 값</th><th>지침 위치</th><th>고치는 곳</th></tr></thead>
         <tbody>
-          <tr><th>재택의료기본료</th><td data-label="지금 값">140,000원 / 수급자·월</td><td data-label="지침 위치">재택 19쪽 급여 목록, 13쪽 나.1)</td><td data-label="코드 위치"><code>home-care-fee.ts</code> HOME_CARE_BASE_FEE</td></tr>
-          <tr><th>기본료 요건</th><td data-label="지금 값">의사 1회 · 간호사 2회 · 사회복지사 상담 1회</td><td data-label="지침 위치">재택 13쪽 나.1)나)</td><td data-label="코드 위치"><code>programs.ts</code> HOME_CARE_MONTHLY_VISITS</td></tr>
-          <tr><th>사망 종결</th><td data-label="지금 값">기본료 50%(70,000원), 지속관리료 없음</td><td data-label="지침 위치">재택 13쪽 나.4), 14쪽 다.1), 19쪽</td><td data-label="코드 위치"><code>home-care-fee.ts</code> HOME_CARE_DEATH_FEE_RATE</td></tr>
-          <tr><th>지속관리료</th><td data-label="지금 값">60,000원, 기본료 6개월 연속마다</td><td data-label="지침 위치">재택 14쪽 다., 19쪽, 66쪽 Q2-4</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_CONTINUITY_FEE · _MONTHS</td></tr>
-          <tr><th>추가간호료</th><td data-label="지금 값">53,770원, 기본 2회 초과·월 3회까지·30분 이상·의사 동행 제외</td><td data-label="지침 위치">재택 14쪽 라., 19쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_EXTRA_NURSING_FEE · _MAX · _MIN_MINUTES</td></tr>
-          <tr><th>의사 1인당 한도</th><td data-label="지금 값">기본료 수급자 140명, 방문진료료 140회 / 월</td><td data-label="지침 위치">재택 13쪽 나.2), 12쪽 가.1) · 일차 11쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_DOCTOR_MONTHLY_LIMIT</td></tr>
-          <tr><th>방문진료료Ⅰ</th><td data-label="지금 값">131,720원(의원 IA001) — 보건의료원·보건소 IA005도 같은 금액, 병원급 이상 IA003은 140,600원</td><td data-label="지침 위치">일차 12쪽 급여 목록(점수당 단가 ’26년 의원 95.6원·병원 83.8원·보건기관 98.6원), 보건소 24쪽</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_VISIT_FEE(의원 기준)</td></tr>
-          <tr><th>동일 건물 · 세대</th><td data-label="지금 값">동일 건물 75%, 동일 세대 두 번째 환자부터 50%</td><td data-label="지침 위치">일차 10쪽 2.가.3)·4), 12쪽 주 1·2</td><td data-label="코드 위치"><code>home-care-revenue.ts</code> HOME_CARE_VISIT_FEE_RATES</td></tr>
-          <tr><th>포괄평가 재평가 기한</th><td data-label="지금 값">평가한 달의 12개월 뒤 1일 ~ 13개월 뒤 말일, 넘기면 급여 산정 안 함</td><td data-label="지침 위치">재택 16쪽 아.1)나)②, 예시 1~3</td><td data-label="코드 위치"><code>home-care-case.ts</code> reassessmentWindow</td></tr>
-          <tr><th>첫 달 산정 기간</th><td data-label="지금 값">최초 포괄평가일부터 그달 말일</td><td data-label="지침 위치">재택 65쪽 Q2-2</td><td data-label="코드 위치"><code>home-care-case.ts</code> homeCareMonthPeriod</td></tr>
-          <tr><th>같은 날 산정 제외</th><td data-label="지금 값">가정간호·방문간호·주야간보호·방문목욕·단기보호·시설급여·사회복지사 급여관리·만성질환관리·장애인 주치의</td><td data-label="지침 위치">재택 14~15쪽 바.</td><td data-label="코드 위치"><code>home-care-case.ts</code> EXTERNAL_SERVICE_INFO</td></tr>
-          <tr><th>청구 마감</th><td data-label="지금 값">다음 달 10일</td><td data-label="지침 위치">재택 34쪽</td><td data-label="코드 위치"><code>home-care-fee.ts</code> homeCareClaimDeadline</td></tr>
-          <tr><th>셈하지 않는 가산</th><td data-label="지금 값">의사 외 인력 동반 350.69점, 의료접근성 취약지 275.56점, 소아 21.56·8.88점</td><td data-label="지침 위치">일차 10쪽 5), 12쪽 주 3~5</td><td data-label="코드 위치">없음(예상 수입에 넣지 않음)</td></tr>
+          <tr><th>재택의료기본료</th><td data-label="지금 값">140,000원 / 수급자·월</td><td data-label="지침 위치">재택 19쪽 급여 목록, 13쪽 나.1)</td><td data-label="고치는 곳">[수가 관리] 재택의료기본료(월)</td></tr>
+          <tr><th>기본료 요건</th><td data-label="지금 값">의사 1회 · 간호사 2회 · 사회복지사 상담 1회</td><td data-label="지침 위치">재택 13쪽 나.1)나)</td><td data-label="고치는 곳">코드 <code>programs.ts</code> HOME_CARE_MONTHLY_VISITS</td></tr>
+          <tr><th>사망 종결</th><td data-label="지금 값">기본료 50%(70,000원), 지속관리료 없음</td><td data-label="지침 위치">재택 13쪽 나.4), 14쪽 다.1), 19쪽</td><td data-label="고치는 곳">[수가 관리] 사망 종결 기본료 비율</td></tr>
+          <tr><th>지속관리료</th><td data-label="지금 값">60,000원, 기본료 6개월 연속마다</td><td data-label="지침 위치">재택 14쪽 다., 19쪽, 66쪽 Q2-4</td><td data-label="고치는 곳">[수가 관리] 지속관리료 · 연속 개월</td></tr>
+          <tr><th>추가간호료</th><td data-label="지금 값">53,770원, 기본 2회 초과·월 3회까지·30분 이상·의사 동행 제외</td><td data-label="지침 위치">재택 14쪽 라., 19쪽</td><td data-label="고치는 곳">[수가 관리] 추가간호료 · 월 최대 · 최소 시간</td></tr>
+          <tr><th>의사 1인당 한도</th><td data-label="지금 값">기본료 수급자 140명, 방문진료료 140회 / 월</td><td data-label="지침 위치">재택 13쪽 나.2), 12쪽 가.1) · 일차 11쪽</td><td data-label="고치는 곳">[수가 관리] 의사 1인당 기본료 수급자 · 방문진료료</td></tr>
+          <tr><th>방문진료료Ⅰ</th><td data-label="지금 값">131,720원(의원 IA001) — 보건의료원·보건소 IA005도 같은 금액, 병원급 이상 IA003은 140,600원</td><td data-label="지침 위치">일차 12쪽 급여 목록(점수당 단가 ’26년 의원 95.6원·병원 83.8원·보건기관 98.6원), 보건소 24쪽</td><td data-label="고치는 곳">[수가 관리] 방문진료료Ⅰ 의원·보건기관 · 병원급 이상(기관의 종별로 고른다)</td></tr>
+          <tr><th>동일 건물 · 세대</th><td data-label="지금 값">동일 건물 75%, 동일 세대 두 번째 환자부터 50%</td><td data-label="지침 위치">일차 10쪽 2.가.3)·4), 12쪽 주 1·2</td><td data-label="고치는 곳">[수가 관리] 동일 건물 비율 · 동일 세대 비율</td></tr>
+          <tr><th>포괄평가 재평가 기한</th><td data-label="지금 값">평가한 달의 12개월 뒤 1일 ~ 13개월 뒤 말일, 넘기면 급여 산정 안 함</td><td data-label="지침 위치">재택 16쪽 아.1)나)②, 예시 1~3</td><td data-label="고치는 곳">코드 <code>home-care-case.ts</code> reassessmentWindow</td></tr>
+          <tr><th>첫 달 산정 기간</th><td data-label="지금 값">최초 포괄평가일부터 그달 말일</td><td data-label="지침 위치">재택 65쪽 Q2-2</td><td data-label="고치는 곳">코드 <code>home-care-case.ts</code> homeCareMonthPeriod</td></tr>
+          <tr><th>같은 날 산정 제외</th><td data-label="지금 값">가정간호·방문간호·주야간보호·방문목욕·단기보호·시설급여·사회복지사 급여관리·만성질환관리·장애인 주치의</td><td data-label="지침 위치">재택 14~15쪽 바.</td><td data-label="고치는 곳">코드 <code>home-care-case.ts</code> EXTERNAL_SERVICE_INFO</td></tr>
+          <tr><th>청구 마감</th><td data-label="지금 값">다음 달 10일</td><td data-label="지침 위치">재택 34쪽</td><td data-label="고치는 곳">코드 <code>home-care-fee.ts</code> homeCareClaimDeadline</td></tr>
+          <tr><th>셈하지 않는 가산</th><td data-label="지금 값">의사 외 인력 동반 350.69점, 의료접근성 취약지 275.56점, 소아 21.56·8.88점</td><td data-label="지침 위치">일차 10쪽 5), 12쪽 주 3~5</td><td data-label="고치는 곳">없음(예상 수입에 넣지 않음)</td></tr>
         </tbody>
       </table>
     </div>
@@ -453,7 +453,8 @@
       <li><span><b>언제 볼까</b> — 매년 1월(새해 점수당 단가로 금액이 바뀌어 새 지침이 나온다), 그리고 심평원·복지부 공지에 "지침 개정"이 올라올 때. 재택의료센터는 공단 공문(예: "’26년 2월 1일 기준")이 올 때.</span></li>
       <li><span><b>받기</b> — 지침 본문, 주요 개정사항, 별지서식 모음(위 "받는 곳").</span></li>
       <li><span><b>주요 개정사항부터</b> — 금액·비율·한도·서식이 바뀌었는지 먼저 본다. 요약에 없더라도 본문 급여 목록과 산정 기준을 위 대조표와 한 줄씩 맞춰 본다(개발자는 PDF를 글로 뽑아 이전 판과 비교하면 빠르다).</span></li>
-      <li><span><b>값이 바뀌었으면</b> — 대조표의 코드 위치에서 상수를 고치고 <code>pnpm test</code>로 확인한 뒤 배포한다. 화면의 산정 기준 글도 같은 상수로 만들어지므로 따로 고칠 곳은 없다.</span></li>
+      <li><span><b>금액·비율·한도가 바뀌었으면</b> — 운영자가 관리 웹 [수가 관리] → [새 수가 넣기]에서 시행 월(지침의 적용 시작 달), 바뀐 칸, 근거(지침 판·쪽)를 넣는다. 배포는 필요 없다. 그 달부터 재택의료 수입의 판정·금액과 화면 아래 산정 기준 글이 새 값을 쓰고, 지난달은 그때 수가 그대로다. 코드 기본값(<code>DEFAULT_HOME_CARE_FEE_SET</code>)은 고치지 않는다 — 고치면 넣은 수가가 없는 지난달 금액까지 바뀐다.</span></li>
+      <li><span><b>규칙의 모양이 바뀌었으면</b> — 직종별 요건, 재평가 기한, 같은 날 산정 제외 종류, 셈하는 방문처럼 계산 방법이 바뀌면 대조표의 코드를 고치고 <code>pnpm test</code>로 확인한 뒤 배포한다. 새 종류의 금액(예: 새 가산)은 수가 묶음에 칸을 더한다(<code>fee-schedule.ts</code>의 <code>HOME_CARE_FEE_GROUPS</code>·<code>DEFAULT_HOME_CARE_FEE_SET</code>, 지난 묶음은 그 칸을 코드 기본값으로 읽으므로 맞지 않으면 마이그레이션으로 지난 묶음에 값을 넣는다).</span></li>
       <li><span><b>별지 제4호가 바뀌었으면</b> — 서식 정의(<code>forms/primary-care-check.ts</code>)와 원본 서식 PDF(<code>apps/server/src/form-pdf/assets/templates</code>)·자리(<code>overlay/layouts.ts</code>)를 고친다. 순서는 개발 지침의 "서식 PDF"를 따른다. 금액 셈이 읽는 칸(동일 건물·세대)은 테스트가 서식 정의에 있는지 본다.</span></li>
       <li><span><b>기록</b> — 아래 변경 이력에 확인한 날, 판, 결과를 적는다. 개발 지침과 CLAUDE.md의 지침 판 표기도 맞춘다.</span></li>
     </ol>
@@ -474,14 +475,15 @@
   </section>
 
   <section class="sec" id="admin">
-    <div class="sec-label">계획</div>
-    <h2>관리 화면에서 수가 관리하기(검토 중)</h2>
-    <p class="lead">값이 바뀔 때마다 코드를 고치고 배포하지 않도록, 운영자가 관리 웹에서 새 수가를 <b>시행일과 함께</b> 등록하는 방안입니다.</p>
+    <div class="sec-label">관리 웹</div>
+    <h2>수가 관리 화면</h2>
+    <p class="lead">값이 바뀔 때마다 코드를 고치고 배포하지 않도록, 운영자가 관리 웹 [수가 관리](<code>/admin/fee-schedules</code>)에서 새 수가를 <b>시행 월과 함께</b> 넣습니다.</p>
     <ul class="bul">
-      <li><b>관리 화면으로 옮길 것</b>: 금액(기본료, 방문진료료 의원·병원급, 추가간호료, 지속관리료)과 비율(사망 50%, 동일 건물 75%, 동일 세대 50%), 숫자 한도(의사 140명·140회, 추가간호 월 3회·30분).</li>
-      <li><b>코드에 남길 것</b>: 규칙의 모양(직종별 요건, 재평가 기한 계산, 같은 날 산정 제외 종류, 무엇을 방문으로 세는지). 이것이 바뀌면 계산 방법이 바뀌므로 코드 수정과 테스트가 필요하다.</li>
-      <li><b>시행일별 이력</b>: 한 번 등록한 수가는 지우지 않고 새 시행일로 덧붙인다. 지난달 금액은 그때 수가로 계산되고, 다음 달부터 바뀌는 수가를 미리 넣어 둘 수 있다. 누가·언제·어떤 근거(지침 판·쪽)로 넣었는지 남긴다.</li>
-      <li><b>권한</b>: 운영자만(모든 기관 공통). 기관 관리자는 보기만.</li>
+      <li><b>화면에서 넣는 것</b>: 금액(기본료, 방문진료료 의원·보건기관·병원급 이상, 추가간호료, 지속관리료), 비율(사망 종결, 동일 건물, 동일 세대), 숫자 한도(의사 1인당 140명·140회, 추가간호 월 3회·30분, 지속관리료 6개월). 새 수가 창은 그 전 달 수가를 채워 두고 바꾼 칸을 이전 값과 함께 강조한다.</li>
+      <li><b>코드에 남는 것</b>: 규칙의 모양(직종별 요건, 재평가 기한 계산, 같은 날 산정 제외 종류, 무엇을 방문으로 세는지). 바뀌면 계산 방법이 바뀌므로 코드 수정과 테스트가 필요하다.</li>
+      <li><b>시행 월별 이력</b>: 그 달에는 시행 월이 그 달 이하인 가장 늦은 수가를 쓰고, 넣은 수가가 없는 달은 코드 기본값을 쓴다. 넣은 수가는 고치지 않는다 — 틀렸으면 지우고 다시 넣는다. 지운 수가도 누가·언제 지웠는지와 함께 이력에 남는다. 한 시행 월에는 지우지 않은 수가가 하나만 있다(DB가 막는다). 다음 달부터 바뀌는 수가를 미리 넣어 둘 수 있다(이력에 "예정").</li>
+      <li><b>기관 종별</b>: 방문진료료 단가는 기관의 종별(관리 웹 [기관]: 의원 · 병원급 이상 · 보건소·보건지소·보건의료원)로 고른다. 병원급 이상만 병원급 단가이고 나머지는 의원·보건기관 단가다.</li>
+      <li><b>권한</b>: 넣기·지우기는 운영자만(모든 기관 공통). 기관 관리자는 보기만.</li>
     </ul>
   </section>
 

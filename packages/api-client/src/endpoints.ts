@@ -3,12 +3,14 @@ import type {
   AuthUser,
   ChangePasswordInput,
   CreateHomeCareAssessmentInput,
+  CreateHomeCareFeeScheduleInput,
   FormLayoutDetail,
   FormLayoutSummary,
   FormId,
   ExternalServiceInput,
   FormPdfQuery,
   HomeCareCase,
+  HomeCareFeeScheduleList,
   HomeCareMonthQuery,
   HomeCareMonthResponse,
   MarkPortalEntryInput,
@@ -106,6 +108,20 @@ export function createCarenoteApi(http: KyInstance) {
         http.post("organizations", { json: input }).json<Organization>(),
       update: (id: string, input: UpdateOrganizationInput) =>
         http.patch(`organizations/${id}`, { json: input }).json<Organization>(),
+    },
+
+    /** 재택의료 수입의 수가 묶음(보기는 기관 관리자·운영자, 넣기·지우기는 운영자). 넣고 지우면 목록 전체를 준다. */
+    feeSchedules: {
+      list: () =>
+        http.get("home-care-fee-schedules").json<HomeCareFeeScheduleList>(),
+      create: (input: CreateHomeCareFeeScheduleInput) =>
+        http
+          .post("home-care-fee-schedules", { json: input })
+          .json<HomeCareFeeScheduleList>(),
+      remove: (id: string) =>
+        http
+          .delete(`home-care-fee-schedules/${id}`)
+          .json<HomeCareFeeScheduleList>(),
     },
 
     /** 원본 서식 조정(운영자). */

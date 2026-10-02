@@ -1,4 +1,5 @@
 import { addMonths, formatDateLabel, monthOf } from "./date.js";
+import type { HomeCareFees } from "./fee-schedule.js";
 import {
   checkHomeCareVisit,
   externalConflictText,
@@ -26,14 +27,10 @@ import {
  * 방문에 저장한 직종(profession)이다.
  * 산정 기간·막힘(포괄평가 전·재평가 기한 지남)·종결은 home-care-case.ts의 homeCareMonthPeriod,
  * 같은 날 다른 기관 서비스가 있어 산정하지 않는 방문은 externalConflicts가 정한다.
+ * 기본료 금액·사망 종결 비율은 그달 수가 묶음(fee-schedule.ts의 HomeCareFees, 관리 웹 [수가 관리])이다.
  * 방문진료료·추가간호료·지속관리료와 의사 1인당 한도는 home-care-revenue.ts가 이 판정 위에 더한다.
  * 아직 보지 않는 규칙: 케어플랜 없는 긴급왕진 제외.
  */
-
-/** 재택의료기본료(수급자당 월, 원). 수가가 바뀌면 여기만 고친다. */
-export const HOME_CARE_BASE_FEE = 140_000;
-/** 방문한 뒤 사망으로 요건을 채우지 못한 달의 기본료 비율(지침 13쪽 나.4)). */
-export const HOME_CARE_DEATH_FEE_RATE = 0.5;
 
 /** 이달 재택의료 방문 중 한 직종의 건수. */
 export interface HomeCareTally {
@@ -153,6 +150,7 @@ function judge<T extends HomeCareCaseFacts>(
   visits: readonly DatedVisit[],
   month: string,
   today: string,
+  fees: HomeCareFees,
 ): HomeCareFeeStatus<T> {
   const period = homeCareMonthPeriod(recipient, month);
   const tallies = emptyTallies();
@@ -215,7 +213,7 @@ function judge<T extends HomeCareCaseFacts>(
     period,
     tallies,
     ...counted,
-    fee: HOME_CARE_BASE_FEE,
+    fee: fees.baseFee,
     halfFee: false,
     countedVisitIds,
     notes,
@@ -236,7 +234,7 @@ function judge<T extends HomeCareCaseFacts>(
     // 팀이 한 번이라도 방문한 뒤 사망해 요건을 채우지 못했으면 기본료의 50%(그 방문을 확정하면 확보).
     // 더 잡을 방문은 없다.
     notes.unshift(
-      `${formatDateLabel(period.ended.on)} 사망 종결로 요건을 채우지 못해 기본료의 ${HOME_CARE_DEATH_FEE_RATE * 100}%를 받습니다`,
+      `${formatDateLabel(period.ended.on)} 사망 종결로 요건을 채우지 못해 기본료의 ${fees.deathFeePercent}%를 받습니다`,
     );
     const confirmed = PROFESSIONS.some(
       (profession) => tallies[profession].confirmed > 0,
@@ -248,7 +246,7 @@ function judge<T extends HomeCareCaseFacts>(
       shortfall: 0,
       toConfirm: confirmed ? 0 : 1,
       toVisit: 0,
-      fee: HOME_CARE_BASE_FEE * HOME_CARE_DEATH_FEE_RATE,
+      fee: Math.round((fees.baseFee * fees.deathFeePercent) / 100),
       halfFee: true,
     };
   }
@@ -267,6 +265,7 @@ export function homeCareFeeStatuses<
   visits: readonly HomeCareFeeVisit[],
   month: string,
   today: string,
+  fees: HomeCareFees,
 ): HomeCareFeeStatus<T>[] {
   const byRecipient = new Map<string, DatedVisit[]>();
   for (const visit of visits) {
@@ -280,7 +279,7 @@ export function homeCareFeeStatuses<
   return recipients
     .filter((recipient) => recipient.programs.includes("HOME_CARE_CENTER"))
     .map((recipient) =>
-      judge(recipient, byRecipient.get(recipient.id) ?? [], month, today),
+      judge(recipient, byRecipient.get(recipient.id) ?? [], month, today, fees),
     )
     .sort(
       (a, b) =>

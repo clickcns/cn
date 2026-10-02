@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  HOME_CARE_BASE_FEE,
+  DEFAULT_HOME_CARE_FEE_SET,
   homeCareClaimDeadline,
   homeCareFeeStatuses,
   homeCareFeeTotals,
@@ -10,6 +10,8 @@ import {
   type VisitCalendarItem,
   type VisitStatus,
 } from "@repo/shared-types";
+
+const FEES = DEFAULT_HOME_CARE_FEE_SET.fees;
 
 const MONTH = "2026-10";
 const TODAY = "2026-10-15";
@@ -74,6 +76,7 @@ describe("homeCareFeeStatuses", () => {
       ],
       MONTH,
       TODAY,
+      FEES,
     );
     assert.deepEqual(
       statuses.map((status) => [status.recipient.id, status.verdict]),
@@ -127,6 +130,7 @@ describe("homeCareFeeStatuses", () => {
       ],
       MONTH,
       TODAY,
+      FEES,
     );
     assert.deepEqual(status.tallies, {
       DOCTOR: { confirmed: 1, unconfirmedPast: 0, upcoming: 0 },
@@ -150,6 +154,7 @@ describe("homeCareFeeStatuses", () => {
       ],
       MONTH,
       "2026-11-03",
+      FEES,
     );
     assert.equal(status.verdict, "PENDING");
     assert.equal(status.toConfirm, 2);
@@ -171,12 +176,13 @@ describe("homeCareFeeTotals · homeCarePlannedCounts · homeCareClaimDeadline", 
       ],
       MONTH,
       TODAY,
+      FEES,
     );
     assert.deepEqual(homeCareFeeTotals(statuses), {
       BLOCKED: { count: 0, amount: 0 },
-      SHORT: { count: 2, amount: 2 * HOME_CARE_BASE_FEE },
+      SHORT: { count: 2, amount: 2 * FEES.baseFee },
       PENDING: { count: 0, amount: 0 },
-      SECURED: { count: 1, amount: HOME_CARE_BASE_FEE },
+      SECURED: { count: 1, amount: FEES.baseFee },
     });
     const b = statuses.find((status) => status.recipient.id === "b")!;
     assert.deepEqual(homeCarePlannedCounts(b.tallies), {

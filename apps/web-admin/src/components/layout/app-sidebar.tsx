@@ -5,6 +5,7 @@ import {
   ClipboardPasteIcon,
   HeartHandshakeIcon,
   LayoutDashboardIcon,
+  ReceiptTextIcon,
   SlidersHorizontalIcon,
   UsersRoundIcon,
   type LucideIcon,
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.visits, label: "방문 기록", icon: ClipboardListIcon },
   { to: ROUTES.portal, label: "포털 입력", icon: ClipboardPasteIcon },
   { to: ROUTES.homeCare, label: "재택의료 수입", icon: BanknoteIcon },
+  { to: ROUTES.feeSchedules, label: "수가 관리", icon: ReceiptTextIcon },
   { to: ROUTES.recipients, label: "수급자", icon: HeartHandshakeIcon },
   { to: ROUTES.users, label: "사용자", icon: UsersRoundIcon },
   {

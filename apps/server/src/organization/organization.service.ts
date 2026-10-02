@@ -27,6 +27,7 @@ function toOrganization(row: OrganizationRow): Organization {
     name: row.name,
     code: row.code,
     programs: row.programs,
+    institutionType: row.institutionType,
     userCount: row._count.users,
     recipientCount: row._count.recipients,
     createdAt: row.createdAt.toISOString(),

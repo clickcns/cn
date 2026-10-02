@@ -12,7 +12,7 @@ import { queryKeys } from "@/lib/query-keys";
 
 /**
  * 재택의료 수입의 한 달: 그달 재택의료센터 방문(금액 셈에 쓰는 사실 포함)·수급자(사례 정보 포함)·
- * 직전 연속 개월을 받아 판정(homeCareFeeStatuses)·판정별 기본료·예상 수입을 낸다. 재택의료 수입
+ * 직전 연속 개월·그달 수가 묶음을 받아 판정(homeCareFeeStatuses)·판정별 기본료·예상 수입을 낸다. 재택의료 수입
  * 화면과 현황판이 같은 판정을 쓴다. 달·기관을 바꾸면 새로 받는 동안 judged는 undefined다(이전 달
  * 방문으로 이번 달을 판정하지 않게 placeholder를 두지 않는다).
  */
@@ -34,16 +34,24 @@ export function useHomeCareMonth(month: string) {
       data.visits,
       month,
       today,
+      data.feeSet.fees,
     );
     return {
       statuses,
       totals: homeCareFeeTotals(statuses),
-      revenue: homeCareMonthRevenue(statuses, data.visits, data.priorStreaks),
+      revenue: homeCareMonthRevenue(
+        statuses,
+        data.visits,
+        data.priorStreaks,
+        data.feeSet.fees,
+      ),
     };
   }, [data, month, today]);
 
   return {
     visits: data?.visits,
+    /** 그달 수가 묶음과 근거(받는 중이면 undefined) */
+    feeSet: data?.feeSet,
     judged,
     error: monthQuery.error,
     isFetching: monthQuery.isFetching,

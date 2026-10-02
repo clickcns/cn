@@ -806,7 +806,7 @@
           </div>
         </dd>
         <dt>지금 코드</dt>
-        <dd><span class="pill good">1차 됨 · 2026.10.1</span> 관리 웹 <code>/home-care</code>(재택의료 기본료)와 현황판 카드. 판정은 shared-types <code>home-care-fee.ts</code>의 <code>homeCareFeeStatuses</code> 한 곳이고, 기본료 금액(<code>HOME_CARE_BASE_FEE</code>)·요건(<code>HOME_CARE_MONTHLY_VISITS</code>)만 지침에 맞춰 고칩니다(2025.10 → 2026.1 → 2026.2로 자주 바뀜). 2차는 추가간호·의사 140명·지속관리료 연속·청구 마감 알림·상담 안부 경고, 3차는 포괄평가 기한·다른 기관 서비스 겹침·사망 종결(수급자 정보에 칸 추가).</dd>
+        <dd><span class="pill good">1~3차 됨 · 2026.10.2</span> 관리 웹 <code>/home-care</code>(재택의료 수입)와 현황판 카드. 1차 기본료 판정, 2차 방문진료료·추가간호료·지속관리료 연속·의사 140명·상담 안부 경고, 3차 포괄평가 기한·다른 기관 서비스 겹침·사망 종결. 판정은 shared-types <code>home-care-fee.ts</code>, 금액은 <code>home-care-revenue.ts</code> 한 곳이고, 금액·비율·한도는 운영자가 관리 웹 [수가 관리]에서 시행 월과 함께 넣습니다(지침이 2025.10 → 2026.1 → 2026.2로 자주 바뀌어도 배포 없이, 근거는 <a href="/dev/fees">/dev/fees</a>). 요건(<code>HOME_CARE_MONTHLY_VISITS</code>) 같은 규칙만 코드에 둡니다.</dd>
         <dt>판매 문구</dt>
         <dd>"수급자 1명의 기본료를 한 번 지키면 한 달 요금이 나온다."</dd>
         <dt>확인할 것</dt>

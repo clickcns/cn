@@ -17,7 +17,13 @@ import {
   type HomeCareAssessmentFact,
   type HomeCareCaseFacts,
 } from "./home-care-case.js";
+import {
+  visitFeeFor,
+  type HomeCareFees,
+  type HomeCareFeeSet,
+} from "./fee-schedule.js";
 import type { HomeCareFeeStatus } from "./home-care-fee.js";
+import type { InstitutionType } from "./organization.js";
 import { HOME_CARE_MONTHLY_VISITS } from "./programs.js";
 import type { Recipient } from "./recipient.js";
 import type { Profession } from "./roles.js";
@@ -31,26 +37,9 @@ import {
 /*
  * 재택의료센터 그달 예상 수입(관리 웹 재택의료 수입). 기본료 판정(home-care-fee.ts) 위에
  * 방문진료료·추가간호료·지속관리료와 놓치기 쉬운 산정 조건을 더한다. 금액은 본인부담금을 포함한
- * 수가이고, 장기요양 재택의료센터 시범사업 지침(2026.2)·일차의료 방문진료 수가(의원)를 따른다.
- * 수가가 바뀌면 아래 상수만 고친다(화면 글도 이 상수로 만든다). 동반인력·야간 가산은 셈하지 않는다.
+ * 수가이고, 금액·비율·한도는 그달 수가 묶음(fee-schedule.ts의 HomeCareFees, 관리 웹 [수가 관리])이다.
+ * 방문진료료는 기관 종별(의원·보건기관 / 병원급 이상) 단가를 쓴다. 동반인력·야간 가산은 셈하지 않는다.
  */
-
-/** 방문진료료Ⅰ(의원, 회). 재택의료센터 의사 방문을 제4호로 심평원에 청구할 때. */
-export const HOME_CARE_VISIT_FEE = 131_720;
-/** 제4호 "동일 건물 및 동일 세대 방문 여부"별 방문진료료 비율(동일 세대는 두 번째 환자부터). */
-export const HOME_CARE_VISIT_FEE_RATES = {
-  SAME_BUILDING: 0.75,
-  SAME_HOUSEHOLD: 0.5,
-} as const;
-/** 추가간호료(회). 간호사 기본 방문(월 2회)을 넘는 방문, 월 3회까지, 30분 이상, 의사 동행 아님. */
-export const HOME_CARE_EXTRA_NURSING_FEE = 53_770;
-export const HOME_CARE_EXTRA_NURSING_MAX = 3;
-export const HOME_CARE_EXTRA_NURSING_MIN_MINUTES = 30;
-/** 지속관리료. 기본료를 6개월 연속 받을 때마다 수급자당 한 번. */
-export const HOME_CARE_CONTINUITY_FEE = 60_000;
-export const HOME_CARE_CONTINUITY_MONTHS = 6;
-/** 의사 1인당 월 한도: 기본료 수급자 140명, 방문진료료 140회. */
-export const HOME_CARE_DOCTOR_MONTHLY_LIMIT = 140;
 
 /* ---------- 방문 하나에서 뽑는 사실 ---------- */
 
@@ -63,7 +52,7 @@ export const HOME_CARE_REVENUE_FIELDS = {
   sameBuilding: {
     formId: "PRIMARY_CARE_CHECK",
     key: "sameBuilding",
-    values: Object.keys(HOME_CARE_VISIT_FEE_RATES),
+    values: ["SAME_BUILDING", "SAME_HOUSEHOLD"],
   },
   /** 제7호 방문사유 */
   visitType: {
@@ -95,8 +84,11 @@ export const HOME_CARE_REVENUE_FORM_IDS: FormId[] = [
 
 /** 금액 셈에 쓰는 방문의 사실. 서버가 서식 값에서 뽑아 보낸다(서식 값 전체는 보내지 않는다). */
 export interface HomeCareVisitFacts {
-  /** 의사 방문을 제4호로 청구하면 방문진료료 비율(1·0.75·0.5), 아니면 null */
-  visitFeeRate: number | null;
+  /**
+   * 의사 방문을 제4호로 청구하면 방문진료료 산정 구분(그대로·동일 건물·동일 세대, 비율은 수가 묶음),
+   * 청구하지 않으면 null
+   */
+  visitFeeBasis: "FULL" | "SAME_BUILDING" | "SAME_HOUSEHOLD" | null;
   /** 제7호 방문사유(정기·추가). 아직 적지 않았으면 null */
   nurseVisitType: "REGULAR" | "ADDITIONAL" | null;
   /** 제7호 동행자에 의사가 있다 */
@@ -110,9 +102,6 @@ export interface HomeCareVisitFacts {
 const valuesOf = (forms: VisitForms, field: RevenueField) =>
   selectedOptions(forms[field.formId], field.key).map((option) => option.value);
 
-const visitFeeRates: Readonly<Record<string, number>> =
-  HOME_CARE_VISIT_FEE_RATES;
-
 export function homeCareVisitFacts(visit: {
   profession: Profession;
   formIds: readonly FormId[];
@@ -122,14 +111,16 @@ export function homeCareVisitFacts(visit: {
 }): HomeCareVisitFacts {
   const { forms } = visit;
   const fields = HOME_CARE_REVENUE_FIELDS;
-  const [sameBuilding = ""] = valuesOf(forms, fields.sameBuilding);
+  const [sameBuilding] = valuesOf(forms, fields.sameBuilding);
   const [visitType] = valuesOf(forms, fields.visitType);
   const content = valuesOf(forms, fields.content);
   return {
-    visitFeeRate:
+    visitFeeBasis:
       visit.profession === "DOCTOR" &&
       visit.formIds.includes(fields.sameBuilding.formId)
-        ? (visitFeeRates[sameBuilding] ?? 1)
+        ? sameBuilding === "SAME_BUILDING" || sameBuilding === "SAME_HOUSEHOLD"
+          ? sameBuilding
+          : "FULL"
         : null,
     nurseVisitType:
       visitType === "REGULAR" || visitType === "ADDITIONAL" ? visitType : null,
@@ -160,6 +151,8 @@ export interface HomeCareRecipient
       "id" | "organizationId" | "name" | "careGrade" | "programs" | "isActive"
     >,
     HomeCareCaseFacts {
+  /** 소속 기관 종별(방문진료료 단가) */
+  institutionType: InstitutionType;
   assessments: HomeCareAssessmentFact[];
   /** 기관 밖 서비스와, 같은 기관의 그달 장기요양 방문간호 날(ownLtcNursingDay) */
   externalServices: ExternalServiceSchedule[];
@@ -172,6 +165,8 @@ export interface HomeCareMonthResponse {
   recipients: HomeCareRecipient[];
   /** 수급자 id → 그달 직전까지 기본료 요건을 확정 기록으로 이어서 채운 달 수(0이면 뺀다) */
   priorStreaks: Record<string, number>;
+  /** 그달에 쓰는 수가 묶음과 근거(관리 웹 [수가 관리], 넣은 묶음이 없으면 코드 기본값) */
+  feeSet: HomeCareFeeSet;
 }
 
 export const HomeCareMonthQuerySchema = z.object({
@@ -285,13 +280,24 @@ export interface HomeCareRevenue {
   issues: string[];
 }
 
-function visitFee(visits: readonly HomeCareMonthVisit[]) {
+/** 방문진료료: 제4호로 청구하는 의사 방문마다 기관 종별 단가 × 동일 건물·세대 비율. */
+function visitFee(
+  visits: readonly HomeCareMonthVisit[],
+  fees: HomeCareFees,
+  institutionType: InstitutionType,
+) {
+  const unit = visitFeeFor(fees, institutionType);
+  const percentOf = {
+    FULL: 100,
+    SAME_BUILDING: fees.sameBuildingPercent,
+    SAME_HOUSEHOLD: fees.sameHouseholdPercent,
+  };
   let count = 0;
   let amount = 0;
   for (const { facts } of visits) {
-    if (facts.visitFeeRate === null) continue;
+    if (facts.visitFeeBasis === null) continue;
     count += 1;
-    amount += Math.round(HOME_CARE_VISIT_FEE * facts.visitFeeRate);
+    amount += Math.round((unit * percentOf[facts.visitFeeBasis]) / 100);
   }
   return { count, amount };
 }
@@ -301,7 +307,10 @@ function visitFee(visits: readonly HomeCareMonthVisit[]) {
  * 이상인 방문 수와 월 3회 중 작은 만큼 받는다. 방문사유를 아직 적지 않은 방문(예정 등)은 추가로
  * 적을 수 있는 방문으로 본다. 받지 못하는 까닭(추가로 적은 방문만)은 issues로 돌려준다.
  */
-function extraNursing(visits: readonly HomeCareMonthVisit[]) {
+function extraNursing(
+  visits: readonly HomeCareMonthVisit[],
+  fees: HomeCareFees,
+) {
   const nurseVisits = visits.filter((visit) => visit.profession === "NURSE");
   const beyondBasic = Math.max(
     0,
@@ -318,24 +327,24 @@ function extraNursing(visits: readonly HomeCareMonthVisit[]) {
       if (additional) withDoctor += 1;
     } else if (
       facts.minutes !== null &&
-      facts.minutes < HOME_CARE_EXTRA_NURSING_MIN_MINUTES
+      facts.minutes < fees.extraNursingMinMinutes
     ) {
       if (additional) tooShort += 1;
     } else eligible += 1;
   }
-  const count = Math.min(HOME_CARE_EXTRA_NURSING_MAX, eligible, beyondBasic);
-  const over = Math.min(eligible, beyondBasic) - HOME_CARE_EXTRA_NURSING_MAX;
+  const count = Math.min(fees.extraNursingMax, eligible, beyondBasic);
+  const over = Math.min(eligible, beyondBasic) - fees.extraNursingMax;
   const issues = [
     regular > HOME_CARE_MONTHLY_VISITS.NURSE &&
       `간호사 정기 방문이 ${regular}회로 적혀 있습니다. 기본 ${HOME_CARE_MONTHLY_VISITS.NURSE}회를 넘는 방문은 방문사유를 추가 방문으로 적어야 추가간호료를 받습니다`,
     withDoctor > 0 &&
       `의사와 동행한 추가 방문 ${withDoctor}건은 추가간호료를 받지 않습니다`,
     tooShort > 0 &&
-      `${HOME_CARE_EXTRA_NURSING_MIN_MINUTES}분이 안 된 추가 방문 ${tooShort}건은 추가간호료를 받지 않습니다`,
+      `${fees.extraNursingMinMinutes}분이 안 된 추가 방문 ${tooShort}건은 추가간호료를 받지 않습니다`,
     over > 0 &&
-      `추가간호료는 월 ${HOME_CARE_EXTRA_NURSING_MAX}회까지라 ${over}건은 받지 않습니다`,
+      `추가간호료는 월 ${fees.extraNursingMax}회까지라 ${over}건은 받지 않습니다`,
   ].filter((issue) => issue !== false);
-  return { count, amount: count * HOME_CARE_EXTRA_NURSING_FEE, issues };
+  return { count, amount: count * fees.extraNursingFee, issues };
 }
 
 /**
@@ -343,7 +352,7 @@ function extraNursing(visits: readonly HomeCareMonthVisit[]) {
  * 예정·미확정 방문도 마치고 확정하면 받을 금액으로 넣는다. 기본료는 판정이 방문 부족·포괄평가
  * 필요면 0, 아니면 판정의 fee(사망 종결 50% 포함)다. 포괄평가 필요(막힘)면 장기요양 재택의료
  * 급여(기본료·추가간호료·지속관리료)는 없고 건강보험 방문진료료만 받는다. 추가간호료는 기본료
- * 횟수에 넣은 방문(countedVisitIds)으로 센다.
+ * 횟수에 넣은 방문(countedVisitIds)으로 센다. 금액은 그달 수가 묶음 fees, 방문진료료는 기관 종별 단가다.
  */
 export function homeCareRevenue(
   status: Pick<
@@ -352,13 +361,15 @@ export function homeCareRevenue(
   >,
   visits: readonly HomeCareMonthVisit[],
   priorStreak: number,
+  fees: HomeCareFees,
+  institutionType: InstitutionType,
 ): HomeCareRevenue {
   const blocked = status.verdict === "BLOCKED";
   const payable = !blocked && status.verdict !== "SHORT";
   const counted = visits.filter((visit) =>
     status.countedVisitIds.has(visit.id),
   );
-  const { issues, ...extra } = extraNursing(blocked ? [] : counted);
+  const { issues, ...extra } = extraNursing(blocked ? [] : counted, fees);
   const social = counted.filter(
     (visit) => visit.profession === "SOCIAL_WORKER",
   );
@@ -369,20 +380,20 @@ export function homeCareRevenue(
   }
   if (!payable && priorStreak > 0) {
     issues.push(
-      `기본료를 놓치면 ${priorStreak}개월 이어 온 연속이 끊깁니다(지속관리료는 ${HOME_CARE_CONTINUITY_MONTHS}개월 연속마다)`,
+      `기본료를 놓치면 ${priorStreak}개월 이어 온 연속이 끊깁니다(지속관리료는 ${fees.continuityMonths}개월 연속마다)`,
     );
   }
   const streak = payable ? priorStreak + 1 : 0;
   // 사망 종결로 기본료 50%를 받는 달은 지속관리료를 산정하지 않는다.
   const due =
-    !status.halfFee && streak > 0 && streak % HOME_CARE_CONTINUITY_MONTHS === 0;
+    !status.halfFee && streak > 0 && streak % fees.continuityMonths === 0;
   const parts: RevenueParts = {
     base: { count: payable ? 1 : 0, amount: payable ? status.fee : 0 },
-    visitFee: visitFee(visits),
+    visitFee: visitFee(visits, fees, institutionType),
     extraNursing: extra,
     continuity: {
       count: due ? 1 : 0,
-      amount: due ? HOME_CARE_CONTINUITY_FEE : 0,
+      amount: due ? fees.continuityFee : 0,
     },
   };
   return { parts, total: sumParts(parts), streak, issues };
@@ -404,12 +415,15 @@ export interface HomeCareMonthRevenue {
 
 /**
  * 판정한 수급자마다 그달 예상 수입을 내고 합한다. visits는 그달 재택의료센터 방문(API가 그달만
- * 준다), priorStreaks는 수급자별 직전 연속 개월이다.
+ * 준다), priorStreaks는 수급자별 직전 연속 개월, fees는 그달 수가 묶음이다.
  */
 export function homeCareMonthRevenue(
-  statuses: readonly HomeCareFeeStatus<{ id: string }>[],
+  statuses: readonly HomeCareFeeStatus<
+    Pick<HomeCareRecipient, "id" | "institutionType">
+  >[],
   visits: readonly HomeCareMonthVisit[],
   priorStreaks: Readonly<Record<string, number>>,
+  fees: HomeCareFees,
 ): HomeCareMonthRevenue {
   const visitsOf = new Map<string, HomeCareMonthVisit[]>();
   for (const visit of visits) {
@@ -427,6 +441,8 @@ export function homeCareMonthRevenue(
       status,
       visitsOf.get(recipient.id) ?? [],
       priorStreaks[recipient.id] ?? 0,
+      fees,
+      recipient.institutionType,
     );
     byRecipient.set(recipient.id, revenue);
     for (const part of HOME_CARE_REVENUE_PARTS) {
@@ -437,12 +453,15 @@ export function homeCareMonthRevenue(
   return {
     byRecipient,
     totals: { parts, total: sumParts(parts) },
-    warnings: doctorLimitWarnings(visits),
+    warnings: doctorLimitWarnings(visits, fees),
   };
 }
 
-/** 의사 1인당 월 기본료 140명·방문진료료 140회를 넘으면 넘는 만큼은 받지 못한다. */
-function doctorLimitWarnings(visits: readonly HomeCareMonthVisit[]): string[] {
+/** 의사 1인당 월 기본료 수급자·방문진료료 횟수 한도를 넘으면 넘는 만큼은 받지 못한다. */
+function doctorLimitWarnings(
+  visits: readonly HomeCareMonthVisit[],
+  fees: HomeCareFees,
+): string[] {
   const doctors = new Map<
     string,
     { name: string; recipients: Set<string>; billed: number }
@@ -455,18 +474,18 @@ function doctorLimitWarnings(visits: readonly HomeCareMonthVisit[]): string[] {
       doctors.set(visit.staff.id, doctor);
     }
     doctor.recipients.add(visit.recipient.id);
-    if (visit.facts.visitFeeRate !== null) doctor.billed += 1;
+    if (visit.facts.visitFeeBasis !== null) doctor.billed += 1;
   }
   const warnings: string[] = [];
   for (const { name, recipients, billed } of doctors.values()) {
-    if (recipients.size > HOME_CARE_DOCTOR_MONTHLY_LIMIT) {
+    if (recipients.size > fees.doctorRecipientLimit) {
       warnings.push(
-        `${name} 의사의 이달 수급자가 ${recipients.size}명입니다. 기본료는 의사 1인당 ${HOME_CARE_DOCTOR_MONTHLY_LIMIT}명까지입니다`,
+        `${name} 의사의 이달 수급자가 ${recipients.size}명입니다. 기본료는 의사 1인당 ${fees.doctorRecipientLimit}명까지입니다`,
       );
     }
-    if (billed > HOME_CARE_DOCTOR_MONTHLY_LIMIT) {
+    if (billed > fees.doctorVisitFeeLimit) {
       warnings.push(
-        `${name} 의사의 이달 방문진료료 청구가 ${billed}회입니다. 의사 1인당 월 ${HOME_CARE_DOCTOR_MONTHLY_LIMIT}회까지입니다`,
+        `${name} 의사의 이달 방문진료료 청구가 ${billed}회입니다. 의사 1인당 월 ${fees.doctorVisitFeeLimit}회까지입니다`,
       );
     }
   }

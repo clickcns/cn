@@ -21,6 +21,10 @@ export const queryKeys = {
     preview: (formId: string, adjustments: string) =>
       ["form-layouts", "preview", formId, adjustments] as const,
   },
+  /** 수가 묶음 목록(운영자가 넣고 지우면 응답으로 바꾼다). */
+  feeSchedules: {
+    all: ["fee-schedules"] as const,
+  },
   organizations: {
     all: ["organizations"] as const,
     list: () => ["organizations", "list"] as const,

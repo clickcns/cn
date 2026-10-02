@@ -5,6 +5,7 @@ import { AppController } from "./app.controller.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { ConfigModule, getPinoHttpConfig } from "./config/index.js";
 import { DictationModule } from "./dictation/dictation.module.js";
+import { FeeScheduleModule } from "./fee-schedule/fee-schedule.module.js";
 import { FormPdfModule } from "./form-pdf/form-pdf.module.js";
 import { globalProviders } from "./core/providers/global.providers.js";
 import { OrganizationModule } from "./organization/organization.module.js";
@@ -24,6 +25,7 @@ import { VisitModule } from "./visit/visit.module.js";
     PrismaModule,
     AuthModule,
     OrganizationModule,
+    FeeScheduleModule,
     UserModule,
     RecipientModule,
     VisitModule,

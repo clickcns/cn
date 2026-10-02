@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  DEFAULT_HOME_CARE_FEE_SET,
   assessmentOrderError,
   ExternalServiceSchema,
   externalConflicts,
   externalServiceOn,
-  HOME_CARE_BASE_FEE,
-  HOME_CARE_CONTINUITY_FEE,
-  HOME_CARE_DEATH_FEE_RATE,
-  HOME_CARE_VISIT_FEE,
   homeCareFeeStatuses,
   homeCareMonthPeriod,
   homeCareMonthRevenue,
@@ -22,6 +19,8 @@ import {
   type Profession,
   type VisitStatus,
 } from "@repo/shared-types";
+
+const FEES = DEFAULT_HOME_CARE_FEE_SET.fees;
 
 const MONTH = "2026-10";
 const TODAY = "2026-10-20";
@@ -58,7 +57,7 @@ function visit(
     startedAt: until ? scheduledAt : null,
     endedAt: until ? new Date(`${date}T${until}:00+09:00`).toISOString() : null,
     facts: {
-      visitFeeRate: null,
+      visitFeeBasis: null,
       nurseVisitType: null,
       withDoctor: false,
       minutes: null,
@@ -89,6 +88,7 @@ const caseFacts = (
 const recipient = (id: string, facts: Partial<HomeCareCaseFacts> = {}) => ({
   id,
   programs: ["HOME_CARE_CENTER"] as const,
+  institutionType: "CLINIC" as const,
   ...caseFacts(facts),
 });
 
@@ -321,6 +321,7 @@ describe("판정과 예상 수입에 반영", () => {
       visits,
       MONTH,
       TODAY,
+      FEES,
     );
     assert.equal(status.verdict, "SECURED");
     assert.equal(status.tallies.NURSE.confirmed, 2);
@@ -345,6 +346,7 @@ describe("판정과 예상 수입에 반영", () => {
       ],
       MONTH,
       TODAY,
+      FEES,
     );
     assert.equal(status.verdict, "SHORT");
     assert.equal(status.missing.NURSE, 2);
@@ -352,18 +354,24 @@ describe("판정과 예상 수입에 반영", () => {
 
   it("재평가 기한이 지나면 포괄평가 필요: 장기요양 급여 없이 방문진료료만", () => {
     const visits = [...fullMonth("a"), visit("a", "NURSE", 15)];
-    visits[0].facts.visitFeeRate = 1;
+    visits[0].facts.visitFeeBasis = "FULL";
     const statuses = homeCareFeeStatuses(
       [recipient("a", { assessments: [initial("2025-07-10")] })],
       visits,
       MONTH,
       TODAY,
+      FEES,
     );
     assert.equal(statuses[0].verdict, "BLOCKED");
-    const { totals, byRecipient } = homeCareMonthRevenue(statuses, visits, {
-      a: 5,
-    });
-    assert.equal(totals.total, HOME_CARE_VISIT_FEE);
+    const { totals, byRecipient } = homeCareMonthRevenue(
+      statuses,
+      visits,
+      {
+        a: 5,
+      },
+      FEES,
+    );
+    assert.equal(totals.total, FEES.visitFeeClinic);
     assert.equal(totals.parts.extraNursing.amount, 0);
     assert.match(byRecipient.get("a")!.issues.at(-1)!, /연속이 끊깁니다/);
   });
@@ -379,12 +387,13 @@ describe("판정과 예상 수입에 반영", () => {
       visits,
       MONTH,
       TODAY,
+      FEES,
     );
     assert.equal(status.verdict, "SECURED");
-    assert.equal(status.fee, HOME_CARE_BASE_FEE * HOME_CARE_DEATH_FEE_RATE);
+    assert.equal(status.fee, (FEES.baseFee * FEES.deathFeePercent) / 100);
     assert.equal(status.missing.NURSE, 0);
     assert.ok(status.notes.some((note) => note.includes("뒤 방문 1건")));
-    const { totals } = homeCareMonthRevenue([status], visits, { a: 5 });
+    const { totals } = homeCareMonthRevenue([status], visits, { a: 5 }, FEES);
     assert.equal(totals.parts.base.amount, status.fee);
     assert.equal(totals.parts.continuity.amount, 0);
     // 방문 없이 사망하면 0원(방문 부족)
@@ -393,6 +402,7 @@ describe("판정과 예상 수입에 반영", () => {
       [],
       MONTH,
       TODAY,
+      FEES,
     );
     assert.equal(none.verdict, "SHORT");
     // 사망 전에 요건을 채웠으면 그대로 받는다
@@ -401,8 +411,9 @@ describe("판정과 예상 수입에 반영", () => {
       fullMonth("a"),
       MONTH,
       TODAY,
+      FEES,
     );
-    assert.equal(full.fee, HOME_CARE_BASE_FEE);
+    assert.equal(full.fee, FEES.baseFee);
   });
 
   it("재평가 기간이면 알린다", () => {
@@ -411,6 +422,7 @@ describe("판정과 예상 수입에 반영", () => {
       fullMonth("a"),
       MONTH,
       TODAY,
+      FEES,
     );
     // 재평가 기간 2026-09-01 ~ 10-31
     assert.ok(status.notes.some((note) => note.includes("재평가 기간")));
@@ -495,8 +507,9 @@ describe("homeCarePriorStreaks + 사례 정보", () => {
       visits,
       MONTH,
       TODAY,
+      FEES,
     );
-    const { totals } = homeCareMonthRevenue(statuses, visits, { a: 5 });
-    assert.equal(totals.parts.continuity.amount, HOME_CARE_CONTINUITY_FEE);
+    const { totals } = homeCareMonthRevenue(statuses, visits, { a: 5 }, FEES);
+    assert.equal(totals.parts.continuity.amount, FEES.continuityFee);
   });
 });

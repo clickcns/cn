@@ -3,6 +3,7 @@ generator client {
   output              = "../src/generated/prisma"
   moduleFormat        = "cjs"
   importFileExtension = "js"
+  previewFeatures     = ["partialIndexes"]
 }
 
 datasource db {
@@ -44,6 +45,13 @@ enum VisitStatus {
 }
 
 /// 방문간호 기관(재가장기요양기관·가정간호사업소 등).
+/// 기관 종별(shared-types INSTITUTION_TYPES). 방문진료료 단가를 고른다.
+enum InstitutionType {
+  CLINIC
+  HOSPITAL
+  PUBLIC_HEALTH
+}
+
 /// 재택의료센터 포괄평가 구분(shared-types HOME_CARE_ASSESSMENT_KINDS)
 enum HomeCareAssessmentKind {
   INITIAL
@@ -71,14 +79,16 @@ enum ExternalServiceKind {
 }
 
 model Organization {
-  id        String    @id @default(uuid())
-  name      String
+  id              String          @id @default(uuid())
+  name            String
   /// 요양기관기호·장기요양기관 기호 등 기관 식별 코드(서식 머리에 적는다)
-  code      String?   @unique
+  code            String?         @unique
   /// 기관이 하는 사업. 방문을 만들 때 이 중에서 고른다.
-  programs  Program[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  programs        Program[]
+  /// 기관 종별(의원·병원급 이상·보건기관). 방문진료료 단가를 고른다.
+  institutionType InstitutionType @default(CLINIC)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   users      User[]
   recipients Recipient[]
@@ -112,6 +122,8 @@ model User {
   reopenedVersions      VisitRecordVersion[]   @relation("VersionReopenedBy")
   portalEntries         VisitPortalEntry[]
   homeCareAssessments   HomeCareAssessment[]
+  feeSchedulesCreated   HomeCareFeeSchedule[]  @relation("FeeScheduleCreatedBy")
+  feeSchedulesDeleted   HomeCareFeeSchedule[]  @relation("FeeScheduleDeletedBy")
   /// 저장한 원본 서식 조정
   formLayoutAdjustments FormLayoutAdjustment[]
 
@@ -316,6 +328,31 @@ model RecipientExternalService {
 
   @@index([recipientId])
   @@map("recipient_external_services")
+}
+
+/// 재택의료 수입이 쓰는 수가·비율·한도 묶음(shared-types fee-schedule.ts). 운영자가 지침이 바뀔 때
+/// 시행 월과 함께 넣고, 그달은 시행 월이 그달 이하인 가장 늦은 묶음을 쓴다(없으면 코드 기본값).
+/// 고치지 않고 새로 넣으며, 지우면 deletedAt만 붙여 이력에 남긴다(지우지 않은 묶음은 시행 월마다 하나).
+model HomeCareFeeSchedule {
+  id             String    @id @default(uuid())
+  /// 시행 월(YYYY-MM)
+  effectiveMonth String
+  /// HomeCareFees(shared-types HomeCareFeesSchema)
+  fees           Json
+  /// 근거(지침 판·쪽)
+  source         String
+  note           String?
+  createdById    String
+  createdAt      DateTime  @default(now())
+  deletedById    String?
+  deletedAt      DateTime?
+
+  createdBy User  @relation("FeeScheduleCreatedBy", fields: [createdById], references: [id])
+  deletedBy User? @relation("FeeScheduleDeletedBy", fields: [deletedById], references: [id])
+
+  /// 시행 월마다 지우지 않은 묶음은 하나(지우고 다시 넣는다)
+  @@unique([effectiveMonth], where: raw("\"deletedAt\" IS NULL"))
+  @@map("home_care_fee_schedules")
 }
 
 /// 방문 직후 음성 구술과 그로부터 만든 기록 초안. 방문당 하나이며, 다시 녹음하면 바꾸고

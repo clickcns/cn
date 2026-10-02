@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   formatKstDate,
-  HOME_CARE_DEATH_FEE_RATE,
   HOME_CARE_END_REASON_LABELS,
   HOME_CARE_END_REASONS,
   SetHomeCareEndSchema,
@@ -123,7 +122,7 @@ function EndSection({
   return (
     <CaseSection
       title="재택의료 종결"
-      description={`종결한 달은 종결일까지 요건을 세고, 그 뒤 달에는 재택의료 수입에 나오지 않습니다. 사망으로 종결한 달에 팀이 방문한 적이 있으면 요건을 못 채워도 기본료의 ${HOME_CARE_DEATH_FEE_RATE * 100}%를 셉니다.`}
+      description={`종결한 달은 종결일까지 요건을 세고, 그 뒤 달에는 재택의료 수입에 나오지 않습니다. 사망으로 종결한 달에 팀이 방문한 적이 있으면 요건을 못 채워도 기본료의 일부([수가 관리]의 사망 종결 비율)를 셉니다.`}
     >
       {endedOn && endReason ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border px-3 py-2">

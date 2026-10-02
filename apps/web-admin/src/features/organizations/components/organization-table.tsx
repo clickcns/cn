@@ -1,4 +1,8 @@
-import { PROGRAM_LABELS, type Organization } from "@repo/shared-types";
+import {
+  INSTITUTION_TYPE_LABELS,
+  PROGRAM_LABELS,
+  type Organization,
+} from "@repo/shared-types";
 import { PencilIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SortableTableHead } from "@/components/ui/sortable-table-head";
@@ -52,6 +56,7 @@ export function OrganizationTable({
         <TableRow className="hover:bg-transparent">
           {head("name", "기관 이름")}
           {head("code", "기관 코드")}
+          <TableHead>종별</TableHead>
           <TableHead>사업</TableHead>
           {head("userCount", "사용자 수", "text-right")}
           {head("recipientCount", "수급자 수", "text-right")}
@@ -68,6 +73,9 @@ export function OrganizationTable({
               <TableCell className="font-medium">{organization.name}</TableCell>
               <TableCell className="text-muted-foreground">
                 {orDash(organization.code)}
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
+                {INSTITUTION_TYPE_LABELS[organization.institutionType]}
               </TableCell>
               <TableCell>
                 {orDash(

@@ -16,6 +16,7 @@ import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { fromDbDate, toDbDate } from "../core/utils/db-date.js";
 import { resolveOrganizationFilter } from "../core/utils/org-scope.js";
 import type { Prisma } from "../generated/prisma/client.js";
+import { FeeScheduleService } from "../fee-schedule/fee-schedule.service.js";
 import { PrismaService } from "../prisma/index.js";
 import {
   homeCareRecipientSelect,
@@ -47,7 +48,10 @@ const monthVisitArgs = {
  */
 @Injectable()
 export class HomeCareService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly feeSchedules: FeeScheduleService,
+  ) {}
 
   /**
    * 그달 재택의료센터 방문(모든 상태, 서식 값 대신 금액 셈에 쓰는 사실만)과 수급자(사례 정보 포함),
@@ -63,14 +67,22 @@ export class HomeCareService {
       organizationId: query.organizationId,
       program: "HOME_CARE_CENTER" as const,
     };
-    const rows = await this.prisma.visit.findMany({
-      ...monthVisitArgs,
-      where: filterWhere(actor, filter, range),
-      orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
-      take: VISIT_CALENDAR_MAX_ITEMS + 1,
-    });
+    const [rows, feeSet] = await Promise.all([
+      this.prisma.visit.findMany({
+        ...monthVisitArgs,
+        where: filterWhere(actor, filter, range),
+        orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+        take: VISIT_CALENDAR_MAX_ITEMS + 1,
+      }),
+      this.feeSchedules.forMonth(query.month),
+    ]);
     if (rows.length > VISIT_CALENDAR_MAX_ITEMS) {
-      return { visits: null, recipients: [], priorStreaks: {} };
+      return {
+        visits: null,
+        recipients: [],
+        priorStreaks: {},
+        feeSet,
+      };
     }
     const [recipientRows, ltcNursing, counts] = await Promise.all([
       // 사용 중이거나 그달 방문이 있고, 그달 전에 종결하지 않은 재택의료센터 수급자
@@ -155,6 +167,7 @@ export class HomeCareService {
         query.month,
         new Map(recipients.map((recipient) => [recipient.id, recipient])),
       ),
+      feeSet,
     };
   }
 }
