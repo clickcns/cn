@@ -11,14 +11,33 @@ export function formatKstDate(date: Date = new Date()): string {
   return new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-/** 주어진 시각의 한국 시각을 HH:mm으로 돌려준다. */
-export function formatKstTime(date: Date): string {
-  return new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(11, 16);
+/** 주어진 시각의 한국 시각을 HH:mm(seconds면 HH:mm:ss)으로 돌려준다. */
+export function formatKstTime(
+  date: Date,
+  { seconds = false }: { seconds?: boolean } = {},
+): string {
+  return new Date(date.getTime() + KST_OFFSET_MS)
+    .toISOString()
+    .slice(11, seconds ? 19 : 16);
 }
 
 /** YYYY-MM-DD(한국 날짜)의 0시를 UTC 기준 Date로 돌려준다. */
 export function kstStartOfDay(date: string): Date {
   return new Date(`${date}T00:00:00${KST_OFFSET}`);
+}
+
+/**
+ * 한국 날짜 기간(끝 날 포함)을 UTC 시각 범위 [gte, lt)로. 한쪽만 주면 그쪽만 묶는다.
+ * from ≤ to 검사는 각 스키마가 한다.
+ */
+export function kstDateRange(
+  from?: string,
+  to?: string,
+): { gte?: Date; lt?: Date } {
+  return {
+    gte: from ? kstStartOfDay(from) : undefined,
+    lt: to ? kstStartOfDay(addKstDays(to, 1)) : undefined,
+  };
 }
 
 /** YYYY-MM-DD(한국 날짜)에 일수를 더한 한국 날짜를 돌려준다. */

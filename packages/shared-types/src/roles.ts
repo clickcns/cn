@@ -63,6 +63,11 @@ export function assignableRoles(actorRole: Role): readonly Role[] {
 export const LOGIN_CLIENTS = ["FIELD_WEB", "ADMIN_WEB"] as const;
 export type LoginClient = (typeof LOGIN_CLIENTS)[number];
 
+export const LOGIN_CLIENT_LABELS: Record<LoginClient, string> = {
+  FIELD_WEB: "현장 웹",
+  ADMIN_WEB: "관리 웹",
+};
+
 export const LOGIN_CLIENT_ROLES: Record<LoginClient, readonly Role[]> = {
   FIELD_WEB: ["STAFF", "MANAGER"],
   ADMIN_WEB: ["ADMIN", "MANAGER"],

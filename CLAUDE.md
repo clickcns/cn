@@ -77,6 +77,17 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
   - 갱신이 401·403으로 거절될 때만 로그아웃한다. 네트워크 오류·시간 초과·5xx는 세션을 지우지 않는다(작성 중이던 기록이 사라진다).
 - 세션이 끊기면 각 앱이 React Query 캐시를 비운다(이전 사용자의 데이터가 다음 사용자에게 보이지 않게).
 
+## 접속기록 (개인정보 안전성 확보조치 기준 제8조·제5조)
+
+- 표 `AccessLog`(access_logs): 누가(아이디·이름·역할 — 사용자가 바뀌어도 남게 그때 값), 언제, 어디서(IP, `TRUST_PROXY`), 무엇을(`action`: 로그인·로그인 실패·로그아웃·조회·등록·수정·삭제·내려받기·권한 변경과 작업 이름 `label`), 누구 정보를(정보주체 `recipientIds` — 목록은 앞쪽 500명과 수 `subjectCount`, 대상 `targetType`·`targetId`), 어느 기관 정보를(`organizationIds`), 결과(`status`), 상세(`detail`: 경로 값(id 빼고)과 검색 조건 또는 바꾼 칸 **이름만** — 기록 내용·비밀번호 값은 남기지 않는다, 실패하면 사용자가 본 오류 문구). 외래 키를 두지 않는다. 고칠 수 없고 3년이 지난 행만 지울 수 있다(마이그레이션의 트리거 `access_logs_guard`, TRUNCATE도 막는다). 개발 DB에서 시험 행을 지우려면 트리거를 잠시 끈다(DB 소유자만 된다).
+- 남기기: API마다 `@AccessLog(action, label, target, detail)`(`access-log/access-log.decorator.ts`: 대상은 `fromParam("visit")`(경로 `:id`)·`fromResult("recipient")`(응답 id)·`listOf(응답 → 수급자 id)`) 또는 `@NoAccessLog(까닭)`을 단다 — `access-log.spec.ts`가 모든 컨트롤러 경로를 읽어 빠진 것을 잡는다(**새 API를 더하면 둘 중 하나를 꼭 단다**).
+  - 흐름: 전역 가드 맨 앞 `AccessLogGuard`(`core/providers/global.providers.ts`, 막지 않음)가 자리(`response.locals`)를 만들고 응답이 끝나면(`finish`/`close`) 한 번 남긴다 → 그래서 뒤 가드가 막은 요청(역할 403, 로그인 요청 제한 429)도 최종 상태로 남는다. 전역 인터셉터 `AccessLogInterceptor`는 경로 값 대상의 정보주체·기관 찾기를 핸들러와 함께 시작하고(지우기만 먼저 — 지운 뒤에는 못 찾는다) 핸들러가 돌려준 값을 담는다. 오류 문구는 `ErrorFilter`가 담아 둔 것(사용자가 본 그대로). 남기기는 `AccessLogService.record`, 한 줄 만들기는 순수 함수 `buildAccessLog`(`access-log.entry.ts`). 남기지 못하면 그 줄 전체를 서버 로그에 남긴다.
+  - 기관(`organizationIds`): 대상의 기관, 목록이면 나온 수급자들의 기관(운영자가 "전체 기관"으로 본 것도 각 기관 관리자에게 보인다), 로그인 실패면 입력한 아이디의 기관, 그 밖에는 운영자가 요청한 기관 또는 사용자 기관.
+  - 권한 기록(제5조): 사용자 등록·수정은 `PERMISSION`. 성공하면 역할·직종·기관·사용 여부 중 바뀐 칸의 이전·새 값(`changes`, 이전 값은 처리 전에 찾은 사용자), 실패하면 오류 문구.
+- 남지 않는 것: 토큰이 만료·위조돼 막힌 요청(401 — 누구의 것인지 모른다, 로그인 실패는 남긴다), 접속기록 표시가 없는 API(토큰 갱신·본인 정보·개인정보 없는 설정 조회).
+- 보기: `GET /access-logs`(기관 관리자는 자기 기관이 든 기록, 운영자는 헤더 [기관 선택]), `GET /access-logs/export`(CSV, 엑셀용 BOM, 최신순 10,000줄까지 1,000줄씩 읽고 넘으면 마지막 줄에 알림). 보고 내려받는 것도 기록된다. 조회 응답의 정보주체는 앞쪽 3명(`ACCESS_LOG_SHOWN_SUBJECTS`)과 수급자로 좁힌 그 수급자만. 관리 웹 `/access-logs`: 기간·작업·사용자·수급자(대상의 이름을 누르면 그 수급자 기록만) 조건, 점검 버튼(로그인 실패·내려받기·삭제·권한 변경·실패한 요청), 상세의 조건 이름·값은 화면에서만 한국어로 바꾼다.
+- 아직 없는 것: 관리자 2단계 인증, 앱 DB 계정을 INSERT·SELECT만으로 좁히기와 날마다 요약 hash(트리거는 DB 소유자를 막지 못한다), 이상 징후 알림(근무시간 밖·대량 조회), 3년 지난 행 정리 작업.
+
 ## 도메인 규칙
 
 - 시간대는 한국 표준시(UTC+9). 날짜 쿼리(`date`, `from`, `to`)는 KST 날짜이며 `to`는 그날을 포함한다. 변환은 `shared-types/src/date.ts`.

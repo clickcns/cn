@@ -16,6 +16,7 @@ import {
   SaveFormLayoutSchema,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import { AccessLog, NoAccessLog } from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { FormLayoutService } from "./form-layout.service.js";
@@ -32,16 +33,19 @@ export class FormLayoutController {
   constructor(private readonly formLayoutService: FormLayoutService) {}
 
   @Get()
+  @NoAccessLog("원본 서식 자리: 개인정보를 다루지 않는다")
   list() {
     return this.formLayoutService.list();
   }
 
   @Get(":formId")
+  @NoAccessLog("원본 서식 자리: 개인정보를 다루지 않는다")
   detail(@Param("formId") formId: string) {
     return this.formLayoutService.detail(formId);
   }
 
   @Put(":formId")
+  @AccessLog("UPDATE", "원본 서식 조정 저장")
   save(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("formId") formId: string,
@@ -51,6 +55,7 @@ export class FormLayoutController {
   }
 
   @Delete(":formId")
+  @AccessLog("UPDATE", "원본 서식 조정 지우기")
   reset(@Param("formId") formId: string) {
     return this.formLayoutService.reset(formId);
   }
@@ -59,6 +64,7 @@ export class FormLayoutController {
   @Post(":formId/preview")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
+  @NoAccessLog("표본 PDF: 실제 기록이 아닌 표본 값으로 그린다")
   async preview(
     @Param("formId") formId: string,
     @Body() dto: PreviewFormLayoutDto,

@@ -4,8 +4,15 @@ import {
   CreateRecipientSchema,
   RecipientListQuerySchema,
   UpdateRecipientSchema,
+  type Recipient,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import {
+  AccessLog,
+  fromParam,
+  fromResult,
+  listOf,
+} from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -23,6 +30,11 @@ export class RecipientController {
   constructor(private readonly recipientService: RecipientService) {}
 
   @Get()
+  @AccessLog(
+    "VIEW",
+    "수급자 목록",
+    listOf((result: Recipient[]) => result.map((recipient) => recipient.id)),
+  )
   list(
     @CurrentUser() actor: AuthenticatedUser,
     @Query() query: RecipientListQueryDto,
@@ -31,12 +43,14 @@ export class RecipientController {
   }
 
   @Get(":id")
+  @AccessLog("VIEW", "수급자 정보", fromParam("recipient"))
   get(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.recipientService.get(actor, id);
   }
 
   @Roles("ADMIN", "MANAGER")
   @Post()
+  @AccessLog("CREATE", "수급자 등록", fromResult("recipient"))
   create(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: CreateRecipientDto,
@@ -46,6 +60,7 @@ export class RecipientController {
 
   @Roles("ADMIN", "MANAGER")
   @Patch(":id")
+  @AccessLog("UPDATE", "수급자 정보 수정", fromParam("recipient"))
   update(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,

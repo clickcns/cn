@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
+import { AccessLogModule } from "./access-log/access-log.module.js";
 import { AppController } from "./app.controller.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { ConfigModule, getPinoHttpConfig } from "./config/index.js";
@@ -23,6 +24,7 @@ import { VisitModule } from "./visit/visit.module.js";
       errorMessage: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요",
     }),
     PrismaModule,
+    AccessLogModule,
     AuthModule,
     OrganizationModule,
     FeeScheduleModule,

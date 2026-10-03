@@ -10,6 +10,7 @@ import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 import { ZodValidationException } from "nestjs-zod";
 import type { ZodError } from "zod";
+import { setResponseErrorMessage } from "../../access-log/access-log.context.js";
 
 /** 모든 오류를 shared-types ApiErrorBody 형태로 응답한다. */
 @Catch(Error)
@@ -88,6 +89,8 @@ export class ErrorFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
     };
+    // 접속기록이 사용자가 본 문구 그대로 남긴다.
+    setResponseErrorMessage(response, message);
     response.status(statusCode).json(body);
   }
 

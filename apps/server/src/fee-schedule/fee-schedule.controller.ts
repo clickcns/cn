@@ -5,6 +5,7 @@ import {
   UpdateHomeCareFeeScheduleSchema,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import { AccessLog, NoAccessLog } from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -30,12 +31,14 @@ export class FeeScheduleController {
 
   @Get()
   @Roles("ADMIN", "MANAGER")
+  @NoAccessLog("수가: 개인정보를 다루지 않는다")
   list() {
     return this.feeScheduleService.list();
   }
 
   @Post()
   @Roles("ADMIN")
+  @AccessLog("CREATE", "수가 넣기")
   create(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: CreateHomeCareFeeScheduleDto,
@@ -45,6 +48,7 @@ export class FeeScheduleController {
 
   @Put(":id")
   @Roles("ADMIN")
+  @AccessLog("UPDATE", "수가 고치기")
   update(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -55,6 +59,7 @@ export class FeeScheduleController {
 
   @Delete(":id")
   @Roles("ADMIN")
+  @AccessLog("DELETE", "수가 지우기")
   remove(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.feeScheduleService.remove(actor, id);
   }

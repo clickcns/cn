@@ -1,4 +1,5 @@
 import type {
+  AccessLogQuery,
   HomeCareMonthQuery,
   PortalQueueQuery,
   RecipientListQuery,
@@ -24,6 +25,10 @@ export const queryKeys = {
   /** 수가 묶음 목록(운영자가 넣고 지우면 응답으로 바꾼다). */
   feeSchedules: {
     all: ["fee-schedules"] as const,
+  },
+  accessLogs: {
+    all: ["access-logs"] as const,
+    list: (query: AccessLogQuery) => ["access-logs", query] as const,
   },
   organizations: {
     all: ["organizations"] as const,

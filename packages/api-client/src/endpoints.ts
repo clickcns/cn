@@ -1,4 +1,6 @@
 import type {
+  AccessLogPage,
+  AccessLogQuery,
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
@@ -111,7 +113,21 @@ export function createCarenoteApi(http: KyInstance) {
         http.patch(`organizations/${id}`, { json: input }).json<Organization>(),
     },
 
-    /** 재택의료 수입의 수가 묶음(보기는 기관 관리자·운영자, 넣기·지우기는 운영자). 넣고 지우면 목록 전체를 준다. */
+    /** 접속기록(기관 관리자는 자기 기관, 운영자는 전체). 보고 내려받는 것도 기록된다. */
+    accessLogs: {
+      list: (query: AccessLogQuery) =>
+        http
+          .get("access-logs", { searchParams: toSearchParams(query) })
+          .json<AccessLogPage>(),
+      export: (query: AccessLogQuery) =>
+        fileDownload(
+          http.get("access-logs/export", {
+            searchParams: toSearchParams(query),
+          }),
+        ),
+    },
+
+    /** 재택의료 수입의 수가 묶음(보기는 기관 관리자·운영자, 넣기·고치기·지우기는 운영자). 바꾸면 목록 전체를 준다. */
     feeSchedules: {
       list: () =>
         http.get("home-care-fee-schedules").json<HomeCareFeeScheduleList>(),

@@ -396,3 +396,54 @@ model FormLayoutAdjustment {
 
   @@map("form_layout_adjustments")
 }
+
+/// shared-types ACCESS_ACTIONS와 값이 일치해야 한다.
+enum AccessAction {
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  VIEW
+  CREATE
+  UPDATE
+  DELETE
+  DOWNLOAD
+  PERMISSION
+}
+
+/// 접속기록(개인정보 안전성 확보조치 기준 제8조, 권한 기록 제5조): 누가 언제 어디서 어떤 정보주체의
+/// 정보를 어떻게 처리했나. 고칠 수 없고 3년이 지난 행만 지울 수 있다(DB 트리거, 마이그레이션 SQL).
+/// 사용자·대상이 지워져도 남도록 외래 키를 두지 않고 그때의 아이디·이름·역할을 함께 적는다.
+model AccessLog {
+  id              String       @id @default(uuid())
+  at              DateTime     @default(now())
+  /// 로그인 실패는 계정을 모를 수 있다(입력한 아이디만)
+  actorId         String?
+  actorUsername   String
+  actorName       String?
+  actorRole       Role?
+  /// 처리한 정보가 속한 기관들(기관 관리자는 자기 기관이 든 기록만 본다). 목록은 나온 수급자의 기관들
+  organizationIds String[]
+  ip              String
+  action          AccessAction
+  /// 작업 이름(예: "방문 기록 확정")
+  label           String
+  /// shared-types ACCESS_TARGET_TYPES
+  targetType      String?
+  targetId        String?
+  /// 처리한 정보주체(수급자). 목록은 화면에 나온 수급자 중 앞쪽 ACCESS_LOG_MAX_SUBJECTS명
+  recipientIds    String[]
+  /// 처리한 정보주체 수
+  subjectCount    Int          @default(0)
+  method          String
+  /// 경로 틀(예: /api/visits/:id) — 값은 targetId·recipientIds에
+  path            String
+  status          Int
+  /// 검색 조건·바꾼 칸 이름 등(비밀번호·기록 내용 같은 값은 넣지 않는다)
+  detail          Json?
+
+  @@index([at])
+  @@index([actorId, at])
+  @@index([recipientIds], type: Gin)
+  @@index([organizationIds], type: Gin)
+  @@map("access_logs")
+}

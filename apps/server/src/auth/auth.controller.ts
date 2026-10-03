@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
+import { AccessLog, NoAccessLog } from "../access-log/access-log.decorator.js";
 import { AuthService } from "./auth.service.js";
 import { CurrentUser, Public } from "./decorators/index.js";
 import { ChangePasswordDto, LoginDto, RefreshDto } from "./dto/index.js";
@@ -30,6 +31,9 @@ export class AuthController {
   @Throttle(LOGIN_THROTTLE)
   @Post("login")
   @HttpCode(HttpStatus.OK)
+  @AccessLog("LOGIN", "로그인", undefined, (request) => ({
+    client: (request.body as { client?: unknown }).client,
+  }))
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -38,6 +42,7 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
+  @NoAccessLog("로그인 유지(토큰 갱신)")
   refresh(@CurrentUser() context: RefreshContext, @Body() _dto: RefreshDto) {
     return this.authService.refresh(context);
   }
@@ -45,6 +50,7 @@ export class AuthController {
   @ApiBearerAuth()
   @Post("logout")
   @HttpCode(HttpStatus.OK)
+  @AccessLog("LOGOUT", "로그아웃")
   logout(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.logout(user);
   }
@@ -54,6 +60,7 @@ export class AuthController {
   @Throttle(LOGIN_THROTTLE)
   @Post("password")
   @HttpCode(HttpStatus.OK)
+  @AccessLog("UPDATE", "본인 비밀번호 변경")
   changePassword(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: ChangePasswordDto,
@@ -63,6 +70,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Get("me")
+  @NoAccessLog("본인 정보")
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.me(user.id);
   }

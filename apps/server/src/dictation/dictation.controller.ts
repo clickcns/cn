@@ -16,6 +16,7 @@ import { Throttle } from "@nestjs/throttler";
 import { DICTATION_MAX_SECONDS } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
+import { AccessLog, fromParam } from "../access-log/access-log.decorator.js";
 import { CurrentUser } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -43,6 +44,7 @@ export class DictationController {
   constructor(private readonly dictationService: DictationService) {}
 
   @Get()
+  @AccessLog("VIEW", "구술 초안", fromParam("visit"))
   get(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.dictationService.get(actor, id);
   }
@@ -67,6 +69,7 @@ export class DictationController {
       },
     },
   })
+  @AccessLog("CREATE", "구술 녹음 보내기", fromParam("visit"))
   record(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -81,11 +84,13 @@ export class DictationController {
   @Post("redraft")
   @HttpCode(HttpStatus.OK)
   @Throttle(DICTATION_THROTTLE)
+  @AccessLog("UPDATE", "구술 초안 다시 만들기", fromParam("visit"))
   redraft(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.dictationService.redraft(actor, id);
   }
 
   @Delete()
+  @AccessLog("DELETE", "구술 지우기", fromParam("visit"))
   remove(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.dictationService.remove(actor, id);
   }

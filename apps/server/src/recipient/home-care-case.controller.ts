@@ -6,6 +6,7 @@ import {
   SetHomeCareEndSchema,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import { AccessLog, fromParam } from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -29,11 +30,13 @@ export class HomeCareCaseController {
   constructor(private readonly homeCareCaseService: HomeCareCaseService) {}
 
   @Get(":id/home-care-case")
+  @AccessLog("VIEW", "재택의료 사례 정보", fromParam("recipient"))
   get(@CurrentUser() actor: AuthenticatedUser, @UuidParam() id: string) {
     return this.homeCareCaseService.get(actor, id);
   }
 
   @Post(":id/assessments")
+  @AccessLog("CREATE", "포괄평가 기록", fromParam("recipient"))
   addAssessment(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -43,6 +46,7 @@ export class HomeCareCaseController {
   }
 
   @Delete(":id/assessments/:assessmentId")
+  @AccessLog("DELETE", "포괄평가 기록 삭제", fromParam("recipient"))
   removeAssessment(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -52,6 +56,7 @@ export class HomeCareCaseController {
   }
 
   @Post(":id/external-services")
+  @AccessLog("CREATE", "다른 기관 서비스 등록", fromParam("recipient"))
   addExternalService(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -61,6 +66,7 @@ export class HomeCareCaseController {
   }
 
   @Put(":id/external-services/:serviceId")
+  @AccessLog("UPDATE", "다른 기관 서비스 수정", fromParam("recipient"))
   updateExternalService(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -76,6 +82,7 @@ export class HomeCareCaseController {
   }
 
   @Delete(":id/external-services/:serviceId")
+  @AccessLog("DELETE", "다른 기관 서비스 삭제", fromParam("recipient"))
   removeExternalService(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -86,6 +93,7 @@ export class HomeCareCaseController {
 
   /** 재택의료 종결 날짜·사유를 적거나 지운다(둘 다 null). */
   @Put(":id/home-care-end")
+  @AccessLog("UPDATE", "재택의료 종결", fromParam("recipient"))
   setEnd(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,

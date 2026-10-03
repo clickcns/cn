@@ -13,10 +13,12 @@ import {
   NurseMonthPdfQuerySchema,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import { AccessLog, fromParam } from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
 import { FormPdfService, type PdfFile } from "./form-pdf.service.js";
+import { fileResponse } from "../core/utils/file-response.js";
 
 class FormPdfQueryDto extends createZodDto(FormPdfQuerySchema) {}
 class NurseMonthPdfQueryDto extends createZodDto(NurseMonthPdfQuerySchema) {}
@@ -26,9 +28,11 @@ class NurseMonthPdfQueryDto extends createZodDto(NurseMonthPdfQuerySchema) {}
  * 대상자 기록이라 브라우저·프록시에 남기지 않는다(no-store).
  */
 function pdfResponse(file: PdfFile): StreamableFile {
-  return new StreamableFile(file.bytes, {
+  return fileResponse(file.bytes, {
     type: "application/pdf",
-    disposition: `inline; filename="form.pdf"; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+    filename: file.filename,
+    fallbackName: "form.pdf",
+    inline: true,
   });
 }
 
@@ -41,6 +45,7 @@ export class FormPdfController {
   /** 확정본 한 벌의 서식 PDF(style=original: 원본 위에 채움, standard: 서식 정의로 그림). */
   @Get("visits/:id/versions/:version/pdf")
   @Header("Cache-Control", "no-store")
+  @AccessLog("DOWNLOAD", "확정본 PDF", fromParam("visit"))
   async visitVersionPdf(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
@@ -61,6 +66,7 @@ export class FormPdfController {
   @Roles("ADMIN", "MANAGER")
   @Get("recipients/:id/home-care-nurse-pdf")
   @Header("Cache-Control", "no-store")
+  @AccessLog("DOWNLOAD", "제7호 월간 기록지 PDF", fromParam("recipient"))
   async nurseMonthPdf(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,

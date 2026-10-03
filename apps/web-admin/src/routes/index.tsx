@@ -69,6 +69,10 @@ export const router = createBrowserRouter(
                   lazy: page(() => import("@/pages/users")),
                 },
                 {
+                  path: ROUTES.accessLogs,
+                  lazy: page(() => import("@/pages/access-logs")),
+                },
+                {
                   element: <AdminGuard />,
                   children: [
                     {

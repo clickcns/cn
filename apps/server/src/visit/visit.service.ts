@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
-  addKstDays,
   checkVisitTimes,
   conflictsOnSameDay,
   countVisitsByDay,
@@ -22,7 +21,7 @@ import {
   isRecordEditable,
   keepDraftForms,
   missingRequiredMessage,
-  kstStartOfDay,
+  kstDateRange,
   PROGRAM_LABELS,
   selectForms,
   toKstIsoDateTime,
@@ -873,17 +872,9 @@ export function scheduledRange(query: {
   from?: string;
   to?: string;
 }): Prisma.DateTimeFilter | undefined {
-  if (query.date) {
-    return {
-      gte: kstStartOfDay(query.date),
-      lt: kstStartOfDay(addKstDays(query.date, 1)),
-    };
-  }
+  if (query.date) return kstDateRange(query.date, query.date);
   if (!query.from && !query.to) return undefined;
-  return {
-    gte: query.from ? kstStartOfDay(query.from) : undefined,
-    lt: query.to ? kstStartOfDay(addKstDays(query.to, 1)) : undefined,
-  };
+  return kstDateRange(query.from, query.to);
 }
 
 /**

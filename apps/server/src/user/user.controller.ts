@@ -4,8 +4,15 @@ import {
   CreateUserSchema,
   UpdateUserSchema,
   UserListQuerySchema,
+  type UserSummary,
 } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import {
+  AccessLog,
+  fromParam,
+  fromResult,
+  listOf,
+} from "../access-log/access-log.decorator.js";
 import { CurrentUser, Roles } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -24,6 +31,11 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
+  @AccessLog(
+    "VIEW",
+    "사용자 목록",
+    listOf<UserSummary[]>(undefined, (result) => result.length),
+  )
   list(
     @CurrentUser() actor: AuthenticatedUser,
     @Query() query: UserListQueryDto,
@@ -32,11 +44,13 @@ export class UserController {
   }
 
   @Post()
+  @AccessLog("PERMISSION", "사용자 등록", fromResult("user"))
   create(@CurrentUser() actor: AuthenticatedUser, @Body() dto: CreateUserDto) {
     return this.userService.create(actor, dto);
   }
 
   @Patch(":id")
+  @AccessLog("PERMISSION", "사용자 정보·권한 변경", fromParam("user"))
   update(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,

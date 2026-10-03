@@ -2,6 +2,7 @@ import { Controller, Get, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { RecipientRecordQuerySchema } from "@repo/shared-types";
 import { createZodDto } from "nestjs-zod";
+import { AccessLog, fromParam } from "../access-log/access-log.decorator.js";
 import { CurrentUser } from "../auth/decorators/index.js";
 import type { AuthenticatedUser } from "../auth/types/authenticated-user.js";
 import { UuidParam } from "../core/decorators/uuid-param.js";
@@ -23,6 +24,7 @@ export class RecipientRecordsController {
    * 현장 직원도 다른 직원의 확정 기록을 보는 유일한 길이다(조건은 record-history.ts).
    */
   @Get(":id/records")
+  @AccessLog("VIEW", "지난 기록", fromParam("recipient"))
   records(
     @CurrentUser() actor: AuthenticatedUser,
     @UuidParam() id: string,
