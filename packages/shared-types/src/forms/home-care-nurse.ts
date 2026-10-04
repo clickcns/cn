@@ -7,6 +7,7 @@ import {
   PULSE_FIELD,
   SYSTOLIC_FIELD,
   TEMPERATURE_FIELD,
+  WEIGHT_CHANGE_FIELD,
   YES_NO_OPTIONS,
 } from "./common.js";
 import type { FormDef } from "./engine.js";
@@ -84,19 +85,7 @@ export const HOME_CARE_NURSE_FORM = {
         PULSE_FIELD,
         TEMPERATURE_FIELD,
         GLUCOSE_FIELD,
-        {
-          key: "weightChange",
-          label: "체중 변화",
-          visitSpecific: true,
-          type: "number",
-          unit: "kg",
-          min: -50,
-          max: 50,
-          decimals: 1,
-          signed: true,
-          dictation: true,
-          hint: "늘었으면 양수, 줄었으면 음수. quote에는 숫자만",
-        },
+        WEIGHT_CHANGE_FIELD,
         {
           key: "delirium",
           label: "문제행동(섬망)",

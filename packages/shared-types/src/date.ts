@@ -247,6 +247,22 @@ export function normalizeDateTyping(text: string): string {
     : text;
 }
 
+/** 기준일과 비교한 "오늘"·"내일"·"어제". 그 밖의 날은 null. */
+export function relativeDayLabel(date: string, today: string): string | null {
+  if (date === today) return "오늘";
+  if (date === addKstDays(today, 1)) return "내일";
+  if (date === addKstDays(today, -1)) return "어제";
+  return null;
+}
+
+/** 분 → "45분", "1시간", "1시간 5분" */
+export function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}분`;
+  return rest === 0 ? `${hours}시간` : `${hours}시간 ${rest}분`;
+}
+
 /** "2026-09-22" → "9월 22일 (화)" */
 export function formatDateLabel(date: string): string {
   const [, month, day] = date.split("-").map(Number);

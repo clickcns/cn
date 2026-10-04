@@ -158,6 +158,16 @@ pnpm --filter @repo/server dictation:eval <녹음 파일...> [--forms 서식ID,.
   - 불러오기는 `mergeFormValues`(`features/forms/lib/merge-form-values.ts`)로 합친다. 지난 기록은 여러 개 고르는 칸을 그 기록대로 바꾸고(replace), 음성 초안(`mergeDraft`)은 이미 고른 항목에 더한다(union). 둘 다 빈 값으로 지우지 않고, 이미 입력한 값이 바뀌면 먼저 묻는다. 채운 뒤 그 서식을 열어 첫 채운 칸으로 가고 알림의 [되돌리기]로 되돌린다. 저장은 기존 [임시 저장].
   - 쿼리 키는 `visitKeys.pastRecords`(`lists` 아래 — 저장·확정·삭제 뒤 함께 다시 받는다). 칸마다 지난 값은 같은 쿼리의 모듈 수준 `select`라 녹음 중 다시 그려도 다시 계산하지 않는다.
 
+## 방문 전 준비 (현장 웹)
+
+집 앞에서 "지난번에 무엇을 했고 오늘 무엇을 챙길지"를 30초 안에 보게 한다. 새 API·DB 없이 기존 쿼리로 만들고, 규칙은 shared-types 선언 한 곳이다 — **서식 칸을 바꾸면 이 목록도 고친다**(서버 spec이 칸·선택지가 서식 정의에 있는지 본다).
+
+- 방문 전 확인(`features/briefing`의 `BriefingCard`, 예정·작성 중 방문만): 지난 기록에서 정한 칸만 그대로 보인다(AI·요약 없음). 칸 목록은 `visit-briefing.ts`의 `BRIEFING_FIELDS`(`kind`: 간호지시·계획·살펴볼 것·한 일·메모, `values`로 그 선택지일 때만 — 예: 낙상 "예"면 "있었음"). `buildVisitBriefing`이 직종 × 사업마다 보일 칸이 있는 가장 최근 기록 하나에서 뽑고(기록을 섞지 않음, 제공 시간 빼고 메모는 남김 — `withoutMinutes`), `briefingForViewer`가 방문 직종(`visit.profession`) 기준으로 맨 위 줄을 고른다(간호사에게는 의사 간호지시, 누구에게나 본인 직종의 계획 — 기록마다 첫 계획 칸 하나). 서식 둘을 쓴 기록(의사 제6호·제4호)은 칸 이름에 서식 번호를 붙인다. [기록 보기]는 지난 기록 창(`?past=`)을 연다.
+- 활력징후 추이(`features/vitals`의 `VitalsTrendCard`, 모든 상태·직종): `vital-signs.ts`의 `VITAL_SIGNS`(혈압 짝·맥박·체온·호흡·혈당·체중 변화 — 칸은 서식이 함께 쓰는 `forms/common.ts`의 정의 그대로라 이름·단위·소수 자리·`signed`를 거기서 읽고, 같은 키의 칸이 어느 서식에서나 그 정의인지 spec이 본다) → `vitalTrends`가 오래된 순 점과 지난 점과의 차(`change`)를 낸다. 확정한 방문이면 이번 값을 마지막 점으로 더한다. **기록된 값과 단순 차이만** — 정상 범위·기준선·색 경고는 넣지 않는다(의료기기 경계). 체중 변화(`signed`)는 이미 변화값이라 차이를 셈하지 않는다(0 기준 막대). 요약 줄은 `vitalSummary`. 그래프는 Recharts를 `vitals-chart.tsx` 한 파일에만 두고 `React.lazy`로 펼쳐서 점이 둘 이상일 때만 받는다(기록 화면 첫 청크에 넣지 않음, 그림은 `aria-hidden`이고 화면 읽기는 표와 `vitalChangeLabel`). [이전 기록 더 보기]는 같은 쿼리의 다음 쪽이며 `RECORD_HISTORY_MAX_LIMIT`(30)건까지다(다시 받기·접속기록 줄 수).
+- 두 카드는 지난 기록 카드와 같은 `visitKeys.pastRecords` 쿼리를 쓴다(요청이 늘지 않음, 브리핑은 모듈 수준 `select` `usePastBriefing`). 둘 다 `CollapsibleCard`(`components/ui`): 요약 줄은 늘 보이고, 넓은 화면은 늘 펼침, 좁은 화면은 접어 두고 마지막 선택을 기억한다. 기록 화면 옆 칸 순서는 방문 요약 → 방문 전 확인 → 수급자 정보 → 활력징후 추이 → 지난 기록.
+- 다음 방문 줄(`NextVisitStrip`, 방문 일정에서 고른 날이 오늘일 때): `day-schedule.ts`의 `upcomingVisits`(목록 순서 그대로 예정 방문만, 지금부터 몇 분 — 지났으면 "지금 차례"), 길 안내(`MapMenuButton`)·[기록 열기], 그다음 두 건, 건수는 서버 `statusCounts`. 1분 시계는 `hooks/use-now.ts`(`useSyncExternalStore`, 화면에 돌아오면 바로)이고 이 줄만 다시 그린다. 주소를 좌표로 바꾸는 외부 API는 쓰지 않는다(주소는 개인정보).
+- 보호자 방문 안내 문자(`GuardianNoticeButton`, 수급자 정보 카드 보호자 줄의 `guardianAction`, 기록 화면에서 예정이고 오늘 이후인 방문만 — `guardianNoticeAvailable`): 문구는 `guardian-notice.ts`의 `guardianNoticeText`(기관·수급자 이름·"오늘/내일"(`relativeDayLabel`)·일시·직종과 담당자만, 보호자 이름·주소·진단은 넣지 않음)이고 창에서 고칠 수 있다. 케어노트는 문자를 보내지 않는다: [문구 복사](`components/ui/copy-button.tsx`, 포털 입력과 공용)와 휴대폰(`pointer: coarse`)·번호가 있을 때 [문자 앱 열기](`smsUrl`: `sms:번호?&body=…`, 번호는 `tel:`과 같은 `dialablePhone`, 기기마다 다를 수 있어 복사를 늘 함께 둔다).
+
 ## 포털 입력 도우미 (공식 전산에 옮겨 적기)
 
 케어노트는 심평원·공단 전산과 연결되지 않는다(공개 쓰기 API 없음, 인증서를 다루지 않음). 확정한 기록을 담당자가 옮겨 적도록 포털 화면 순서대로 늘어놓고, 서식마다 한 번 [입력 완료]로 표시한다. 칸마다 체크하지 않는다(포털에서 한 번, 여기서 또 한 번 누르는 일이 되므로).

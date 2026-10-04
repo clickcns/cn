@@ -31,9 +31,12 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 /** 수급자 기본 정보. 방문 기록 화면과 수급자 상세에서 함께 쓴다. */
 export function RecipientInfoCard({
   recipient,
+  guardianAction,
   className,
 }: {
   recipient: VisitRecipient;
+  /** 보호자 줄에 붙는 동작(방문 기록 화면의 [방문 안내 문자]) */
+  guardianAction?: ReactNode;
   className?: string;
 }) {
   const meta = formatRecipientMeta(recipient);
@@ -67,18 +70,23 @@ export function RecipientInfoCard({
         )}
 
         <InfoRow label="보호자">
-          {recipient.guardianName || recipient.guardianPhone ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              {recipient.guardianName && (
-                <span className="font-semibold">{recipient.guardianName}</span>
-              )}
-              {recipient.guardianPhone && (
-                <PhoneLink phone={recipient.guardianPhone} />
-              )}
-            </div>
-          ) : (
-            "등록된 보호자 없음"
-          )}
+          <div className="flex flex-col gap-2">
+            {recipient.guardianName || recipient.guardianPhone ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                {recipient.guardianName && (
+                  <span className="font-semibold">
+                    {recipient.guardianName}
+                  </span>
+                )}
+                {recipient.guardianPhone && (
+                  <PhoneLink phone={recipient.guardianPhone} />
+                )}
+              </div>
+            ) : (
+              "등록된 보호자 없음"
+            )}
+            {guardianAction && <div>{guardianAction}</div>}
+          </div>
         </InfoRow>
 
         {recipient.notes && (

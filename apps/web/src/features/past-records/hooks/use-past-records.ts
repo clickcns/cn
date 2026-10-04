@@ -1,4 +1,5 @@
 import {
+  buildVisitBriefing,
   latestFieldValuesByForm,
   type RecipientRecordPage,
   type RecipientRecordQuery,
@@ -39,6 +40,9 @@ const allRecords = (data: InfiniteData<RecipientRecordPage>) =>
 const pastFieldValues = (data: InfiniteData<RecipientRecordPage>) =>
   latestFieldValuesByForm(allRecords(data));
 
+const briefingOf = (data: InfiniteData<RecipientRecordPage>) =>
+  buildVisitBriefing(allRecords(data));
+
 /** 지난 기록(최신순, "더 보기"로 이어 받는다). */
 export function usePastRecords(visit: PastRecordsAnchor) {
   return useInfiniteQuery({ ...pastRecordsOptions(visit), select: allRecords });
@@ -50,4 +54,10 @@ export function usePastFieldValues(visit: PastRecordsAnchor) {
     ...pastRecordsOptions(visit),
     select: pastFieldValues,
   }).data;
+}
+
+/** 받아 둔 지난 기록으로 만든 방문 전 브리핑(직종마다 가장 최근 기록의 정한 칸). 아직 없으면 undefined. */
+export function usePastBriefing(visit: PastRecordsAnchor) {
+  return useInfiniteQuery({ ...pastRecordsOptions(visit), select: briefingOf })
+    .data;
 }

@@ -2,6 +2,7 @@ import { CalendarX2, Plus } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageError, PageLoading } from "@/components/ui/page-state";
+import { NextVisitStrip } from "@/features/visits/components/next-visit-strip";
 import { VisitCard } from "@/features/visits/components/visit-card";
 import { useDailyVisits } from "@/features/visits/hooks/use-visits";
 import { formatDateLabel, relativeDayLabel } from "@/lib/date";
@@ -62,6 +63,12 @@ export function DayVisits({ date, today }: DayVisitsProps) {
         />
       ) : (
         <>
+          {date === today && visitsQuery.data && (
+            <NextVisitStrip
+              visits={visits}
+              statusCounts={visitsQuery.data.statusCounts}
+            />
+          )}
           <p className="text-muted-foreground" aria-live="polite">
             방문 <strong className="text-foreground">{total}건</strong>
             {" · "}확정 {confirmedCount}건

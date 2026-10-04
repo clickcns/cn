@@ -2,6 +2,7 @@ import {
   CARE_GRADE_LABELS,
   formatKstDate,
   formatKstTime,
+  formatMinutes,
   fullAge,
   GENDER_LABELS,
   kstWeekday,
@@ -101,11 +102,7 @@ export function formatDuration(start: DateInput, end: DateInput): string {
   if (!start || !end) return EMPTY;
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (!Number.isFinite(ms) || ms < 0) return EMPTY;
-  const totalMinutes = Math.round(ms / 60_000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${minutes}분`;
-  return minutes === 0 ? `${hours}시간` : `${hours}시간 ${minutes}분`;
+  return formatMinutes(Math.round(ms / 60_000));
 }
 
 /** 1942-03-05 (만 84세) */

@@ -15,3 +15,8 @@ export function withParticle(
   }
   return `${word}${(last - 0xac00) % 28 === 0 ? afterVowel : afterBatchim}`;
 }
+
+/** 전화·문자 링크용으로 전화번호에서 숫자와 +만 남긴다: "010-1234-5678" → "01012345678" */
+export function dialablePhone(phone: string): string {
+  return phone.replace(/[^\d+]/g, "");
+}

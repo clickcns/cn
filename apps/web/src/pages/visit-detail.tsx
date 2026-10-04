@@ -3,17 +3,22 @@ import {
   canDeleteVisit,
   canReopenVisit,
   canWriteRecord,
+  formatKstDate,
+  guardianNoticeAvailable,
 } from "@repo/shared-types";
 import { Navigate, useParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageError, PageLoading } from "@/components/ui/page-state";
 import { useCurrentUser } from "@/features/auth/hooks/use-session";
+import { BriefingCard } from "@/features/briefing/components/briefing-card";
 import { PastRecordsCard } from "@/features/past-records/components/past-records-card";
 import { RecipientInfoCard } from "@/features/recipients/components/recipient-info-card";
 import { DeleteVisitButton } from "@/features/visits/components/delete-visit-button";
+import { GuardianNoticeButton } from "@/features/visits/components/guardian-notice-button";
 import { VisitRecordForm } from "@/features/visits/components/record-form/visit-record-form";
 import { VisitRecordView } from "@/features/visits/components/visit-record-view";
 import { VisitSummaryCard } from "@/features/visits/components/visit-summary-card";
+import { VitalsTrendCard } from "@/features/vitals/components/vitals-trend-card";
 import { useVisit } from "@/features/visits/hooks/use-visits";
 import { getVisitDate } from "@/features/visits/lib/record-form";
 import { visitsPath } from "@/lib/routes";
@@ -68,7 +73,16 @@ export default function VisitDetailPage() {
       <div className="flex flex-col gap-4 md:grid md:grid-cols-[17.5rem_minmax(0,1fr)] md:items-start md:gap-6 lg:grid-cols-[21rem_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4 md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
           <VisitSummaryCard visit={visit} />
-          <RecipientInfoCard recipient={visit.recipient} />
+          {visit.status !== "CONFIRMED" && <BriefingCard visit={visit} />}
+          <RecipientInfoCard
+            recipient={visit.recipient}
+            guardianAction={
+              guardianNoticeAvailable(visit, formatKstDate()) && (
+                <GuardianNoticeButton visit={visit} />
+              )
+            }
+          />
+          <VitalsTrendCard visit={visit} />
           <PastRecordsCard visit={visit} />
         </aside>
 

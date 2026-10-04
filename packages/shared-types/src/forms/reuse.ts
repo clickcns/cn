@@ -71,11 +71,21 @@ export function sanitizeFieldValue(field: FieldDef, raw: unknown): FieldValue {
   }
 }
 
-/** 제공 시간(분)은 그 방문의 기록이라 다시 쓰지 않는다(메모는 남긴다). */
-function withoutMinutes(selected: SelectedOption): SelectedOption {
+function omitMinutes(selected: SelectedOption): SelectedOption {
   const copy = { ...selected };
   delete copy.minutes;
   return copy;
+}
+
+/** 고른 항목의 제공 시간(분)을 뺀 값(메모는 남긴다). 제공 시간은 그 방문의 기록이라 다시 쓰지 않는다. */
+export function withoutMinutes(field: FieldDef, value: FieldValue): FieldValue {
+  if (field.type === "single" && value) {
+    return omitMinutes(value as SelectedOption);
+  }
+  if (field.type === "multi" && value) {
+    return (value as SelectedOption[]).map(omitMinutes);
+  }
+  return value;
 }
 
 /**
@@ -84,14 +94,7 @@ function withoutMinutes(selected: SelectedOption): SelectedOption {
  */
 export function reusableFieldValue(field: FieldDef, raw: unknown): FieldValue {
   if (field.visitSpecific) return null;
-  const value = sanitizeFieldValue(field, raw);
-  if (field.type === "single" && value) {
-    return withoutMinutes(value as SelectedOption);
-  }
-  if (field.type === "multi" && value) {
-    return (value as SelectedOption[]).map(withoutMinutes);
-  }
-  return value;
+  return withoutMinutes(field, sanitizeFieldValue(field, raw));
 }
 
 /** 지난 서식 값에서 이 칸들(서식 전체 또는 구분 하나)의 다시 쓸 값. 값이 있는 칸만 남긴다. */

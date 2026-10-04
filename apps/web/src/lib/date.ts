@@ -1,21 +1,16 @@
 import {
-  addKstDays,
   formatDateLabel,
   formatKstDate,
   formatKstTime,
   minutesBetween,
+  relativeDayLabel,
 } from "@repo/shared-types";
 
-/** "2026-09-22" → "9월 22일 (화)" (관리 웹과 함께 쓴다), 두 시각 사이의 분 */
-export { formatDateLabel, minutesBetween };
-
-/** 기준일과 비교한 "오늘"·"내일"·"어제". 그 밖의 날은 null. */
-export function relativeDayLabel(date: string, today: string): string | null {
-  if (date === today) return "오늘";
-  if (date === addKstDays(today, 1)) return "내일";
-  if (date === addKstDays(today, -1)) return "어제";
-  return null;
-}
+/**
+ * "2026-09-22" → "9월 22일 (화)" (관리 웹과 함께 쓴다), 두 시각 사이의 분, 기준일과 비교한
+ * "오늘"·"내일"·"어제"(그 밖의 날은 null)
+ */
+export { formatDateLabel, minutesBetween, relativeDayLabel };
 
 /** ISO 시각 → "9월 22일 (화) 09:00" (한국 시간) */
 export function formatDateTimeLabel(iso: string): string {

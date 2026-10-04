@@ -113,3 +113,30 @@ export const GLUCOSE_FIELD = {
   dictation: true,
   visitSpecific: true,
 } as const satisfies NumberFieldDef;
+
+export const RESPIRATION_FIELD = {
+  key: "respiration",
+  label: "호흡",
+  visitSpecific: true,
+  type: "number",
+  unit: "회/분",
+  min: 4,
+  max: 80,
+  decimals: 0,
+  dictation: true,
+} as const satisfies NumberFieldDef;
+
+/** 지난번과 비교한 체중 변화(그 자체가 변화량) */
+export const WEIGHT_CHANGE_FIELD = {
+  key: "weightChange",
+  label: "체중 변화",
+  visitSpecific: true,
+  type: "number",
+  unit: "kg",
+  min: -50,
+  max: 50,
+  decimals: 1,
+  signed: true,
+  dictation: true,
+  hint: "늘었으면 양수, 줄었으면 음수. quote에는 숫자만",
+} as const satisfies NumberFieldDef;
