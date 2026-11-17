@@ -13,17 +13,14 @@ import {
   ExternalLink,
   SquareCheck,
   TriangleAlert,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogBody,
-  DialogClose,
-  DialogDescription,
   DialogPageContent,
-  DialogTitle,
+  DialogPageHeader,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,19 +57,10 @@ export function PortalEntryDialog({
       }}
     >
       <DialogPageContent>
-        <div className="border-border flex shrink-0 items-start gap-3 border-b px-4 py-3 md:px-6 md:pt-5">
-          <div className="min-w-0 flex-1">
-            <DialogTitle>{info.short}에 옮겨 적기</DialogTitle>
-            <DialogDescription>
-              {formLabel(formId)} · {visit.recipient.name}
-            </DialogDescription>
-          </div>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" aria-label="닫기">
-              <X />
-            </Button>
-          </DialogClose>
-        </div>
+        <DialogPageHeader
+          title={`${info.short}에 옮겨 적기`}
+          description={`${formLabel(formId)} · ${visit.recipient.name}`}
+        />
         <DialogBody className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <Button variant="outline" asChild className="self-start">

@@ -1,13 +1,12 @@
 import {
-  formatKstDate,
+  GUARDIAN_SMS_NOTE,
   guardianNoticeText,
-  smsUrl,
+  guardianNoticeVisitOf,
   type VisitDetail,
 } from "@repo/shared-types";
 import { MessageSquareText } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/ui/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { SmsNoticeBody } from "@/features/visits/components/sms-notice-body";
+import { useToday } from "@/hooks/use-now";
 
 /**
  * 보호자 방문 안내 문자: 문구를 미리 채워 보여 주고(고칠 수 있음) 복사하거나, 휴대폰이면 문자 앱을 연다.
@@ -36,72 +35,32 @@ export function GuardianNoticeButton({ visit }: { visit: VisitDetail }) {
         방문 안내 문자
       </Button>
       <DialogContent>
-        {open && <GuardianNoticeBody visit={visit} />}
+        {open && (
+          <>
+            <DialogHeader>
+              <DialogTitle>보호자 방문 안내</DialogTitle>
+              <DialogDescription>{GUARDIAN_SMS_NOTE}</DialogDescription>
+            </DialogHeader>
+            <GuardianNoticeText visit={visit} />
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
-function GuardianNoticeBody({ visit }: { visit: VisitDetail }) {
-  const textId = useId();
-  const isTouch = useMediaQuery("(pointer: coarse)");
-  const { recipient } = visit;
+/** 방문 안내 문구 본문(받는 사람·문구·복사). 보호자 안내 모아 보기의 펼친 행도 쓴다. */
+export function GuardianNoticeText({ visit }: { visit: VisitDetail }) {
+  const today = useToday();
   const [text, setText] = useState(() =>
-    guardianNoticeText(
-      {
-        scheduledAt: visit.scheduledAt,
-        recipientName: recipient.name,
-        profession: visit.profession,
-        staffName: visit.staff.name,
-        organizationName: visit.organization.name,
-      },
-      formatKstDate(),
-    ),
+    guardianNoticeText(guardianNoticeVisitOf(visit), today),
   );
-  const phone = recipient.guardianPhone;
-
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle>보호자 방문 안내</DialogTitle>
-        <DialogDescription>
-          문자는 내 휴대폰 문자 앱으로 보냅니다. 케어노트는 문자를 보내지
-          않습니다.
-        </DialogDescription>
-      </DialogHeader>
-      <p className="text-sm">
-        <span className="text-muted-foreground font-semibold">받는 사람 </span>
-        {phone ? (
-          <span className="tabular-nums">
-            {recipient.guardianName && `${recipient.guardianName} · `}
-            {phone}
-          </span>
-        ) : (
-          "등록된 보호자 번호 없음"
-        )}
-      </p>
-      <div className="flex flex-col gap-2">
-        <label htmlFor={textId} className="text-sm font-semibold">
-          문구
-        </label>
-        <Textarea
-          id={textId}
-          rows={5}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-        />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <CopyButton text={text} label="방문 안내 문구" idleText="문구 복사" />
-        {isTouch && phone && (
-          <Button asChild size="sm">
-            <a href={smsUrl(phone, text)}>
-              <MessageSquareText />
-              문자 앱 열기
-            </a>
-          </Button>
-        )}
-      </div>
-    </>
+    <SmsNoticeBody
+      recipient={visit.recipient}
+      text={text}
+      onTextChange={setText}
+      copyLabel="방문 안내 문구"
+    />
   );
 }

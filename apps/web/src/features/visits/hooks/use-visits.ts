@@ -1,6 +1,8 @@
 import {
   VISIT_LIST_MAX_PAGE_SIZE,
   type SameDayWarningQuery,
+  type UsualDurationsResponse,
+  type VisitUsualDuration,
   type VisitCalendarQuery,
   type VisitListQuery,
 } from "@repo/shared-types";
@@ -70,6 +72,37 @@ export function useRecipientVisits(
     queryFn: () => api.visits.list(query),
     enabled: Boolean(recipientId),
   });
+}
+
+const byVisit = (response: UsualDurationsResponse) =>
+  new Map<string, VisitUsualDuration>(
+    response.items.map((item) => [item.visitId, item]),
+  );
+
+/**
+ * 그날 본인 방문의 평소 방문 시간(방문 id → 분·근거). 하루 동선(planDay)에 쓴다. 하루 동안 거의 바뀌지
+ * 않아 오래 두고, 지도·문자 앱에서 돌아올 때마다 다시 받지 않는다. 그날 방문(visits, 하루 목록)이
+ * 바뀌면 키가 바뀌어 다시 받고, 받는 동안은 이전 값을 둔다(여유 표시가 깜박이지 않게).
+ */
+export function useUsualDurations(
+  date: string,
+  visits: readonly { id: string }[],
+  enabled = true,
+) {
+  const visitIds = visits
+    .map((visit) => visit.id)
+    .sort()
+    .join(",");
+  return useQuery({
+    queryKey: visitKeys.usualDurations(date, visitIds),
+    queryFn: () => api.visits.usualDurations({ date }),
+    select: byVisit,
+    enabled,
+    staleTime: 10 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
+  }).data;
 }
 
 export function useVisit(id: string) {

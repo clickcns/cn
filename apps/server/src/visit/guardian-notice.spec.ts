@@ -5,40 +5,10 @@ import {
   guardianNoticeAvailable,
   guardianNoticeText,
   smsUrl,
-  upcomingVisits,
-  type VisitStatus,
 } from "@repo/shared-types";
 
-const visit = (id: string, status: VisitStatus, time: string) => ({
-  id,
-  status,
-  scheduledAt: new Date(`2026-10-03T${time}:00+09:00`).toISOString(),
-});
-
-describe("upcomingVisits", () => {
-  it("예정 방문만(받은 순서 그대로), 지금부터 남은 분 — 지나면 음수", () => {
-    const now = new Date("2026-10-03T09:50:00+09:00");
-    const result = upcomingVisits(
-      [
-        visit("x", "CONFIRMED", "08:00"),
-        visit("a", "SCHEDULED", "09:30"),
-        visit("d", "DRAFT", "10:00"),
-        visit("b", "SCHEDULED", "11:00"),
-        visit("c", "SCHEDULED", "14:00"),
-      ],
-      now,
-    );
-    assert.deepEqual(
-      result.map((item) => [item.visit.id, item.minutesFromNow]),
-      [
-        ["a", -20],
-        ["b", 70],
-        ["c", 250],
-      ],
-    );
-  });
-
-  it("남은 시간 글", () => {
+describe("남은 시간 글", () => {
+  it("분 → 시간·분", () => {
     assert.equal(formatMinutes(45), "45분");
     assert.equal(formatMinutes(60), "1시간");
     assert.equal(formatMinutes(65), "1시간 5분");

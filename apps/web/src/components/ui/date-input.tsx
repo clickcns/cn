@@ -1,6 +1,5 @@
 import {
   formatDateTyping,
-  formatKstDate,
   isIsoDate,
   normalizeDateTyping,
 } from "@repo/shared-types";
@@ -15,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useToday } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
 
 /** "YYYY-MM-DD" ↔ 달력의 Date(로컬 자정). 달력 칸의 날짜 자체만 주고받는다. */
@@ -76,7 +76,7 @@ export function DateInput({
   const selected = isIsoDate(text) ? toDate(text) : undefined;
   const minDate = min && isIsoDate(min) ? toDate(min) : undefined;
   const maxDate = max && isIsoDate(max) ? toDate(max) : undefined;
-  const today = formatKstDate();
+  const today = useToday();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

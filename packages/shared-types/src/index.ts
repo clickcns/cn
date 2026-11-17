@@ -19,7 +19,7 @@ export * from "./portal-entry.js";
 export * from "./record-history.js";
 export * from "./visit-briefing.js";
 export * from "./vital-signs.js";
-export * from "./day-schedule.js";
+export * from "./day-plan.js";
 export * from "./guardian-notice.js";
 export * from "./form-pdf.js";
 export * from "./form-layout.js";

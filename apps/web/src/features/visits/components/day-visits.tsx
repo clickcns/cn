@@ -1,7 +1,9 @@
+import { guardianNoticesAvailable } from "@repo/shared-types";
 import { CalendarX2, Plus } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageError, PageLoading } from "@/components/ui/page-state";
+import { GuardianNoticesButton } from "@/features/visits/components/guardian-notices-dialog";
 import { NextVisitStrip } from "@/features/visits/components/next-visit-strip";
 import { VisitCard } from "@/features/visits/components/visit-card";
 import { useDailyVisits } from "@/features/visits/hooks/use-visits";
@@ -22,6 +24,12 @@ export function DayVisits({ date, today }: DayVisitsProps) {
   const confirmedCount = visitsQuery.data?.statusCounts.CONFIRMED ?? 0;
   const addVisitLink = newVisitPath({ date });
   const relative = relativeDayLabel(date, today);
+  // 오늘 이후 예정 방문이 있으면 보호자 안내 문자를 한곳에서
+  const canNotify = guardianNoticesAvailable(
+    date,
+    visitsQuery.data?.statusCounts.SCHEDULED ?? 0,
+    today,
+  );
 
   return (
     <section className="flex flex-col gap-3" aria-label="고른 날의 방문">
@@ -32,11 +40,14 @@ export function DayVisits({ date, today }: DayVisitsProps) {
             <span className="text-primary ml-2 text-base">{relative}</span>
           )}
         </h2>
-        <Button asChild size="sm" variant="soft">
-          <Link to={addVisitLink}>
-            <Plus />이 날 방문 추가
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canNotify && <GuardianNoticesButton date={date} />}
+          <Button asChild size="sm" variant="soft">
+            <Link to={addVisitLink}>
+              <Plus />이 날 방문 추가
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {visitsQuery.isPending ? (
@@ -67,6 +78,7 @@ export function DayVisits({ date, today }: DayVisitsProps) {
             <NextVisitStrip
               visits={visits}
               statusCounts={visitsQuery.data.statusCounts}
+              today={today}
             />
           )}
           <p className="text-muted-foreground" aria-live="polite">

@@ -18,7 +18,6 @@ import {
   ClipboardPaste,
   Info,
   LoaderCircle,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import {
   DialogClose,
   DialogDescription,
   DialogPageContent,
+  DialogPageHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Notice } from "@/components/ui/notice";
@@ -105,25 +105,23 @@ function PastRecordView({
 
   return (
     <>
-      <div className="border-border flex shrink-0 items-start gap-3 border-b px-4 py-3 md:px-6 md:pt-5">
-        <div className="min-w-0 flex-1">
-          <DialogTitle className="flex flex-wrap items-center gap-2">
+      <DialogPageHeader
+        titleClassName="flex flex-wrap items-center gap-2"
+        title={
+          <>
             {date} 기록
             {record.status === "DRAFT" && (
               <VisitStatusBadge status="DRAFT" size="sm" />
             )}
-          </DialogTitle>
-          <DialogDescription>
+          </>
+        }
+        description={
+          <>
             {PROGRAM_LABELS[record.program]} · {recordStaffLabel(record)}
             {time && ` · ${time.start} ~ ${time.end}`}
-          </DialogDescription>
-        </div>
-        <DialogClose asChild>
-          <Button variant="ghost" size="icon" aria-label="닫기">
-            <X />
-          </Button>
-        </DialogClose>
-      </div>
+          </>
+        }
+      />
 
       <DialogBody className="flex flex-col gap-4">
         {record.formIds.length > 1 && (

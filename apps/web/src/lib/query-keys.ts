@@ -26,6 +26,12 @@ export const visitKeys = {
    */
   pastRecords: (recipientId: string, query: RecipientRecordQuery) =>
     [...VISITS, "list", "records", recipientId, query] as const,
+  /**
+   * 그날 본인 방문의 평소 방문 시간. 확정 기록에서만 셈해 저장·확정으로 바뀌지 않으므로 `lists` 밖에 두고,
+   * 그날 방문이 바뀔 때만(방문 id 목록이 키에 있다) 다시 받는다(받을 때마다 접속기록이 남는다).
+   */
+  usualDurations: (date: string, visitIds: string) =>
+    [...VISITS, "usual-durations", date, visitIds] as const,
   detail: (id: string) => [...VISITS, "detail", id] as const,
   /** 방문 서식의 포털 입력 표시. 상세 아래라 확정·[수정] 뒤 상세와 함께 다시 받는다. */
   portalEntries: (id: string) =>

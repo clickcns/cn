@@ -3,7 +3,6 @@ import {
   canDeleteVisit,
   canReopenVisit,
   canWriteRecord,
-  formatKstDate,
   guardianNoticeAvailable,
 } from "@repo/shared-types";
 import { Navigate, useParams } from "react-router";
@@ -15,18 +14,21 @@ import { PastRecordsCard } from "@/features/past-records/components/past-records
 import { RecipientInfoCard } from "@/features/recipients/components/recipient-info-card";
 import { DeleteVisitButton } from "@/features/visits/components/delete-visit-button";
 import { GuardianNoticeButton } from "@/features/visits/components/guardian-notice-button";
+import { NextVisitCard } from "@/features/visits/components/next-visit-card";
 import { VisitRecordForm } from "@/features/visits/components/record-form/visit-record-form";
 import { VisitRecordView } from "@/features/visits/components/visit-record-view";
 import { VisitSummaryCard } from "@/features/visits/components/visit-summary-card";
 import { VitalsTrendCard } from "@/features/vitals/components/vitals-trend-card";
 import { useVisit } from "@/features/visits/hooks/use-visits";
 import { getVisitDate } from "@/features/visits/lib/record-form";
+import { useToday } from "@/hooks/use-now";
 import { visitsPath } from "@/lib/routes";
 
 export default function VisitDetailPage() {
   const { visitId = "" } = useParams();
   const visitQuery = useVisit(visitId);
   const currentUserId = useCurrentUser()?.id;
+  const today = useToday();
   const [deleted, setDeleted] = useState(false);
 
   if (visitQuery.isPending || visitQuery.isError) {
@@ -73,11 +75,12 @@ export default function VisitDetailPage() {
       <div className="flex flex-col gap-4 md:grid md:grid-cols-[17.5rem_minmax(0,1fr)] md:items-start md:gap-6 lg:grid-cols-[21rem_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4 md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto">
           <VisitSummaryCard visit={visit} />
+          <NextVisitCard visit={visit} />
           {visit.status !== "CONFIRMED" && <BriefingCard visit={visit} />}
           <RecipientInfoCard
             recipient={visit.recipient}
             guardianAction={
-              guardianNoticeAvailable(visit, formatKstDate()) && (
+              guardianNoticeAvailable(visit, today) && (
                 <GuardianNoticeButton visit={visit} />
               )
             }

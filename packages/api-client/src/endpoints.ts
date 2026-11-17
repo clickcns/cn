@@ -44,6 +44,8 @@ import type {
   UpdateVisitInput,
   UserListQuery,
   UserSummary,
+  UsualDurationsQuery,
+  UsualDurationsResponse,
   VisitCalendarQuery,
   VisitCalendarResponse,
   VisitDetail,
@@ -249,6 +251,13 @@ export function createCarenoteApi(http: KyInstance) {
         http
           .get("visits/calendar", { searchParams: toSearchParams(query) })
           .json<VisitCalendarResponse>(),
+      /** 그날 본인 방문의 평소 방문 시간(분, 같은 수급자의 확정 기록 중앙값 — 동선 1단계). */
+      usualDurations: (query: UsualDurationsQuery) =>
+        http
+          .get("visits/usual-durations", {
+            searchParams: toSearchParams(query),
+          })
+          .json<UsualDurationsResponse>(),
       /** 만들려는 방문과 같은 날 함께 있으면 재택의료 급여를 산정하지 않는 방문이 있는지. */
       sameDayWarnings: (query: SameDayWarningQuery) =>
         http

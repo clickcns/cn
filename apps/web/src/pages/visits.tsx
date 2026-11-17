@@ -1,11 +1,13 @@
-import { formatKstDate, isIsoDate } from "@repo/shared-types";
+import { isIsoDate } from "@repo/shared-types";
 import { Plus } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { DayVisits } from "@/features/visits/components/day-visits";
+import { GuardianNoticesDialog } from "@/features/visits/components/guardian-notices-dialog";
 import { ScheduleCalendar } from "@/features/visits/components/schedule-calendar";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useToday } from "@/hooks/use-now";
 import { useStoredFlag } from "@/hooks/use-stored-flag";
 import { newVisitPath } from "@/lib/routes";
 
@@ -15,7 +17,7 @@ import { newVisitPath } from "@/lib/routes";
  */
 export default function VisitsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const today = formatKstDate();
+  const today = useToday();
   // 날짜는 주소에 두어 방문을 열었다가 뒤로 가도 그날로 돌아온다.
   const dateParam = searchParams.get("date");
   const date = isIsoDate(dateParam) ? dateParam : today;
@@ -58,6 +60,7 @@ export default function VisitsPage() {
         </div>
         <DayVisits date={date} today={today} />
       </div>
+      <GuardianNoticesDialog />
     </>
   );
 }

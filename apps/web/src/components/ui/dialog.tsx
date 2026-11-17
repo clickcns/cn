@@ -1,5 +1,7 @@
-import { useRef, type ComponentProps } from "react";
+import { X } from "lucide-react";
+import { useRef, type ComponentProps, type ReactNode } from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Dialog(props: ComponentProps<typeof DialogPrimitive.Root>) {
@@ -104,6 +106,31 @@ export function DialogPageContent({
         {children}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
+  );
+}
+
+/** DialogPageContent 의 머리: 제목·설명과 닫기(X) 버튼, 아래 구분선. */
+export function DialogPageHeader({
+  title,
+  description,
+  titleClassName,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  titleClassName?: string;
+}) {
+  return (
+    <div className="border-border flex shrink-0 items-start gap-3 border-b px-4 py-3 md:px-6 md:pt-5">
+      <div className="min-w-0 flex-1">
+        <DialogTitle className={titleClassName}>{title}</DialogTitle>
+        {description && <DialogDescription>{description}</DialogDescription>}
+      </div>
+      <DialogClose asChild>
+        <Button variant="ghost" size="icon" aria-label="닫기">
+          <X />
+        </Button>
+      </DialogClose>
+    </div>
   );
 }
 

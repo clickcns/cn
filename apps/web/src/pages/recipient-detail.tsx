@@ -1,4 +1,4 @@
-import { addKstDays, formatKstDate } from "@repo/shared-types";
+import { addKstDays } from "@repo/shared-types";
 import { CalendarPlus, History } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { PageHeader } from "@/components/layout/page-header";
@@ -9,12 +9,13 @@ import { RecipientInfoCard } from "@/features/recipients/components/recipient-in
 import { useRecipient } from "@/features/recipients/hooks/use-recipients";
 import { RecipientVisitItem } from "@/features/visits/components/recipient-visit-item";
 import { useRecipientVisits } from "@/features/visits/hooks/use-visits";
+import { useToday } from "@/hooks/use-now";
 import { newVisitPath, ROUTES } from "@/lib/routes";
 
 const RECENT_DAYS = 90;
 
 function RecentVisits({ recipientId }: { recipientId: string }) {
-  const today = formatKstDate();
+  const today = useToday();
   const visitsQuery = useRecipientVisits(
     recipientId,
     addKstDays(today, -(RECENT_DAYS - 1)),

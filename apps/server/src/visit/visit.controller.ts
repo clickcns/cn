@@ -22,10 +22,12 @@ import {
   SaveVisitRecordSchema,
   UpdateVisitFormsSchema,
   UpdateVisitSchema,
+  UsualDurationsQuerySchema,
   VisitCalendarQuerySchema,
   VisitListQuerySchema,
   type HomeCareMonthResponse,
   type PortalQueueResponse,
+  type UsualDurationsResponse,
   type VisitCalendarResponse,
   type VisitListResponse,
 } from "@repo/shared-types";
@@ -53,6 +55,7 @@ class SameDayWarningQueryDto extends createZodDto(SameDayWarningQuerySchema) {}
 class VisitCalendarQueryDto extends createZodDto(VisitCalendarQuerySchema) {}
 class PortalQueueQueryDto extends createZodDto(PortalQueueQuerySchema) {}
 class MarkPortalEntryDto extends createZodDto(MarkPortalEntrySchema) {}
+class UsualDurationsQueryDto extends createZodDto(UsualDurationsQuerySchema) {}
 class HomeCareMonthQueryDto extends createZodDto(HomeCareMonthQuerySchema) {}
 
 @ApiTags("visits")
@@ -143,6 +146,25 @@ export class VisitController {
     @Query() query: HomeCareMonthQueryDto,
   ) {
     return this.homeCareService.month(actor, query);
+  }
+
+  /**
+   * 그날 본인 방문의 평소 방문 시간(현장 웹 동선 1단계 — 같은 수급자의 확정 기록에서 분만).
+   * ":id"보다 먼저 둔다.
+   */
+  @Get("usual-durations")
+  @AccessLog(
+    "VIEW",
+    "평소 방문 시간",
+    listOf((result: UsualDurationsResponse) =>
+      result.items.map((item) => item.recipientId),
+    ),
+  )
+  usualDurations(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Query() query: UsualDurationsQueryDto,
+  ) {
+    return this.visitService.usualDurations(actor, query);
   }
 
   @Get(":id")

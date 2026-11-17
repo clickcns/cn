@@ -2,7 +2,6 @@ import {
   BRIEFING_KIND_LABELS,
   briefingForViewer,
   daysBetween,
-  formatKstDate,
   FORMS,
   PROFESSION_LABELS,
   PROGRAM_SHORT_LABELS,
@@ -15,6 +14,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { usePastRecordParam } from "@/features/past-records/hooks/use-past-record-param";
 import { usePastBriefing } from "@/features/past-records/hooks/use-past-records";
 import { VisitStatusBadge } from "@/features/visits/components/visit-status-badge";
+import { useToday } from "@/hooks/use-now";
 import { formatDateLabel } from "@/lib/date";
 
 /** "9월 22일 (화) · 3일 전" */
@@ -50,8 +50,8 @@ function sourceTitles(sources: readonly BriefingSource[]): Map<string, string> {
 export function BriefingCard({ visit }: { visit: VisitDetail }) {
   const briefing = usePastBriefing(visit);
   const { open } = usePastRecordParam();
+  const today = useToday();
   if (!briefing || briefing.length === 0) return null;
-  const today = formatKstDate();
   const { highlights, sources } = briefingForViewer(briefing, visit.profession);
   const titles = sourceTitles(sources);
   // 서식 둘을 쓴 기록(의사 제6호·제4호)은 비슷한 칸 이름이 겹치므로 칸 이름에 서식을 붙인다

@@ -38,6 +38,11 @@ import {
   type SaveVisitRecordSchema,
   type UpdateVisitFormsSchema,
   type UpdateVisitSchema,
+  RECIPIENT_SAMPLE_LIMIT,
+  STAFF_SAMPLE_LIMIT,
+  type UsualDurationsQuery,
+  type UsualDurationsResponse,
+  usualVisitDurations,
   type VisitCalendarQuerySchema,
   type VisitCalendarResponse,
   type VisitDetail,
@@ -276,6 +281,78 @@ export class VisitService {
     });
     const days = toCalendarDays(groups);
     return withVisits ? { days, visits: null } : { days };
+  }
+
+  /**
+   * 그날 본인 방문의 평소 방문 시간(동선 1단계). 기관 관리자도 본인 방문만(현장 웹 하루 일정과 같게).
+   * 표본은 그 수급자의 같은 직종 확정 기록(지난 기록과 같은 기관 범위, 작성자 무관)을 수급자 × 직종마다
+   * 최근 몇 건씩과 본인의 최근 확정 기록이다. 표본의 시각·담당자는 내보내지 않고 분만 준다.
+   */
+  async usualDurations(
+    actor: AuthenticatedUser,
+    query: UsualDurationsQuery,
+  ): Promise<UsualDurationsResponse> {
+    const timed = {
+      status: "CONFIRMED",
+      startedAt: { not: null },
+      endedAt: { not: null },
+    } satisfies Prisma.VisitWhereInput;
+    const sampleSelect = {
+      profession: true,
+      startedAt: true,
+      endedAt: true,
+    } satisfies Prisma.VisitSelect;
+    const visits = await this.prisma.visit.findMany({
+      where: filterWhere(actor, { staffId: actor.id }, scheduledRange(query)),
+      select: { id: true, recipientId: true, profession: true },
+      orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+    });
+    if (visits.length === 0) return { items: [] };
+
+    // 수급자 × 직종마다 최근 몇 건만(인덱스 recipientId, scheduledAt). 하루 방문은 열 건 안팎이다.
+    const pairs = new Map(
+      visits.map((visit) => [
+        `${visit.recipientId}:${visit.profession}`,
+        visit,
+      ]),
+    );
+    const [staffRows, ...recipientGroups] = await Promise.all([
+      this.prisma.visit.findMany({
+        where: { ...timed, staffId: actor.id },
+        select: sampleSelect,
+        orderBy: recordHistoryOrderBy,
+        take: STAFF_SAMPLE_LIMIT,
+      }),
+      ...[...pairs.values()].map(({ recipientId, profession }) =>
+        this.prisma.visit.findMany({
+          // 지난 기록과 같은 범위 안의 확정 기록
+          where: {
+            AND: [recordHistoryWhere({ actor, recipientId }), timed],
+            profession,
+          },
+          select: { recipientId: true, ...sampleSelect },
+          orderBy: recordHistoryOrderBy,
+          take: RECIPIENT_SAMPLE_LIMIT,
+        }),
+      ),
+    ]);
+    const recipientRows = recipientGroups.flat();
+    const toSample = <
+      R extends { startedAt: Date | null; endedAt: Date | null },
+    >(
+      row: R,
+    ) => ({
+      ...row,
+      startedAt: row.startedAt?.toISOString() ?? null,
+      endedAt: row.endedAt?.toISOString() ?? null,
+    });
+    return {
+      items: usualVisitDurations(
+        visits,
+        recipientRows.map(toSample),
+        staffRows.map(toSample),
+      ),
+    };
   }
 
   async get(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
