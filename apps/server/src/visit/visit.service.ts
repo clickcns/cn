@@ -94,6 +94,8 @@ import {
 const VISIT_NOT_FOUND = "방문을 찾을 수 없습니다";
 const RECORD_LOCKED =
   "확정된 방문 기록입니다. 고치려면 [수정]을 눌러 작성 중으로 되돌려 주세요";
+const CONVERSATION_PENDING =
+  "끝내지 않은 대화 녹음이 있습니다. 초안을 만들거나 버린 뒤 확정해 주세요";
 
 /**
  * 사용자가 볼 수 있는 방문의 범위. 목록과 단건 조회가 같은 조건을 쓴다.
@@ -656,8 +658,12 @@ export class VisitService {
   async confirm(actor: AuthenticatedUser, id: string): Promise<VisitDetail> {
     const row = await this.prisma.$transaction(async (tx) => {
       const visit = await this.lockWritable(tx, actor, id);
-      // 저장한 서식 값과 확정본에 함께 보관할 서식 머리
-      const { forms: saved, ...header } = await tx.visit.findUniqueOrThrow({
+      // 저장한 서식 값과 확정본에 함께 보관할 서식 머리, 끝내지 않은 대화 녹음 조각 수
+      const {
+        forms: saved,
+        _count: pending,
+        ...header
+      } = await tx.visit.findUniqueOrThrow({
         where: { id },
         select: {
           ...recordHeaderSelect,
@@ -665,8 +671,13 @@ export class VisitService {
             where: { formId: { in: visit.formIds } },
             select: { formId: true, data: true },
           },
+          _count: { select: { conversationSegments: true } },
         },
       });
+      // 확정하면 대화 녹음을 초안으로 만들지도 지우지도 못한다(조각이 남는다).
+      if (pending.conversationSegments > 0) {
+        throw new ConflictException(CONVERSATION_PENDING);
+      }
       const missing = visit.formIds.find(
         (formId) => !saved.some((form) => form.formId === formId),
       );
@@ -805,6 +816,7 @@ export class VisitService {
           formIds: true,
           profession: true,
           dictation: { select: { id: true } },
+          _count: { select: { conversationSegments: true } },
         },
       });
       if (!visit) throw new NotFoundException(VISIT_NOT_FOUND);
@@ -829,7 +841,9 @@ export class VisitService {
           staffId: visit.staffId,
           scheduledAt: visit.scheduledAt,
           formIds: toFormIds(visit.formIds),
-          hasDictation: visit.dictation !== null,
+          // 끝내지 않은 대화 녹음 조각도 담당자의 녹음이다.
+          hasDictation:
+            visit.dictation !== null || visit._count.conversationSegments > 0,
           profession: visit.profession,
         },
         dto,

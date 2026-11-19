@@ -320,6 +320,7 @@ export type VisitRecipient = Pick<
   | "guardianPhone"
   | "notes"
   | "ltcCertNumber"
+  | "recordingConsent"
 >;
 
 export interface VisitStaff {

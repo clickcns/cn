@@ -64,6 +64,22 @@ const recipientPrograms = z
     "같은 사업이 중복되었습니다",
   );
 
+/**
+ * 방문 중 대화 녹음 동의(현장 웹 [대화 녹음]은 이 기록이 있는 수급자만 켜진다).
+ * 날짜와 동의한 사람을 함께 적는다. 동의서 원본은 기관이 보관한다.
+ */
+export const RecordingConsentSchema = z.object({
+  /** 동의한 날(YYYY-MM-DD) */
+  on: z.iso.date("동의 날짜 형식이 올바르지 않습니다"),
+  /** 동의한 사람: 본인·보호자(관계) */
+  by: z
+    .string()
+    .trim()
+    .min(1, "동의한 사람을 입력해 주세요")
+    .max(50, "동의한 사람은 50자 이하로 입력해 주세요"),
+});
+export type RecordingConsent = z.output<typeof RecordingConsentSchema>;
+
 const RecipientFieldsSchema = z.object({
   name: z
     .string()
@@ -83,6 +99,8 @@ const RecipientFieldsSchema = z.object({
   guardianName: optionalText(50, "보호자 이름"),
   guardianPhone: optionalText(30, "보호자 연락처"),
   notes: optionalText(1000, "메모"),
+  /** null이면 동의 없음(지움), 보내지 않으면 등록은 없음·수정은 변경 없음. */
+  recordingConsent: RecordingConsentSchema.nullable().optional(),
   programs: recipientPrograms,
   /** 운영자(ADMIN)만 지정한다. 기관 관리자가 만들면 자기 기관으로 고정된다. */
   organizationId: blankToNull(z.uuid("기관을 선택해 주세요")),
@@ -173,6 +191,8 @@ export interface Recipient {
   guardianName: string | null;
   guardianPhone: string | null;
   notes: string | null;
+  /** 방문 중 대화 녹음 동의. 없으면 null. */
+  recordingConsent: RecordingConsent | null;
   /** 등록한 사업. 방문은 이 중에서 고른다. */
   programs: Program[];
   isActive: boolean;

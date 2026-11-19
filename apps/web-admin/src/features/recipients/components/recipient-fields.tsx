@@ -8,7 +8,8 @@ import {
   requiresCareGrade,
   type Program,
 } from "@repo/shared-types";
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CheckboxGroup } from "@/components/ui/checkbox-group";
 import { DateInput } from "@/components/ui/date-input";
 import { FormField } from "@/components/ui/form-field";
@@ -35,9 +36,11 @@ export function RecipientFields({
   const {
     control,
     register,
+    setValue,
     formState: { errors },
   } = useFormContext<RecipientFieldValues>();
   const id = (name: string) => `${idPrefix}-${name}`;
+  const recordingConsent = useWatch({ control, name: "recordingConsent" });
 
   return (
     <div className="grid grid-cols-6 gap-x-4 gap-y-4">
@@ -237,6 +240,65 @@ export function RecipientFields({
           {...register("guardianPhone")}
         />
       </FormField>
+      <div className="col-span-6 flex flex-col gap-3">
+        <label className="flex items-center gap-2 font-medium select-none">
+          <Checkbox
+            checked={!!recordingConsent}
+            onCheckedChange={(checked) =>
+              setValue(
+                "recordingConsent",
+                checked === true ? { on: formatKstDate(), by: "" } : null,
+                { shouldDirty: true },
+              )
+            }
+          />
+          방문 중 대화 녹음 동의
+        </label>
+        <p className="text-muted-foreground -mt-1 text-sm">
+          동의가 있으면 현장 웹에서 방문 중 대화를 녹음해 기록 초안을 만들 수
+          있습니다. 동의서 원본은 기관이 보관합니다.
+        </p>
+        {recordingConsent && (
+          <div className="grid grid-cols-6 gap-x-4">
+            <FormField
+              label="동의한 날"
+              className="col-span-2"
+              htmlFor={id("recordingConsentOn")}
+              required
+              error={errors.recordingConsent?.on?.message}
+            >
+              <Controller
+                control={control}
+                name="recordingConsent.on"
+                render={({ field }) => (
+                  <DateInput
+                    id={id("recordingConsentOn")}
+                    max={formatKstDate()}
+                    aria-invalid={!!errors.recordingConsent?.on}
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+            </FormField>
+            <FormField
+              label="동의한 사람"
+              className="col-span-4"
+              htmlFor={id("recordingConsentBy")}
+              required
+              error={errors.recordingConsent?.by?.message}
+            >
+              <Input
+                id={id("recordingConsentBy")}
+                autoComplete="off"
+                placeholder="본인, 보호자 김민수(아들)"
+                aria-invalid={!!errors.recordingConsent?.by}
+                {...register("recordingConsent.by")}
+              />
+            </FormField>
+          </div>
+        )}
+      </div>
       <FormField
         label="메모"
         htmlFor={id("notes")}

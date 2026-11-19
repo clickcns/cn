@@ -15,6 +15,7 @@ export const EMPTY_RECIPIENT_FIELDS = {
   guardianName: null,
   guardianPhone: null,
   notes: null,
+  recordingConsent: null,
   programs: [],
 } satisfies RecipientFieldValues;
 
@@ -34,6 +35,7 @@ export function toEditRecipientFormValues(
     guardianName,
     guardianPhone,
     notes,
+    recordingConsent,
     programs,
     isActive,
   } = recipient;
@@ -49,6 +51,7 @@ export function toEditRecipientFormValues(
     guardianName,
     guardianPhone,
     notes,
+    recordingConsent,
     programs,
     isActive,
   };

@@ -4,6 +4,7 @@ import type {
   AuthResponse,
   AuthUser,
   ChangePasswordInput,
+  ConversationProgress,
   CreateHomeCareAssessmentInput,
   CreateHomeCareFeeScheduleInput,
   FormLayoutDetail,
@@ -365,6 +366,43 @@ export function createCarenoteApi(http: KyInstance) {
           .json<VisitDictation>(),
       remove: (visitId: string) =>
         http.delete(`visits/${visitId}/dictation`).json<{ ok: true }>(),
+      /**
+       * 방문 중 대화 녹음 조각(16kHz·모노 WAV)을 올린다. 조각은 마이크를 켠 구간(runId, 시작 시각)마다
+       * 번호를 매기고, 같은 구간·번호를 다시 보내면 바꾼다.
+       */
+      conversationSegment: (
+        visitId: string,
+        audio: Blob,
+        {
+          runId,
+          runStartedAt,
+          index,
+        }: { runId: string; runStartedAt: string; index: number },
+      ) => {
+        const form = new FormData();
+        form.append("audio", audio, `conversation-${index}.wav`);
+        form.append("runId", runId);
+        form.append("runStartedAt", runStartedAt);
+        form.append("index", String(index));
+        return http
+          .post(`visits/${visitId}/dictation/conversation/segments`, {
+            body: form,
+            ...withTimeout(DICTATION_TIMEOUT_MS),
+          })
+          .json<ConversationProgress>();
+      },
+      /** 대화 녹음을 마치고 서버에 있는 조각을 모두 이어 초안을 만든다. */
+      finishConversation: (visitId: string) =>
+        http
+          .post(
+            `visits/${visitId}/dictation/conversation/finish`,
+            withTimeout(DICTATION_TIMEOUT_MS),
+          )
+          .json<VisitDictation>(),
+      discardConversation: (visitId: string) =>
+        http
+          .delete(`visits/${visitId}/dictation/conversation`)
+          .json<{ ok: true }>(),
     },
   };
 }

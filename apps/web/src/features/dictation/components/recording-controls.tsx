@@ -1,28 +1,14 @@
 import { DICTATION_MAX_SECONDS } from "@repo/shared-types";
 import { ChevronUp, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DICTATION_SHEET_ID } from "@/features/dictation/components/dictation-sheet";
+import { ConversationBarControl } from "@/features/dictation/components/conversation-controls";
+import {
+  DICTATION_SHEET_ID,
+  LevelMeter,
+} from "@/features/dictation/components/recording-parts";
 import type { DictationSession } from "@/features/dictation/hooks/use-dictation-session";
+import { formatClock } from "@/features/dictation/lib/clock";
 import { cn } from "@/lib/utils";
-
-/** 녹음 경과 시간(초) → "1:05" */
-const formatClock = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-
-/** 입력 크기 막대(0~1). 말할 때 움직이면 마이크가 소리를 받고 있다. 폭 대신 transform 으로 늘린다. */
-function LevelMeter({ level }: { level: number }) {
-  return (
-    <span
-      className="bg-destructive-soft block h-1.5 overflow-hidden rounded-full"
-      aria-hidden
-    >
-      <span
-        className="bg-destructive block h-full origin-left rounded-full transition-transform duration-100"
-        style={{ transform: `scaleX(${level})` }}
-      />
-    </span>
-  );
-}
 
 /** 자동으로 끝나기 전 이만큼(초) 남으면 알린다. */
 const ENDING_SOON_SECONDS = 30;
@@ -45,6 +31,9 @@ export function DictationBarControl({
   session: DictationSession;
 }) {
   const { recorder } = session;
+  if (session.isConversationActive) {
+    return <ConversationBarControl session={session} />;
+  }
   if (session.isRecording) {
     const starting = recorder.status === "starting";
     // 시작하는 동안 seconds 는 이전 녹음 값이 남아 있을 수 있다.

@@ -1,6 +1,8 @@
 import {
   CARE_GRADE_LABELS,
   dictationFields,
+  hasConversation,
+  takeStarts,
   FORMS,
   optionValues,
   type CareGrade,
@@ -159,8 +161,25 @@ const RULES = `너는 방문 의료·간호·복지 기록 도우미다.
 ## 음성인식 오류
 문맥상 확실한 의료·복지 용어 오인식은 바로잡아 쓴다(예: "육창" → "욕창", "천골족" → "천골 쪽"). 숫자는 바로잡지 않는다.`;
 
-export function buildDraftSystemPrompt(formIds: readonly FormId[]): string {
-  return [RULES, "## 서식", ...formIds.map(describeForm)].join("\n\n");
+const CONVERSATION_RULES = `## 방문 중 대화 녹음
+"방문 중 대화" 문장은 담당자와 수급자·보호자가 방문하는 동안 나눈 대화를 처음부터 녹음한 것이다. 누가 말했는지 표시가 없다.
+1. 담당자가 직접 재거나 보거나 한 일(측정값을 읽어 주는 말, "~해 드릴게요", "~했습니다")은 기록으로 쓴다.
+2. 수급자·보호자가 말한 증상·호소·생활은 "(수급자 진술)"·"(보호자 진술)"로 표시해 글 칸에 쓴다. 누가 말했는지 모르면 "(진술)"로 쓴다.
+3. 묻기만 하고 답이 없거나, 답이 "글쎄요"처럼 분명하지 않은 내용은 채우지 않는다. 유/무 칸은 분명히 답했을 때만 고른다.
+4. 인사·잡담·서식과 관계없는 이야기는 쓰지 않는다. 대화를 옮겨 적지 말고 기록체로 요약한다.
+5. "담당자 구술" 문장이 대화와 다르면 구술을 따른다(담당자가 방문 뒤 정리한 말이다).`;
+
+/** conversation이면 방문 중 대화 녹음 문장이 있다(대화 규칙을 더한다). */
+export function buildDraftSystemPrompt(
+  formIds: readonly FormId[],
+  { conversation = false }: { conversation?: boolean } = {},
+): string {
+  return [
+    RULES,
+    ...(conversation ? [CONVERSATION_RULES] : []),
+    "## 서식",
+    ...formIds.map(describeForm),
+  ].join("\n\n");
 }
 
 export interface DraftRecipientContext {
@@ -177,10 +196,21 @@ export function buildDraftUserMessage(
     `수급자: ${recipient.name}${recipient.careGrade ? ` (${CARE_GRADE_LABELS[recipient.careGrade]})` : ""}`,
   ];
   if (recipient.notes) lines.push(`수급자 메모: ${recipient.notes}`);
-  lines.push("", "구술 문장:");
-  for (const sentence of sentences) {
+  // 대화 녹음이 섞이면 녹음(take)마다 머리를 달아 대화와 담당자 구술을 나눈다. 번호(S1…)는 이어진다.
+  if (!hasConversation(sentences)) lines.push("", "구술 문장:");
+  const starts = takeStarts(sentences);
+  sentences.forEach((sentence, index) => {
+    const start = starts[index];
+    if (start) {
+      lines.push(
+        "",
+        start === "conversation"
+          ? "방문 중 대화 (화자 구분 없음):"
+          : "담당자 구술:",
+      );
+    }
     lines.push(`${sentence.id} ${sentence.text}`);
-  }
+  });
   return lines.join("\n");
 }
 
@@ -188,10 +218,13 @@ export function buildDraftUserMessage(
 export function buildSttPrompt(
   recipient: DraftRecipientContext,
   formIds: readonly FormId[],
+  { conversation = false }: { conversation?: boolean } = {},
 ): string {
   const terms = [...new Set(formIds.flatMap((id) => FORMS[id].sttTerms))];
   const parts = [
-    "방문 직후 기록을 구술합니다.",
+    conversation
+      ? "방문 중 담당자와 어르신·보호자가 나누는 대화입니다."
+      : "방문 직후 기록을 구술합니다.",
     `${terms.join(", ")} 같은 용어가 나옵니다.`,
     `수급자 ${recipient.name}.`,
   ];

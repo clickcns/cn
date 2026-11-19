@@ -14,6 +14,7 @@ import { useForm, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ConversationCard } from "@/features/dictation/components/conversation-controls";
 import { DictationPanel } from "@/features/dictation/components/dictation-panel";
 import { DictationSheet } from "@/features/dictation/components/dictation-sheet";
 import { DictationBarControl } from "@/features/dictation/components/recording-controls";
@@ -153,6 +154,13 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
   };
 
   const handleConfirmClick = () => {
+    // 확정하면 대화 녹음을 더 이을 수 없다(보낸 녹음이 초안이 되지 못하고 남는다).
+    if (dictation.isConversationActive || dictation.pendingConversation) {
+      toast.error(
+        "끝내지 않은 대화 녹음이 있습니다. 초안을 만들거나 버린 뒤 확정해 주세요",
+      );
+      return;
+    }
     // 확인 창을 띄우기 전에 입력값부터 검사한다.
     const result = buildSaveInput(getValues(), visit.formIds);
     if (!result.ok) {
@@ -211,6 +219,10 @@ export function VisitRecordForm({ visit }: { visit: VisitDetail }) {
           void handleSave();
         }}
       >
+        <ConversationCard
+          session={dictation}
+          consent={visit.recipient.recordingConsent}
+        />
         <DictationPanel
           session={dictation}
           panelRef={dictationPanelRef}

@@ -18,6 +18,7 @@ import {
   formatDuration,
   formatGender,
   formatVisitTimeRange,
+  formatYearDate,
   orDash,
 } from "@/lib/format";
 
@@ -112,6 +113,13 @@ export function RecipientInfoCard({
             { label: "주소", value: orDash(recipient.address), wide: true },
             { label: "보호자", value: orDash(recipient.guardianName) },
             { label: "보호자 연락처", value: orDash(recipient.guardianPhone) },
+            {
+              label: "대화 녹음 동의",
+              value: recipient.recordingConsent
+                ? `${formatYearDate(recipient.recordingConsent.on)} · ${recipient.recordingConsent.by}`
+                : "없음",
+              wide: true,
+            },
             {
               label: "메모",
               value: (

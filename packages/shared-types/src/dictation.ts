@@ -13,6 +13,33 @@ import {
 /** 녹음 한 번의 최대 길이(초). */
 export const DICTATION_MAX_SECONDS = 300;
 
+/*
+ * 방문 중 대화 녹음(부가 기능, 수급자 녹음 동의가 있을 때만): 방문하는 동안 대화를 처음부터 녹음한다.
+ * 브라우저가 몇 분마다 조각을 끊어 녹음하는 동안 올리고(서버가 바로 음성인식해 문장만 둔다),
+ * 녹음을 끝내면 서버에 있는 조각을 모두 이어 구술 문장에 더하고 초안을 만든다. 그 뒤의 구술·되묻기 답은
+ * 그대로 이어 붙인다. 조각은 마이크를 켠 구간(run, 멈췄다 이어 녹음하면 새 구간)마다 번호를 매기므로
+ * 다시 열어 이어 녹음해도 앞 조각과 번호가 겹치지 않는다.
+ */
+/** 대화 녹음 조각을 끊는 길이(초). */
+export const CONVERSATION_SEGMENT_SECONDS = 180;
+/**
+ * 서버가 받는 조각 하나의 최대 길이(초). 화면이 숨으면 브라우저 타이머가 늦어져 조각이 길어질 수 있으므로
+ * 끊는 길이보다 넉넉하게 둔다.
+ */
+export const CONVERSATION_SEGMENT_MAX_SECONDS = 600;
+/** 대화 녹음 한 번의 최대 길이(초). 화면이 이만큼 녹음하면 저절로 끝낸다. */
+export const CONVERSATION_MAX_SECONDS = 90 * 60;
+/** 한 구간의 조각 번호 상한(90분 ÷ 3분보다 넉넉하게). */
+export const CONVERSATION_MAX_RUN_SEGMENTS = 60;
+
+/** 서버에 올렸지만 아직 초안으로 만들지 않은 대화 녹음. */
+export interface ConversationProgress {
+  /** 올린 조각 수 */
+  segments: number;
+  /** 올린 조각 길이 합(초) */
+  seconds: number;
+}
+
 /** 음성인식 결과를 나눈 문장. 초안은 id(S1, S2…)로 근거를 가리킨다. */
 export interface DictationSentence {
   id: string;
@@ -22,6 +49,29 @@ export interface DictationSentence {
   /** 그 녹음 안에서의 시각(초) */
   start: number;
   end: number;
+  /** "conversation"이면 방문 중 대화 녹음에서 나온 문장(화자 구분 없음). 없으면 담당자 구술. */
+  source?: "conversation";
+}
+
+/** 문장에 방문 중 대화 녹음이 있는지. */
+export const hasConversation = (
+  sentences: readonly Pick<DictationSentence, "source">[],
+) => sentences.some((sentence) => sentence.source === "conversation");
+
+/**
+ * 문장마다 그 문장에서 새 녹음이 시작하면 그 녹음의 종류("conversation"·"dictation"), 아니면 null.
+ * 대화 녹음이 섞이지 않았으면 모두 null이다(구술만 있으면 녹음을 나눠 보이지 않는다).
+ * 초안 요청과 화면의 구술 전체 보기가 이것으로 녹음마다 머리를 단다.
+ */
+export function takeStarts(
+  sentences: readonly Pick<DictationSentence, "take" | "source">[],
+): ("conversation" | "dictation" | null)[] {
+  const mixed = hasConversation(sentences);
+  return sentences.map((sentence, index) =>
+    mixed && sentence.take !== sentences[index - 1]?.take
+      ? (sentence.source ?? "dictation")
+      : null,
+  );
 }
 
 /** 초안 값의 근거. ids는 문장 ID, quotes는 숫자 원문(형광펜으로 칠할 표기). */
@@ -101,6 +151,8 @@ export interface VisitDictation {
 
 export interface VisitDictationResponse {
   dictation: VisitDictation | null;
+  /** 끝내지 않은 대화 녹음(올린 조각). 없으면 null. */
+  conversation: ConversationProgress | null;
 }
 
 /**

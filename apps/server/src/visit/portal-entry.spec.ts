@@ -33,6 +33,7 @@ const visit = {
     guardianPhone: null,
     notes: null,
     ltcCertNumber: "L0000001101",
+    recordingConsent: null,
   },
   forms: {},
 };

@@ -2,17 +2,17 @@ import type { VisitDictationPoint } from "@repo/shared-types";
 import { CircleAlert, LoaderCircle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
+import { DICTATION_SHEET_ID } from "@/features/dictation/components/recording-parts";
+import { ConversationSheetContent } from "@/features/dictation/components/conversation-controls";
 import { DictationPoints } from "@/features/dictation/components/dictation-points";
 import type { DictationSession } from "@/features/dictation/hooks/use-dictation-session";
-
-/** 시트의 id. 녹음 막대가 접고 펴는 대상(aria-controls)이다. */
-export const DICTATION_SHEET_ID = "dictation-sheet";
 
 /**
  * 저장 버튼 바 위로 올라오는 시트. 서식을 가리지 않게 필요할 때만 열린다(비모달, 뒤의 서식은 스크롤된다).
  * - 녹음 중: 말할 내용(녹음 막대로 접고 펴며, 마지막 선택을 기억한다)
  * - 처리 중: 초안을 만드는 중이라는 안내
  * - 보내기 실패: 다시 보내기·녹음 버리기
+ * - 대화 녹음 중: 멈춤·끝내기(바의 녹음 표시로 접고 편다. 초안을 만드는 중·실패는 접어 두어도 보인다)
  */
 export function DictationSheet({
   session,
@@ -22,6 +22,18 @@ export function DictationSheet({
   points: readonly VisitDictationPoint[];
 }) {
   const content = (() => {
+    const { conversation } = session;
+    if (session.isConversationActive) {
+      // 초안을 만드는 중·실패와 멈췄을 때의 알림(멈춘 까닭, 빠진 조각)은 접어 두어도 보인다.
+      // 녹음 중 알림은 접기를 막지 않는다(서식을 가리지 않게 — 펼치면 보이고 끝낼 때 알림으로도 띄운다).
+      const mustShow =
+        conversation.status === "finishing" ||
+        conversation.failure !== null ||
+        (conversation.notice !== null && conversation.status !== "recording");
+      return session.conversationSheetOpen || mustShow ? (
+        <ConversationSheetContent session={session} />
+      ) : null;
+    }
     if (session.isRecording) {
       return session.pointsOpen ? <DictationPoints points={points} /> : null;
     }

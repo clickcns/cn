@@ -6,6 +6,7 @@ import {
   type DictationSentence,
   type DraftIssue,
   type FilledDraftForm,
+  takeStarts,
   type VisitDictation,
 } from "@repo/shared-types";
 import {
@@ -246,6 +247,8 @@ export function TranscriptDetails({
 }: {
   dictation: VisitDictation;
 }) {
+  // 대화 녹음이 섞이면 녹음이 바뀌는 곳에 "방문 중 대화"·"구술" 머리를 단다.
+  const starts = takeStarts(dictation.sentences);
   return (
     <details className="border-border group rounded-xl border">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold [&::-webkit-details-marker]:hidden">
@@ -256,14 +259,29 @@ export function TranscriptDetails({
         </span>
       </summary>
       <ol className="border-border flex flex-col gap-2 border-t px-4 py-3">
-        {dictation.sentences.map((sentence) => (
-          <li key={sentence.id} className="flex gap-2">
-            <span className="text-muted-foreground shrink-0 text-sm leading-[inherit] font-semibold tabular-nums">
-              {sentence.id}
-            </span>
-            <span>{sentence.text}</span>
-          </li>
-        ))}
+        {dictation.sentences.map((sentence, index) => {
+          const start = starts[index];
+          const heading = start
+            ? start === "conversation"
+              ? "방문 중 대화"
+              : "구술"
+            : null;
+          return (
+            <li key={sentence.id} className="flex flex-col gap-2">
+              {heading && (
+                <span className="text-primary pt-1 text-sm font-bold">
+                  {heading}
+                </span>
+              )}
+              <span className="flex gap-2">
+                <span className="text-muted-foreground shrink-0 text-sm leading-[inherit] font-semibold tabular-nums">
+                  {sentence.id}
+                </span>
+                <span>{sentence.text}</span>
+              </span>
+            </li>
+          );
+        })}
       </ol>
     </details>
   );

@@ -283,7 +283,11 @@ export function DictationPanel({
         onConfirm={handleRestart}
         isPending={removeDictation.isPending}
         title="구술을 지우고 처음부터 녹음할까요?"
-        description="지금까지 녹음한 구술과 초안이 지워집니다. 서식에 이미 채운 내용은 그대로 남습니다."
+        description={
+          session.pendingConversation
+            ? "지금까지 녹음한 구술과 초안, 끝내지 않은 대화 녹음이 지워집니다. 서식에 이미 채운 내용은 그대로 남습니다."
+            : "지금까지 녹음한 구술과 초안이 지워집니다. 서식에 이미 채운 내용은 그대로 남습니다."
+        }
         confirmText="지우기"
         variant="destructive"
       />

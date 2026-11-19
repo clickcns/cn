@@ -1,4 +1,5 @@
 import type {
+  ConversationProgress,
   VisitDictation,
   VisitDictationResponse,
 } from "@repo/shared-types";
@@ -16,21 +17,25 @@ export class RecordingDecodeError extends Error {
   }
 }
 
-/** 방문의 구술·초안. 없으면 null. */
+/** 방문의 구술·초안과 끝내지 않은 대화 녹음. 없으면 각각 null. */
 export function useDictation(visitId: string) {
   return useQuery({
     queryKey: dictationKey(visitId),
     queryFn: () => api.dictation.get(visitId),
-    select: (response) => response.dictation,
   });
 }
 
-function useSetDictation(visitId: string) {
+/** 캐시의 구술·대화 녹음을 바꾼다. 주지 않은 쪽은 그대로 둔다. */
+export function useSetDictation(visitId: string) {
   const queryClient = useQueryClient();
-  return (dictation: VisitDictation | null) => {
-    queryClient.setQueryData<VisitDictationResponse>(dictationKey(visitId), {
-      dictation,
-    });
+  return (next: {
+    dictation?: VisitDictation | null;
+    conversation?: ConversationProgress | null;
+  }) => {
+    queryClient.setQueryData<VisitDictationResponse>(
+      dictationKey(visitId),
+      (old) => ({ dictation: null, conversation: null, ...old, ...next }),
+    );
   };
 }
 
@@ -53,7 +58,7 @@ export function useRecordDictation(visitId: string) {
       }
       return api.dictation.record(visitId, wav, { append });
     },
-    onSuccess: setDictation,
+    onSuccess: (dictation) => setDictation({ dictation }),
   });
 }
 
@@ -61,7 +66,7 @@ export function useRedraftDictation(visitId: string) {
   const setDictation = useSetDictation(visitId);
   return useMutation({
     mutationFn: () => api.dictation.redraft(visitId),
-    onSuccess: setDictation,
+    onSuccess: (dictation) => setDictation({ dictation }),
   });
 }
 
@@ -69,6 +74,7 @@ export function useRemoveDictation(visitId: string) {
   const setDictation = useSetDictation(visitId);
   return useMutation({
     mutationFn: () => api.dictation.remove(visitId),
-    onSuccess: () => setDictation(null),
+    // 서버가 끝내지 않은 대화 녹음도 함께 지운다.
+    onSuccess: () => setDictation({ dictation: null, conversation: null }),
   });
 }

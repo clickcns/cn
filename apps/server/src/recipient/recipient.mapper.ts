@@ -1,10 +1,11 @@
 import type {
   CareGrade,
   Recipient,
+  RecordingConsent,
   VisitRecipient,
   VisitRecipientSummary,
 } from "@repo/shared-types";
-import { fromDbDate } from "../core/utils/db-date.js";
+import { fromDbDate, toDbDate } from "../core/utils/db-date.js";
 import type { Prisma } from "../generated/prisma/client.js";
 
 /** 입력 시 CARE_GRADES로 검증해 저장하므로 문자열 컬럼을 그대로 좁힌다. */
@@ -31,6 +32,8 @@ export const visitRecipientSelect = {
   guardianPhone: true,
   notes: true,
   ltcCertNumber: true,
+  recordingConsentOn: true,
+  recordingConsentBy: true,
 } as const satisfies Prisma.RecipientSelect;
 
 type RecipientSummaryRow = Prisma.RecipientGetPayload<{
@@ -52,6 +55,27 @@ export function toVisitRecipientSummary(
   };
 }
 
+/** 대화 녹음 동의 두 열 → 하나. 두 열은 함께 적고 함께 비운다(recordingConsentColumns). */
+function toRecordingConsent(row: {
+  recordingConsentOn: Date | null;
+  recordingConsentBy: string | null;
+}): RecordingConsent | null {
+  return row.recordingConsentOn && row.recordingConsentBy
+    ? { on: fromDbDate(row.recordingConsentOn), by: row.recordingConsentBy }
+    : null;
+}
+
+/** 대화 녹음 동의 → 두 열. undefined는 "변경 없음". */
+export function recordingConsentColumns(
+  consent: RecordingConsent | null | undefined,
+) {
+  if (consent === undefined) return {};
+  return {
+    recordingConsentOn: toDbDate(consent?.on ?? null),
+    recordingConsentBy: consent?.by ?? null,
+  };
+}
+
 export function toVisitRecipient(row: VisitRecipientRow): VisitRecipient {
   return {
     ...toVisitRecipientSummary(row),
@@ -63,6 +87,7 @@ export function toVisitRecipient(row: VisitRecipientRow): VisitRecipient {
     guardianPhone: row.guardianPhone,
     notes: row.notes,
     ltcCertNumber: row.ltcCertNumber,
+    recordingConsent: toRecordingConsent(row),
   };
 }
 

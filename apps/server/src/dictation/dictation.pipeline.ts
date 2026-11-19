@@ -1,9 +1,10 @@
-import type {
-  DictationSentence,
-  DraftIssue,
-  FollowUpQuestion,
-  FormId,
-  RecordDraft,
+import {
+  hasConversation,
+  type DictationSentence,
+  type DraftIssue,
+  type FollowUpQuestion,
+  type FormId,
+  type RecordDraft,
 } from "@repo/shared-types";
 import type { LlmClient, LlmUsage } from "../llm/llm.client.js";
 import type { SttClient } from "../speech/stt.client.js";
@@ -43,13 +44,17 @@ export class DictationPipeline {
     private readonly llm: LlmClient,
   ) {}
 
+  /** conversation이면 방문 중 대화 녹음 조각이다(음성인식 힌트가 다르다). */
   async transcribe(
     pcm: Buffer,
     context: DictationContext,
     position: { take: number; firstNumber: number },
+    { conversation = false }: { conversation?: boolean } = {},
   ): Promise<DictationSentence[]> {
     const segments = await this.stt.transcribe(pcm, {
-      prompt: buildSttPrompt(context.recipient, context.formIds),
+      prompt: buildSttPrompt(context.recipient, context.formIds, {
+        conversation,
+      }),
     });
     return toSentences(segments, position);
   }
@@ -62,7 +67,9 @@ export class DictationPipeline {
       buildDraftSchema(formIds),
       {
         name: "visit_record_draft",
-        system: buildDraftSystemPrompt(formIds),
+        system: buildDraftSystemPrompt(formIds, {
+          conversation: hasConversation(sentences),
+        }),
         user: buildDraftUserMessage(sentences, recipient),
       },
     );

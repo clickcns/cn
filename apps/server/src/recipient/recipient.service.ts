@@ -23,7 +23,11 @@ import {
 import type { Prisma } from "../generated/prisma/client.js";
 import { handlePrismaError, PrismaService } from "../prisma/index.js";
 import { toDbDate } from "../core/utils/db-date.js";
-import { toCareGrade, toRecipient } from "./recipient.mapper.js";
+import {
+  recordingConsentColumns,
+  toCareGrade,
+  toRecipient,
+} from "./recipient.mapper.js";
 
 type CreateRecipientData = z.output<typeof CreateRecipientSchema>;
 type UpdateRecipientData = z.output<typeof UpdateRecipientSchema>;
@@ -87,7 +91,12 @@ export class RecipientService {
 
   async create(
     actor: AuthenticatedUser,
-    { organizationId, birthDate, ...fields }: CreateRecipientData,
+    {
+      organizationId,
+      birthDate,
+      recordingConsent,
+      ...fields
+    }: CreateRecipientData,
   ): Promise<Recipient> {
     const targetId = resolveTargetOrganizationId(actor, organizationId);
     const organization = await this.prisma.organization.findUnique({
@@ -101,6 +110,7 @@ export class RecipientService {
       const row = await this.prisma.recipient.create({
         data: {
           ...fields,
+          ...recordingConsentColumns(recordingConsent),
           birthDate: toDbDate(birthDate),
           organizationId: targetId,
         },
@@ -117,7 +127,7 @@ export class RecipientService {
   async update(
     actor: AuthenticatedUser,
     id: string,
-    { birthDate, ...fields }: UpdateRecipientData,
+    { birthDate, recordingConsent, ...fields }: UpdateRecipientData,
   ): Promise<Recipient> {
     if (fields.programs !== undefined || fields.careGrade !== undefined) {
       await this.assertProgramsFit(actor, id, fields);
@@ -129,7 +139,11 @@ export class RecipientService {
           id,
           organizationId: resolveOrganizationFilter(actor),
         },
-        data: { ...fields, birthDate: toDbDate(birthDate) },
+        data: {
+          ...fields,
+          ...recordingConsentColumns(recordingConsent),
+          birthDate: toDbDate(birthDate),
+        },
       });
       return toRecipient(row);
     } catch (error) {

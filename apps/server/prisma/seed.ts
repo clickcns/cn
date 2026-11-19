@@ -233,6 +233,9 @@ async function seedLtcNursingCenter(passwordHash: string) {
       guardianName: "김민수(아들)",
       guardianPhone: "010-0000-0102",
       notes: "천골 부위 욕창 관리 중. 혈압약 복용.",
+      // 방문 중 대화 녹음 동의(현장 웹 [대화 녹음] 시험용)
+      recordingConsentOn: new Date("2026-09-01T00:00:00Z"),
+      recordingConsentBy: "보호자 김민수(아들)",
     },
     {
       name: "박순례",
@@ -404,6 +407,8 @@ async function seedHomeCareClinic(passwordHash: string) {
       guardianName: "강동원(아들)",
       guardianPhone: "010-0000-1102",
       notes: "와상. 유치도뇨관 사용, 천골 욕창 2단계.",
+      recordingConsentOn: new Date("2026-10-15T00:00:00Z"),
+      recordingConsentBy: "보호자 강동원(아들)",
     },
     {
       name: "문태식",
